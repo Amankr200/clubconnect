@@ -1,0 +1,196 @@
+.hero {
+  background: var(--bg-white);
+  padding: 40px 0 36px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hero-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── Hero Banner (like BPIT with campus image placeholder) ── */
+.hero-banner {
+  position: relative;
+  width: 100%;
+  height: 360px;
+  background: linear-gradient(135deg, var(--bpit-blue) 0%, var(--bpit-blue-light) 50%, var(--bpit-maroon) 100%);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.hero-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
+  z-index: 1;
+}
+
+/* Campus graphic pattern */
+.hero-banner-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.3) 40px, rgba(255,255,255,0.3) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.3) 40px, rgba(255,255,255,0.3) 41px);
+}
+
+.hero-banner-icons {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  z-index: 0;
+}
+.hero-banner-icon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.35;
+}
+.hero-banner-icon-item span:first-child { font-size: 3.5rem; }
+.hero-banner-icon-item span:last-child { font-size: 0.7rem; color: #fff; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+
+.hero-banner-content {
+  position: relative;
+  z-index: 2;
+  padding: 24px 30px;
+  width: 100%;
+}
+
+.hero-banner-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bpit-maroon);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: var(--r-sm);
+  margin-bottom: 10px;
+}
+
+.hero-title {
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.25;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.hero-subtitle {
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.88);
+  max-width: 560px;
+  line-height: 1.6;
+  margin-bottom: 18px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.hero-cta-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hero-btn-main {
+  background: #fff;
+  color: var(--bpit-blue);
+  border: 2px solid #fff;
+  border-radius: var(--r-md);
+  padding: 9px 22px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.hero-btn-main:hover { background: #FFE066; border-color: #FFE066; }
+
+.hero-btn-sec {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.7);
+  border-radius: var(--r-md);
+  padding: 9px 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.hero-btn-sec:hover { background: rgba(255,255,255,0.15); border-color: #fff; }
+
+/* ── Slider dots ── */
+.hero-dots {
+  position: absolute;
+  bottom: 14px;
+  right: 24px;
+  z-index: 3;
+  display: flex;
+  gap: 6px;
+}
+.hero-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  border: none;
+  cursor: pointer;
+}
+.hero-dot.active { background: #fff; width: 20px; border-radius: 4px; }
+
+/* ── Stats Row (below banner) ── */
+.hero-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.hero-stat-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s;
+  border-top: 3px solid var(--bpit-blue);
+}
+.hero-stat-card:hover { box-shadow: var(--shadow-md); }
+
+.stat-icon { font-size: 1.6rem; margin-bottom: 6px; }
+.stat-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--bpit-blue);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+
+@media (max-width: 700px) {
+  .hero-stats-row { grid-template-columns: repeat(2, 1fr); }
+  .hero-banner { height: 260px; }
+  .hero-banner-icons { display: none; }
+}
+@media (max-width: 400px) {
+  .hero-stats-row { grid-template-columns: repeat(2, 1fr); }
+}

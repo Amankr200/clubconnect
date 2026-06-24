@@ -1,0 +1,176 @@
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* Announcement above navbar */
+.ann-wrapper {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 950;
+}
+
+/* Navbar below announcement (34px height) */
+.navbar { top: 34px !important; }
+
+/* Main content below announcement (34px) + navbar identity (~68px) + nav bar (42px) ≈ 144px */
+main { padding-top: 144px; }
+
+/* ── Page breadcrumb (shown on Clubs page) ── */
+.page-breadcrumb {
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+.page-breadcrumb .section-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+.breadcrumb-back {
+  background: none;
+  border: none;
+  color: var(--bpit-blue);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+.breadcrumb-back:hover { color: var(--bpit-maroon); text-decoration: underline; }
+.breadcrumb-sep { color: var(--text-muted); }
+.breadcrumb-current { color: var(--text-body); font-weight: 600; }
+
+/* ── Home page Stories section wrapper ── */
+.home-stories-section {
+  background: var(--bg-section);
+  padding: 28px 0 10px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Features Section ── */
+.features-section {
+  padding: 36px 0;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.feature-card {
+  padding: 22px 20px;
+  transition: all 0.2s;
+  border-radius: var(--r-lg);
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  border-top: 3px solid var(--feat-color, var(--bpit-blue));
+}
+.feature-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.feat-icon {
+  width: 46px; height: 46px;
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 14px;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+}
+.feat-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 7px;
+}
+.feat-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.features-cta { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.features-join-btn { padding: 11px 30px; font-size: 0.92rem; }
+.features-clubs-btn { padding: 11px 30px; font-size: 0.92rem; }
+.features-note { margin-top: 4px; font-size: 0.78rem; color: var(--text-muted); }
+
+/* Section helpers used in App inline */
+.section-heading-blue {
+  background: var(--bpit-blue);
+  color: #fff;
+  text-align: center;
+  padding: 10px 20px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: var(--r-sm);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.section-sub-desc {
+  text-align: center;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  font-size: 0.86rem;
+  font-weight: 500;
+  max-width: 360px;
+  box-shadow: var(--shadow-lg);
+  animation: fadeInUp 0.25s var(--ease);
+  border: 1px solid;
+}
+.toast-success {
+  background: #EEF8EE;
+  border-color: #AADDAA;
+  color: #1A5F1A;
+}
+.toast-info {
+  background: var(--bpit-blue-pale);
+  border-color: var(--border-blue);
+  color: var(--bpit-blue);
+}
+.toast-error {
+  background: #FFF0F0;
+  border-color: #FFBBBB;
+  color: var(--bpit-maroon);
+}
+.toast span { flex: 1; }
+.toast-close {
+  background: none; border: none;
+  color: inherit; cursor: pointer;
+  font-size: 0.78rem; opacity: 0.6;
+  transition: opacity 0.15s;
+  font-family: inherit; flex-shrink: 0;
+}
+.toast-close:hover { opacity: 1; }
+
+@media (max-width: 600px) {
+  .toast { bottom: 12px; right: 12px; left: 12px; max-width: none; }
+  main { padding-top: 120px; }
+}

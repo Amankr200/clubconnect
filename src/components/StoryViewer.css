@@ -1,0 +1,179 @@
+.sv-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.sv-container {
+  position: relative;
+  width: 360px;
+  max-width: 95vw;
+  height: 640px;
+  max-height: 95vh;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  user-select: none;
+}
+
+/* ── Progress ── */
+.sv-progress-row {
+  display: flex;
+  gap: 3px;
+  padding: 12px 12px 6px;
+  z-index: 5;
+}
+.sv-progress-track {
+  flex: 1;
+  height: 3px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sv-progress-fill {
+  height: 100%;
+  background: #fff;
+  border-radius: 2px;
+  transition: width 0.05s linear;
+}
+
+/* ── Header ── */
+.sv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px 0;
+  z-index: 5;
+}
+.sv-club-info { display: flex; align-items: center; gap: 8px; }
+.sv-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  border: 2px solid rgba(255,255,255,0.5);
+}
+.sv-club-name { font-weight: 700; font-size: 0.9rem; color: #fff; }
+.sv-time { font-size: 0.7rem; color: rgba(255,255,255,0.7); }
+
+.sv-close {
+  background: rgba(0,0,0,0.3);
+  border: none;
+  color: #fff;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+.sv-close:hover { background: rgba(0,0,0,0.5); }
+
+/* ── Tap Zones ── */
+.sv-tap-zone {
+  position: absolute;
+  top: 70px;
+  bottom: 130px;
+  width: 38%;
+  z-index: 4;
+  cursor: pointer;
+}
+.sv-tap-zone.left  { left: 0; }
+.sv-tap-zone.right { right: 0; }
+
+/* ── Content ── */
+.sv-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px 28px;
+  z-index: 3;
+}
+.sv-slide-emoji {
+  font-size: 4rem;
+  line-height: 1;
+  margin-bottom: 18px;
+  animation: float 3s ease-in-out infinite;
+}
+.sv-headline {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+.sv-sub {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+.sv-cta {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.5);
+  color: #fff;
+  border-radius: var(--r-md);
+  padding: 9px 22px;
+  font-size: 0.87rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  z-index: 6;
+}
+.sv-cta:hover { background: rgba(255,255,255,0.35); }
+
+/* ── Club Strip ── */
+.sv-club-strip {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 6;
+}
+.sv-strip-item {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.3);
+  border: 2px solid rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sv-strip-item:hover { transform: scale(1.12); border-color: rgba(255,255,255,0.6); }
+.sv-strip-item.active { border-color: #fff; background: rgba(255,255,255,0.25); }
+
+.sv-paused-hint {
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 5px 14px;
+  border-radius: var(--r-full);
+  pointer-events: none;
+  z-index: 10;
+}
+
+@media (max-width: 480px) {
+  .sv-container { width: 100vw; height: 100vh; border-radius: 0; max-height: 100vh; }
+  .sv-club-strip { display: none; }
+}

@@ -1,0 +1,217 @@
+/* ─────────────────────────────────────────────
+   ClubConnect – BPIT Style (Light Theme)
+   Matching BPIT college website aesthetics
+───────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* BPIT Brand Colors */
+  --bpit-blue:        #1A3A8B;
+  --bpit-blue-dark:   #122B6B;
+  --bpit-blue-light:  #2550B8;
+  --bpit-blue-pale:   #E8EDF8;
+  --bpit-maroon:      #8B1A1A;
+  --bpit-maroon-light:#B02020;
+  --bpit-red-accent:  #CC0000;
+
+  /* Backgrounds */
+  --bg-white:         #FFFFFF;
+  --bg-light:         #F4F6FA;
+  --bg-light2:        #EEF1F8;
+  --bg-section:       #F8F9FC;
+
+  /* Text */
+  --text-dark:        #1A1A2E;
+  --text-body:        #333344;
+  --text-secondary:   #555566;
+  --text-muted:       #888899;
+  --text-white:       #FFFFFF;
+
+  /* Borders */
+  --border:           #D0D8E8;
+  --border-blue:      #A0B0D0;
+  --border-accent:    #1A3A8B;
+
+  /* Shadows */
+  --shadow-sm:  0 2px 8px rgba(26,58,139,0.08);
+  --shadow-md:  0 4px 16px rgba(26,58,139,0.12);
+  --shadow-lg:  0 8px 32px rgba(26,58,139,0.15);
+
+  /* Radius - simple & clean */
+  --r-sm:   4px;
+  --r-md:   6px;
+  --r-lg:   8px;
+  --r-xl:   10px;
+  --r-full: 999px;
+
+  /* Timing */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur: 0.2s;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  background: var(--bg-white);
+  color: var(--text-body);
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow-x: hidden;
+  font-size: 14px;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-light); }
+::-webkit-scrollbar-thumb { background: var(--bpit-blue); border-radius: 3px; }
+
+/* ── Common Utilities ── */
+.section-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  background: var(--bpit-blue);
+  color: #fff;
+  border: 2px solid var(--bpit-blue);
+  border-radius: var(--r-md);
+  padding: 9px 22px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: inherit;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  background: var(--bpit-blue-dark);
+  border-color: var(--bpit-blue-dark);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--bpit-blue);
+  border: 2px solid var(--bpit-blue);
+  border-radius: var(--r-md);
+  padding: 9px 22px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: inherit;
+  text-decoration: none;
+}
+.btn-outline:hover {
+  background: var(--bpit-blue);
+  color: #fff;
+}
+
+.btn-maroon {
+  background: var(--bpit-maroon);
+  color: #fff;
+  border: 2px solid var(--bpit-maroon);
+  border-radius: var(--r-md);
+  padding: 9px 22px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: inherit;
+}
+.btn-maroon:hover { background: var(--bpit-maroon-light); border-color: var(--bpit-maroon-light); }
+
+/* ── Section Headers (BPIT style: blue background, white text) ── */
+.section-heading {
+  background: var(--bpit-blue);
+  color: #fff;
+  text-align: center;
+  padding: 10px 24px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-radius: var(--r-sm);
+  margin-bottom: 20px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.badge-blue   { background: var(--bpit-blue-pale); color: var(--bpit-blue); border: 1px solid var(--border-blue); }
+.badge-maroon { background: #FFF0F0; color: var(--bpit-maroon); border: 1px solid #FFBBBB; }
+.badge-green  { background: #EEF8EE; color: #1A6B1A; border: 1px solid #AADDAA; }
+.badge-gold   { background: #FFF8E8; color: #805500; border: 1px solid #DDCC88; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-blue);
+}
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.anim-fade-up { animation: fadeInUp 0.4s var(--ease) both; }
+.anim-fade    { animation: fadeIn  0.3s var(--ease) both; }
+
+/* ── Overlay ── */
+.overlay-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s var(--ease);
+}

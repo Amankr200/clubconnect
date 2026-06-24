@@ -1,0 +1,128 @@
+.stories-section {
+  padding: 0 0 10px;
+}
+
+.stories-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.stories-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stories-title-icon { font-size: 1rem; }
+
+.stories-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ── Track ── */
+.stories-track-wrapper { position: relative; }
+
+.stories-track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.stories-track::-webkit-scrollbar { display: none; }
+
+/* ── Nav Arrows ── */
+.stories-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-white);
+  border: 1px solid var(--border-blue);
+  color: var(--bpit-blue);
+  border-radius: 50%;
+  width: 30px; height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+  line-height: 1;
+}
+.stories-nav:hover { background: var(--bpit-blue); color: #fff; }
+.stories-nav.left  { left: -14px; }
+.stories-nav.right { right: -14px; }
+
+/* ── Story Pill ── */
+.story-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+  padding: 2px;
+}
+.story-pill:hover { transform: translateY(-2px); }
+
+/* ── Avatar Ring ── */
+.story-avatar-ring {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  padding: 2.5px;
+}
+
+.unseen .story-avatar-ring {
+  background: linear-gradient(135deg, var(--story-color, var(--bpit-blue)), var(--bpit-maroon));
+}
+.seen .story-avatar-ring {
+  background: linear-gradient(135deg, #AAAAAA, #CCCCCC);
+}
+
+.story-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid var(--bg-white);
+  background: var(--bg-light2);
+  position: relative;
+}
+
+.story-emoji { font-size: 1.7rem; line-height: 1; }
+
+.unseen .story-avatar::after {
+  content: '';
+  position: absolute;
+  top: 2px; right: 2px;
+  width: 10px; height: 10px;
+  background: #22AA22;
+  border-radius: 50%;
+  border: 2px solid var(--bg-white);
+}
+
+.story-club-name {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-body);
+  max-width: 64px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.story-time { font-size: 0.6rem; color: var(--text-muted); }
