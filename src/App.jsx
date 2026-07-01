@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import AnnouncementBar from './components/AnnouncementBar';
 import HeroSection from './components/HeroSection';
@@ -7,35 +7,55 @@ import ClubsSection from './components/ClubsSection';
 import EventsSection from './components/EventsSection';
 import Footer from './components/Footer';
 import LoginModal from './components/LoginModal';
+import { useAuth } from './context/AuthContext';
+
+// Role → Dashboard lazy imports
+import AdminDashboard               from './pages/AdminDashboard';
+import StudentCoordinatorDashboard  from './pages/StudentCoordinatorDashboard';
+import FacultyCoordinatorDashboard  from './pages/FacultyCoordinatorDashboard';
+import DeanDashboard                from './pages/DeanDashboard';
+import PrincipalDashboard           from './pages/PrincipalDashboard';
+
 import './App.css';
 
-const ROLES = {
-  student:       { id: 'student',       label: 'Student',             emoji: '🎓' },
-  society_admin: { id: 'society_admin', label: 'Society Admin',       emoji: '🏛️' },
-  faculty:       { id: 'faculty',       label: 'Faculty Coordinator', emoji: '👨‍🏫' },
-  dean:          { id: 'dean',          label: 'Dean / Authority',    emoji: '🏫' },
-  admin:         { id: 'admin',         label: 'Platform Admin',      emoji: '⚙️' },
+/* ── Role → Dashboard component map ─────────────────────── */
+const DASHBOARD_MAP = {
+  admin:               AdminDashboard,
+  student_coordinator: StudentCoordinatorDashboard,
+  faculty_coordinator: FacultyCoordinatorDashboard,
+  dean:                DeanDashboard,
+  principal:           PrincipalDashboard,
 };
 
+/* ── Loading spinner (while JWT is being verified) ────────── */
+function FullPageLoader() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#0a0b0f',
+    }}>
+      <div style={{
+        width: 48,
+        height: 48,
+        borderRadius: '50%',
+        border: '3px solid rgba(99,102,241,0.3)',
+        borderTopColor: '#6366f1',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
 export default function App() {
+  const { user, loading } = useAuth();
+
   const [showLogin, setShowLogin] = useState(false);
-  const [user, setUser]           = useState(null);
-  const [toast, setToast]         = useState(null);
-  // 'home' | 'clubs'
-  const [page, setPage]           = useState('home');
-
-  const handleLogin = ({ role, name }) => {
-    const roleData = ROLES[role] || ROLES.student;
-    setUser({ role: roleData, name });
-    setShowLogin(false);
-    showToast(`Welcome, ${name}! Signed in as ${roleData.label} ${roleData.emoji}`, 'success');
-  };
-
-  const handleLogout = () => {
-    const name = user?.name;
-    setUser(null);
-    showToast(`Goodbye, ${name}! You've been signed out.`, 'info');
-  };
+  const [toast,     setToast]     = useState(null);
+  const [page,      setPage]      = useState('home');
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
@@ -53,6 +73,18 @@ export default function App() {
     return () => { document.body.style.overflow = ''; };
   }, [showLogin]);
 
+  // ── While validating stored JWT ──
+  if (loading) return <FullPageLoader />;
+
+  // ── Authenticated: render role dashboard ──
+  if (user) {
+    const Dashboard = DASHBOARD_MAP[user.role];
+    if (Dashboard) return <Dashboard />;
+    // Fallback if role doesn't match (shouldn't happen)
+    return <AdminDashboard />;
+  }
+
+  // ── Not authenticated: render landing page ──
   return (
     <div className="app">
       {/* Announcement ticker */}
@@ -63,8 +95,8 @@ export default function App() {
       {/* Sticky Navbar */}
       <Navbar
         onLoginClick={() => setShowLogin(true)}
-        user={user}
-        onLogout={handleLogout}
+        user={null}
+        onLogout={() => {}}
         currentPage={page}
         onNavigate={navigate}
       />
@@ -87,7 +119,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* Events Section — detailed */}
+          {/* Events Section */}
           <EventsSection onLoginClick={() => setShowLogin(true)} />
 
           {/* Features */}
@@ -98,7 +130,6 @@ export default function App() {
       {/* ── Page: Clubs ── */}
       {page === 'clubs' && (
         <main id="clubs-page">
-          {/* Breadcrumb */}
           <div className="page-breadcrumb">
             <div className="section-container">
               <button className="breadcrumb-back" onClick={() => navigate('home')}>
@@ -118,7 +149,10 @@ export default function App() {
       {showLogin && (
         <LoginModal
           onClose={() => setShowLogin(false)}
-          onLogin={handleLogin}
+          onLoginSuccess={(msg) => {
+            setShowLogin(false);
+            showToast(msg, 'success');
+          }}
         />
       )}
 
@@ -133,7 +167,7 @@ export default function App() {
   );
 }
 
-/* ── Features Section ── */
+/* ── Features Section (unchanged) ─────────────────────────── */
 function FeaturesSection({ onLoginClick, onNavigateClubs }) {
   const features = [
     { icon: '📸', title: 'Club Stories',          desc: 'Instagram-style stories from every society. Stay updated on what\'s happening across campus in real time.',                    color: '#EC4899' },
