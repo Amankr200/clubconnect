@@ -14,6 +14,14 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
       onNavigate('clubs');
       return;
     }
+    if (href === '#calendar') {
+      onNavigate('calendar');
+      return;
+    }
+    if (href === '#venues') {
+      onNavigate('venues');
+      return;
+    }
     // For home-page anchors
     if (currentPage !== 'home') {
       onNavigate('home');
@@ -28,11 +36,13 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
   };
 
   const NAV_LINKS = [
-    { label: 'Home',             href: '#home',    page: 'home' },
-    { label: 'Stories',          href: '#stories', page: 'home' },
-    { label: 'Events',           href: '#events',  page: 'home' },
-    { label: 'Clubs & Societies', href: '#clubs',  page: 'clubs' },
-    { label: 'About',            href: '#about',   page: 'home' },
+    { label: 'Home',             href: '#home',      page: 'home' },
+    { label: 'Stories',          href: '#stories',   page: 'home' },
+    { label: 'Events',           href: '#events',    page: 'home' },
+    { label: 'Calendar',         href: '#calendar',  page: 'calendar' },
+    { label: 'Venue Booking',    href: '#venues',    page: 'venues' },
+    { label: 'Clubs & Societies', href: '#clubs',    page: 'clubs' },
+    { label: 'About',            href: '#about',     page: 'home' },
   ];
 
   return (
@@ -78,6 +88,7 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
                 aria-current={link.page === 'clubs' && currentPage === 'clubs' ? 'page' : undefined}
               >
                 {link.href === '#clubs' && <span>🏛️ </span>}
+                {link.href === '#calendar' && <span>🗓️ </span>}
                 {link.label}
               </a>
             );
@@ -143,7 +154,8 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
               className={`mobile-nav-link ${link.href === '#clubs' ? 'mobile-nav-clubs' : ''}`}
               onClick={e => { e.preventDefault(); handleNav(link.href); }}
             >
-              {link.href === '#clubs' ? '🏛️ ' : ''}{link.label}
+              {link.href === '#clubs' ? '🏛️ ' : ''}
+              {link.href === '#calendar' ? '🗓️ ' : ''}{link.label}
             </a>
           ))}
           <div className="mobile-actions">

@@ -7,6 +7,8 @@ import ClubsSection from './components/ClubsSection';
 import EventsSection from './components/EventsSection';
 import Footer from './components/Footer';
 import LoginModal from './components/LoginModal';
+import CalendarPage from './calendar/FullCalendar.jsx';
+import VenueBookingPage from './pages/VenueBookingPage.jsx';
 import './App.css';
 
 const ROLES = {
@@ -21,7 +23,7 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser]           = useState(null);
   const [toast, setToast]         = useState(null);
-  // 'home' | 'clubs'
+  // 'home' | 'clubs' | 'calendar' | 'venues'
   const [page, setPage]           = useState('home');
 
   const handleLogin = ({ role, name }) => {
@@ -55,6 +57,7 @@ export default function App() {
 
   return (
     <div className="app">
+
       {/* Announcement ticker */}
       <div className="ann-wrapper">
         <AnnouncementBar />
@@ -109,6 +112,38 @@ export default function App() {
             </div>
           </div>
           <ClubsSection />
+        </main>
+      )}
+
+      {/* ── Page: Calendar ── */}
+      {page === 'calendar' && (
+        <main id="calendar-page">
+          <div className="page-breadcrumb">
+            <div className="section-container">
+              <button className="breadcrumb-back" onClick={() => navigate('home')}>
+                ← Home
+              </button>
+              <span className="breadcrumb-sep">/</span>
+              <span className="breadcrumb-current">Campus Calendar</span>
+            </div>
+          </div>
+          <CalendarPage />
+        </main>
+      )}
+
+      {/* ── Page: Venue Booking ── */}
+      {page === 'venues' && (
+        <main id="venues-page">
+          <div className="page-breadcrumb">
+            <div className="section-container">
+              <button className="breadcrumb-back" onClick={() => navigate('home')}>
+                ← Home
+              </button>
+              <span className="breadcrumb-sep">/</span>
+              <span className="breadcrumb-current">Venue Booking</span>
+            </div>
+          </div>
+          <VenueBookingPage />
         </main>
       )}
 
