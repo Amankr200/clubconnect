@@ -1,0 +1,82 @@
+.society-about {
+  padding: 40px 0;
+  background: var(--bg-light);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.about-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+
+.about-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.about-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.about-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-heading);
+}
+
+.about-text {
+  color: var(--text-body);
+  line-height: 1.6;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.vision-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mission-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mission-item strong {
+  color: var(--text-heading);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mission-item p {
+  color: var(--text-body);
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .society-about {
+    padding: 32px 0;
+  }
+
+  .about-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}

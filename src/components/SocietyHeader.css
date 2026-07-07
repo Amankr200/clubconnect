@@ -1,0 +1,174 @@
+.society-header {
+  position: relative;
+  padding: 40px 0;
+  overflow: hidden;
+}
+
+.society-hero {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.15;
+  z-index: 0;
+}
+
+.society-header-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.society-logo {
+  width: 140px;
+  height: 140px;
+  border-radius: var(--r-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  flex-shrink: 0;
+}
+
+.society-emoji {
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.society-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.society-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.badge-category {
+  background: var(--bpit-blue);
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-founded {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-body);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.society-name {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin: 8px 0;
+  color: var(--text-heading);
+}
+
+.society-fullname {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  font-weight: 500;
+}
+
+.society-tagline {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0 0 16px 0;
+  font-style: italic;
+}
+
+.society-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-number {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.society-social {
+  display: flex;
+  gap: 12px;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  font-size: 1.2rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.social-link:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .society-header-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+  }
+
+  .society-logo {
+    width: 120px;
+    height: 120px;
+  }
+
+  .society-emoji {
+    font-size: 3rem;
+  }
+
+  .society-name {
+    font-size: 1.8rem;
+  }
+
+  .society-stats {
+    justify-content: center;
+  }
+
+  .society-social {
+    justify-content: center;
+  }
+}

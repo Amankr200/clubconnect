@@ -322,8 +322,8 @@ export const clubs = [
     founded: 2010,
     tags: ["Social Service", "Community", "NSS", "Volunteering"],
     social: { instagram: "#", linkedin: "#", email: "nss@bpit.ac.in" },
-    head: "Amit Rawat",
-    coordinator: "Prof. Suresh Dubey",
+    head: "Harshit",
+    coordinator: "Dr. Shikha Gupta",
   },
   // Entrepreneurship
   {

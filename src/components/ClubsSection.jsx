@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { clubs, categories } from '../data/clubs';
 import './ClubsSection.css';
 
-export default function ClubsSection() {
+export default function ClubsSection({ onNavigateSociety }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
-  const [expanded, setExpanded] = useState(null);
 
   const filtered = clubs.filter(c => {
     const matchCat = activeCategory === 'All' || c.category === activeCategory;
@@ -17,7 +16,7 @@ export default function ClubsSection() {
 
   return (
     <section className="clubs-section" id="clubs" aria-label="Clubs Directory">
-      <div className="section-container">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {/* Header */}
         <div className="section-header">
           <div className="section-heading-blue">
@@ -81,8 +80,7 @@ export default function ClubsSection() {
               <ClubCard
                 key={club.id}
                 club={club}
-                isExpanded={expanded === club.id}
-                onToggle={() => setExpanded(expanded === club.id ? null : club.id)}
+                onNavigateSociety={onNavigateSociety}
               />
             ))}
           </div>
@@ -92,7 +90,7 @@ export default function ClubsSection() {
   );
 }
 
-function ClubCard({ club, isExpanded, onToggle }) {
+function ClubCard({ club, onNavigateSociety }) {
   const catColor = {
     Technical: '#3B82F6',
     Cultural: '#EC4899',
@@ -102,7 +100,7 @@ function ClubCard({ club, isExpanded, onToggle }) {
 
   return (
     <article
-      className={`club-card card ${isExpanded ? 'expanded' : ''}`}
+      className={`club-card card`}
       style={{ '--club-color': club.color, '--cat-color': catColor }}
       id={`club-${club.id}`}
     >
@@ -151,42 +149,14 @@ function ClubCard({ club, isExpanded, onToggle }) {
         </div>
       </div>
 
-      {/* Expand toggle */}
+      {/* CTA Button - View Society Dashboard */}
       <button
-        className="club-expand-btn"
-        onClick={onToggle}
-        aria-expanded={isExpanded}
-        id={`expand-club-${club.id}`}
+        className="club-cta-btn btn-primary"
+        onClick={() => onNavigateSociety(club.id)}
+        aria-label={`View ${club.name} society dashboard`}
       >
-        {isExpanded ? 'Show Less ▲' : 'Show More ▼'}
+        View Society → 
       </button>
-
-      {/* Expanded content */}
-      {isExpanded && (
-        <div className="club-expanded anim-fade-up">
-          <p className="club-desc">{club.description}</p>
-
-          <div className="club-detail-row">
-            <div className="club-detail">
-              <span className="detail-label">👨‍💼 Society Head</span>
-              <span className="detail-val">{club.head}</span>
-            </div>
-            <div className="club-detail">
-              <span className="detail-label">👨‍🏫 Faculty Coordinator</span>
-              <span className="detail-val">{club.coordinator}</span>
-            </div>
-          </div>
-
-          <div className="club-actions">
-            <a href={`mailto:${club.social.email}`} className="btn-primary club-btn">
-              ✉️ Contact
-            </a>
-            <a href={club.social.instagram} className="btn-outline club-btn">
-              View Profile →
-            </a>
-          </div>
-        </div>
-      )}
     </article>
   );
 }

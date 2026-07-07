@@ -7,6 +7,7 @@ import ClubsSection from './components/ClubsSection';
 import EventsSection from './components/EventsSection';
 import Footer from './components/Footer';
 import LoginModal from './components/LoginModal';
+import SocietyDashboard from './pages/SocietyDashboard';
 import './App.css';
 
 const ROLES = {
@@ -23,6 +24,7 @@ export default function App() {
   const [toast, setToast]         = useState(null);
   // 'home' | 'clubs'
   const [page, setPage]           = useState('home');
+  const [selectedClubId, setSelectedClubId] = useState(null);
 
   const handleLogin = ({ role, name }) => {
     const roleData = ROLES[role] || ROLES.student;
@@ -42,8 +44,9 @@ export default function App() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const navigate = (p) => {
+  const navigate = (p, clubId = null) => {
     setPage(p);
+    if (clubId) setSelectedClubId(clubId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -107,9 +110,18 @@ export default function App() {
               <span className="breadcrumb-sep">/</span>
               <span className="breadcrumb-current">All Clubs &amp; Societies</span>
             </div>
+          <ClubsSection onNavigateSociety={(clubId) => navigate('society', clubId)} />
           </div>
-          <ClubsSection />
         </main>
+      )}
+
+      {/* ── Page: Society Dashboard ── */}
+      {page === 'society' && (
+        <SocietyDashboard
+          clubId={selectedClubId}
+          user={user}
+          onNavigateBack={() => navigate('clubs')}
+        />
       )}
 
       <Footer onNavigate={navigate} />
