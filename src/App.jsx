@@ -57,7 +57,7 @@ export default function App() {
   const { user, loading } = useAuth();
 
   const [showLogin, setShowLogin] = useState(false);
-  const [user, setUser]           = useState(null);
+  // const [user, setUser]           = useState(null);
   const [toast, setToast]         = useState(null);
   // 'home' | 'clubs' | 'calendar' | 'venues'
   const [page, setPage]           = useState('home');
