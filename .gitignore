@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+.env
 node_modules
 dist
 dist-ssr
@@ -22,3 +23,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ── Security: never commit secrets ──────────────────────────
+# Environment variables (contains DB URI, JWT secret)
+.env
+.env.*
+!.env.example
+
+# Seed script (contains plaintext passwords)
+backend/seed.js

@@ -1,67 +1,78 @@
 import React, { useState } from 'react';
+import { useAuth, ROLE_META } from '../context/AuthContext';
 import './LoginModal.css';
 
 const ROLES = [
   {
-    id: 'student',
-    label: 'Student',
-    emoji: '🎓',
-    description: 'Discover clubs, RSVP events & track participation',
-    color: '#3B82F6',
-  },
-  {
-    id: 'society_admin',
-    label: 'Society Admin',
-    emoji: '🏛️',
-    description: 'Manage society profile, events & member records',
-    color: '#F59E0B',
-  },
-  {
-    id: 'faculty',
-    label: 'Faculty Coordinator',
-    emoji: '👨‍🏫',
-    description: 'Review events, verify participation & approve certificates',
-    color: '#10B981',
-  },
-  {
-    id: 'dean',
-    label: 'Dean / Authority',
-    emoji: '🏫',
-    description: 'Approve events, venues, sponsorships & monitor all activities',
-    color: '#8B5CF6',
-  },
-  {
-    id: 'admin',
-    label: 'Platform Admin',
-    emoji: '⚙️',
+    id:          'admin',
+    label:       'Platform Admin',
+    emoji:       '⚙️',
     description: 'Manage users, societies, settings & system security',
-    color: '#EF4444',
+    color:       '#EF4444',
+  },
+  {
+    id:          'student_coordinator',
+    label:       'Student Coordinator',
+    emoji:       '🏛️',
+    description: 'Manage society profile, events & member records',
+    color:       '#F59E0B',
+  },
+  {
+    id:          'faculty_coordinator',
+    label:       'Faculty Coordinator',
+    emoji:       '👨‍🏫',
+    description: 'Review events, verify participation & approve certificates',
+    color:       '#10B981',
+  },
+  {
+    id:          'dean',
+    label:       'Dean / HOD',
+    emoji:       '🏫',
+    description: 'Approve events, venues, sponsorships & monitor all activities',
+    color:       '#8B5CF6',
+  },
+  {
+    id:          'principal',
+    label:       'Principal',
+    emoji:       '🎓',
+    description: 'Overall institutional oversight and final authority',
+    color:       '#3B82F6',
   },
 ];
 
-export default function LoginModal({ onClose, onLogin }) {
-  const [step, setStep] = useState('role'); // role | form
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [form, setForm] = useState({ email: '', password: '', name: '' });
-  const [isRegister, setIsRegister] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+export default function LoginModal({ onClose, onLoginSuccess }) {
+  const { login } = useAuth();
 
-  const handleRoleSelect = (role) => {
-    setSelectedRole(role);
+  const [step,         setStep]         = useState('role'); // 'role' | 'form'
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [form,         setForm]         = useState({ email: '', password: '' });
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState('');
+
+  const handleRoleSelect = (roleId) => {
+    setSelectedRole(roleId);
     setStep('form');
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password) { setError('Please fill all fields.'); return; }
+    if (!form.email || !form.password) {
+      setError('Please enter your email and password.');
+      return;
+    }
+
     setLoading(true);
     setError('');
-    setTimeout(() => {
+
+    try {
+      const userData = await login(form.email, form.password);
+      onLoginSuccess?.(`Welcome, ${userData.name}! Signed in as ${ROLE_META[userData.role]?.label ?? userData.role} ${ROLE_META[userData.role]?.emoji ?? ''}`);
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
       setLoading(false);
-      onLogin({ role: selectedRole, name: form.name || form.email.split('@')[0] });
-    }, 1200);
+    }
   };
 
   const selectedRoleData = ROLES.find(r => r.id === selectedRole);
@@ -69,6 +80,7 @@ export default function LoginModal({ onClose, onLogin }) {
   return (
     <div className="modal-backdrop" onClick={onClose} aria-modal="true" role="dialog" aria-label="Login">
       <div className="modal-box" onClick={e => e.stopPropagation()}>
+
         {/* Header */}
         <div className="modal-header">
           <div className="modal-logo">
@@ -78,6 +90,7 @@ export default function LoginModal({ onClose, onLogin }) {
           <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
+        {/* ── Step 1: Role selection ── */}
         {step === 'role' && (
           <div className="modal-body anim-fade-up">
             <h2 className="modal-title">Welcome to BPIT ClubConnect</h2>
@@ -101,41 +114,17 @@ export default function LoginModal({ onClose, onLogin }) {
           </div>
         )}
 
+        {/* ── Step 2: Login form ── */}
         {step === 'form' && selectedRoleData && (
           <div className="modal-body anim-fade-up">
-            <button className="back-btn" onClick={() => setStep('role')}>← Back</button>
+            <button className="back-btn" onClick={() => { setStep('role'); setError(''); }}>← Back</button>
+
             <div className="selected-role-badge" style={{ '--role-color': selectedRoleData.color }}>
               <span>{selectedRoleData.emoji}</span>
               <span>{selectedRoleData.label}</span>
             </div>
 
-            <div className="form-tabs">
-              <button
-                className={`form-tab ${!isRegister ? 'active' : ''}`}
-                onClick={() => { setIsRegister(false); setError(''); }}
-                id="tab-login"
-              >Sign In</button>
-              <button
-                className={`form-tab ${isRegister ? 'active' : ''}`}
-                onClick={() => { setIsRegister(true); setError(''); }}
-                id="tab-register"
-              >Register</button>
-            </div>
-
             <form className="auth-form" onSubmit={handleSubmit} noValidate>
-              {isRegister && (
-                <div className="form-group">
-                  <label htmlFor="auth-name">Full Name</label>
-                  <input
-                    id="auth-name"
-                    type="text"
-                    placeholder="Your full name"
-                    value={form.name}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    autoComplete="name"
-                  />
-                </div>
-              )}
               <div className="form-group">
                 <label htmlFor="auth-email">College Email</label>
                 <input
@@ -145,8 +134,10 @@ export default function LoginModal({ onClose, onLogin }) {
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                   autoComplete="email"
+                  disabled={loading}
                 />
               </div>
+
               <div className="form-group">
                 <label htmlFor="auth-password">Password</label>
                 <input
@@ -155,11 +146,16 @@ export default function LoginModal({ onClose, onLogin }) {
                   placeholder="••••••••"
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  autoComplete={isRegister ? 'new-password' : 'current-password'}
+                  autoComplete="current-password"
+                  disabled={loading}
                 />
               </div>
 
-              {error && <p className="form-error">{error}</p>}
+              {error && (
+                <div className="form-error" role="alert">
+                  <span>⚠️</span> {error}
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -170,27 +166,17 @@ export default function LoginModal({ onClose, onLogin }) {
               >
                 {loading
                   ? <span className="spinner" />
-                  : isRegister ? `Register as ${selectedRoleData.label}` : `Sign In as ${selectedRoleData.label}`
+                  : `Sign In as ${selectedRoleData.label}`
                 }
               </button>
 
-              {!isRegister && (
-                <a href="#" className="forgot-link" onClick={e => e.preventDefault()}>
-                  Forgot password?
-                </a>
-              )}
+              <a href="#" className="forgot-link" onClick={e => e.preventDefault()}>
+                Forgot password?
+              </a>
             </form>
 
-            <p className="form-footer">
-              {isRegister
-                ? 'Already have an account? '
-                : 'New to ClubConnect? '}
-              <button
-                className="link-btn"
-                onClick={() => { setIsRegister(!isRegister); setError(''); }}
-              >
-                {isRegister ? 'Sign In' : 'Register'}
-              </button>
+            <p className="form-footer" style={{ marginTop: '1rem', fontSize: '0.78rem', color: '#64748b', textAlign: 'center' }}>
+              🔒 Credentials are verified securely via JWT
             </p>
           </div>
         )}
