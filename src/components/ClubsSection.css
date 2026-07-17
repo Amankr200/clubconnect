@@ -1,13 +1,18 @@
 .clubs-section {
   padding: 36px 0;
+  margin: 10px;
   background: var(--bg-section);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
+  display: block;
+  width: 100%;
 }
+
 
 /* ── Section Header (BPIT blue heading style) ── */
 .section-header {
   margin-bottom: 24px;
+  display: block;
 }
 
 .section-heading-blue {
@@ -35,15 +40,15 @@
 /* ── Controls ── */
 .clubs-controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
-  align-items: center;
+  align-items: start;
   margin-bottom: 14px;
   padding: 14px;
-  background: var(--bg-white);
-  border: 1px solid var(--border);
+  /* background: var(--bg-white); */
+  /* border: 1px solid var(--border); */
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm);
+  /* box-shadow: var(--shadow-sm); */
 }
 
 .search-box {
@@ -119,8 +124,22 @@
 /* ── Grid ── */
 .clubs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
+}
+
+/* Medium screens (tablets): 2 columns */
+@media (min-width: 768px) {
+  .clubs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Large screens (desktop): 3 columns */
+@media (min-width: 1200px) {
+  .clubs-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* ── Club Card ── */
@@ -196,38 +215,24 @@
 }
 
 /* Expand button */
-.club-expand-btn {
+.club-cta-btn {
   width: 100%;
-  background: var(--bg-light);
   border: none;
-  border-top: 1px solid var(--border);
-  color: var(--bpit-blue);
-  font-size: 0.75rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  padding: 8px;
+  padding: 10px 16px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s;
   font-family: inherit;
   margin-top: 12px;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
 }
-.club-expand-btn:hover { background: var(--bpit-blue-pale); }
+.club-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
 
-/* Expanded content */
-.club-expanded { padding: 0 16px 16px; }
-.club-desc {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-.club-detail-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.club-detail { display: flex; flex-direction: column; gap: 1px; }
-.detail-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
-.detail-val   { font-size: 0.83rem; color: var(--text-dark); font-weight: 600; }
-.club-actions { display: flex; gap: 8px; }
-.club-btn { padding: 8px 16px; font-size: 0.8rem; text-decoration: none; }
+/* ── Removed expanded content styles ── */
 
 /* Empty state */
 .clubs-empty {

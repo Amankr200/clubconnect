@@ -7,6 +7,7 @@ import ClubsSection from './components/ClubsSection';
 import EventsSection from './components/EventsSection';
 import Footer from './components/Footer';
 import LoginModal from './components/LoginModal';
+import SocietyDashboard from './pages/SocietyDashboard';
 import CalendarPage from './calendar/FullCalendar.jsx';
 import VenueBookingPage from './pages/VenueBookingPage.jsx';
 import { useAuth } from './context/AuthContext';
@@ -56,10 +57,11 @@ export default function App() {
   const { user, loading } = useAuth();
 
   const [showLogin, setShowLogin] = useState(false);
-  const [user, setUser]           = useState(null);
+  // const [user, setUser]           = useState(null);
   const [toast, setToast]         = useState(null);
   // 'home' | 'clubs' | 'calendar' | 'venues'
   const [page, setPage]           = useState('home');
+  const [selectedClubId, setSelectedClubId] = useState(null);
 
   const handleLogin = ({ role, name }) => {
     const roleData = ROLES[role] || ROLES.student;
@@ -79,8 +81,9 @@ export default function App() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const navigate = (p) => {
+  const navigate = (p, clubId = null) => {
     setPage(p);
+    if (clubId) setSelectedClubId(clubId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -156,9 +159,18 @@ export default function App() {
               <span className="breadcrumb-sep">/</span>
               <span className="breadcrumb-current">All Clubs &amp; Societies</span>
             </div>
+          <ClubsSection onNavigateSociety={(clubId) => navigate('society', clubId)} />
           </div>
-          <ClubsSection />
         </main>
+      )}
+
+      {/* ── Page: Society Dashboard ── */}
+      {page === 'society' && (
+        <SocietyDashboard
+          clubId={selectedClubId}
+          user={user}
+          onNavigateBack={() => navigate('clubs')}
+        />
       )}
 
       {/* ── Page: Calendar ── */}
