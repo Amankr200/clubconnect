@@ -2,10 +2,21 @@ require('dotenv').config();
 const express  = require('express');
 const mongoose = require('mongoose');
 const cors     = require('cors');
+// Changes
+const fs       = require('fs');
+const path     = require('path');
+// Changes
 const authRoutes = require('./routes/auth');
+const venueBookingRoutes = require('./routes/venueBookings');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
+
+// Changes
+const frontendDistPath = path.resolve(__dirname, '..', 'dist');
+const frontendIndexPath = path.join(frontendDistPath, 'index.html');
+const hasFrontendBuild = fs.existsSync(frontendIndexPath);
+// Changes
 
 /* ─── Middleware ─────────────────────────────────────────── */
 app.use(cors({
@@ -14,11 +25,28 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Changes
+if (hasFrontendBuild) {
+  app.use(express.static(frontendDistPath));
+}
+// Changes
+
 /* ─── Routes ─────────────────────────────────────────────── */
 app.use('/api/auth', authRoutes);
+app.use('/api/venue-bookings', venueBookingRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
+
+// Changes
+app.get(/^(?!\/api).*/, (req, res, next) => {
+  if (!hasFrontendBuild) {
+    return next();
+  }
+
+  return res.sendFile(frontendIndexPath);
+});
+// Changes
 
 /* ─── DB + Server Start ───────────────────────────────────── */
 mongoose

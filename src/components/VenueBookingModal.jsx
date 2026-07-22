@@ -1,140 +1,262 @@
-import React, { useState, useMemo } from 'react';
-import { venues } from '../data/venues.js';
-import { addBooking } from '../data/bookings.js';
-import { generateTimeSlots, convertTo12HourFormat } from '../utils/timeSlots.js';
-import { checkMultipleSlotAvailability, getAvailableSlots, getBookedSlots } from '../utils/availabilityChecker.js';
-import './VenueBookingModal.css';
-import { CheckCircle, AlertCircle, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../context/AuthContext.jsx";
+import { venues } from "../data/venues.js";
+import {
+  generateTimeSlots,
+  convertTo12HourFormat,
+} from "../utils/timeSlots.js";
+import {
+  createVenueBooking,
+  getVenueAvailability,
+  resubmitVenueBooking,
+} from "../api/venueBookings.js";
+import "./VenueBookingModal.css";
+import { CheckCircle, AlertCircle, X } from "lucide-react";
 
-export default function VenueBookingModal({ isOpen, onClose, onBookingSuccess }) {
-  const [selectedVenue, setSelectedVenue] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedSlots, setSelectedSlots] = useState([]); // Multiple slots
-  const [eventName, setEventName] = useState('');
-  const [hostClub, setHostClub] = useState('');
-  const [bookingError, setBookingError] = useState('');
-  const [bookingSuccess, setBookingSuccess] = useState('');
+export default function VenueBookingModal({
+  isOpen,
+  onClose,
+  onBookingSuccess,
+  token,
+  booking,
+}) {
+  const { token: authToken } = useAuth();
+  const activeToken = token || authToken;
+  const [selectedVenue, setSelectedVenue] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedSlots, setSelectedSlots] = useState([]);
+  const [eventName, setEventName] = useState("");
+  const [hostClub, setHostClub] = useState("");
+  const [photo, setPhoto] = useState("");
+  const [photoFileName, setPhotoFileName] = useState("");
+  const [description, setDescription] = useState("");
+  const [eligibility, setEligibility] = useState("");
+  const [attendance, setAttendance] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [studentCoordinators, setStudentCoordinators] = useState("");
+  const [bookingError, setBookingError] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState("");
+  const [existingBookings, setExistingBookings] = useState([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   const allTimeSlots = useMemo(() => generateTimeSlots(), []);
+  const isEditing = Boolean(booking?.id);
 
-  // Get venue details
-  const venueDetails = selectedVenue ? venues.find(v => v.id === parseInt(selectedVenue)) : null;
+  const venueDetails = selectedVenue
+    ? venues.find((venue) => venue.id === parseInt(selectedVenue, 10))
+    : null;
 
-  // Get available time slots for selected venue and date
+  const bookedSlots = useMemo(
+    () => existingBookings.flatMap((item) => item.timeSlots || []),
+    [existingBookings],
+  );
+
   const availableSlots = useMemo(() => {
     if (!selectedVenue || !selectedDate) return [];
-    return getAvailableSlots(parseInt(selectedVenue), selectedDate, allTimeSlots);
-  }, [selectedVenue, selectedDate, allTimeSlots]);
 
-  // Get booked slots
-  const bookedSlots = useMemo(() => {
-    if (!selectedVenue || !selectedDate) return [];
-    return getBookedSlots(parseInt(selectedVenue), selectedDate);
+    return allTimeSlots.filter(
+      (slot) =>
+        !bookedSlots.some(
+          (bookedSlot) =>
+            bookedSlot.startTime < slot.endTime &&
+            bookedSlot.endTime > slot.startTime,
+        ),
+    );
+  }, [selectedVenue, selectedDate, allTimeSlots, bookedSlots]);
+
+  const getMinDate = () => new Date().toISOString().split("T")[0];
+
+  const toggleSlotSelection = (startTime) => {
+    setSelectedSlots((prev) =>
+      prev.includes(startTime)
+        ? prev.filter((slot) => slot !== startTime)
+        : [...prev, startTime].sort(),
+    );
+    setBookingError("");
+  };
+
+  const handlePhotoUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setPhoto("");
+      setPhotoFileName("");
+      setBookingError("");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhoto(String(reader.result || ""));
+      setPhotoFileName(file.name);
+      setBookingError("");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setSelectedVenue(booking?.venueId ? String(booking.venueId) : "");
+    setSelectedDate(booking?.date || "");
+    setSelectedSlots(booking?.timeSlots?.map((slot) => slot.startTime) || []);
+    setEventName(booking?.eventName || "");
+    setHostClub(booking?.hostClub || "");
+    setPhoto(booking?.photo || "");
+    setPhotoFileName(booking?.photoFileName || "");
+    setDescription(booking?.description || "");
+    setEligibility(booking?.eligibility || "");
+    setAttendance(booking?.attendance || "");
+    setFeedback(booking?.feedback || "");
+    setStudentCoordinators(booking?.studentCoordinators || "");
+    setBookingError("");
+    setBookingSuccess("");
+    setExistingBookings([]);
+  }, [booking, isOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAvailability() {
+      if (!selectedVenue || !selectedDate) {
+        setExistingBookings([]);
+        return;
+      }
+
+      setLoadingAvailability(true);
+      try {
+        const data = await getVenueAvailability(selectedVenue, selectedDate);
+        if (!cancelled) {
+          setExistingBookings(data.bookings || []);
+        }
+      } catch {
+        if (!cancelled) {
+          setExistingBookings([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingAvailability(false);
+        }
+      }
+    }
+
+    loadAvailability();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedVenue, selectedDate]);
 
-  // Check current slots availability
-  const slotsAvailability = useMemo(() => {
-    if (!selectedVenue || !selectedDate || selectedSlots.length === 0) return null;
-    const slotsToCheck = allTimeSlots.filter(s => selectedSlots.includes(s.startTime));
-    return checkMultipleSlotAvailability(parseInt(selectedVenue), selectedDate, slotsToCheck);
-  }, [selectedVenue, selectedDate, selectedSlots, allTimeSlots]);
-
-  // Get minimum date (today)
-  const getMinDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  };
-
-  // Toggle slot selection
-  const toggleSlotSelection = (startTime) => {
-    setSelectedSlots(prev => {
-      if (prev.includes(startTime)) {
-        return prev.filter(s => s !== startTime);
-      } else {
-        return [...prev, startTime].sort();
-      }
-    });
-    setBookingError('');
-  };
-
-  // Check if slots are consecutive
   const areSlotConsecutive = (slots) => {
     if (slots.length <= 1) return true;
-    const sortedSlots = slots.sort();
-    for (let i = 0; i < sortedSlots.length - 1; i++) {
-      const currentSlot = allTimeSlots.find(s => s.startTime === sortedSlots[i]);
-      const nextSlot = allTimeSlots.find(s => s.startTime === sortedSlots[i + 1]);
-      if (!currentSlot || !nextSlot) return false;
-      if (currentSlot.endTime !== nextSlot.startTime) return false;
+
+    const sortedSlots = [...slots].sort();
+    for (let i = 0; i < sortedSlots.length - 1; i += 1) {
+      const currentSlot = allTimeSlots.find(
+        (slot) => slot.startTime === sortedSlots[i],
+      );
+      const nextSlot = allTimeSlots.find(
+        (slot) => slot.startTime === sortedSlots[i + 1],
+      );
+      if (
+        !currentSlot ||
+        !nextSlot ||
+        currentSlot.endTime !== nextSlot.startTime
+      ) {
+        return false;
+      }
     }
+
     return true;
   };
 
-  const handleBooking = (e) => {
+  const handleBooking = async (e) => {
     e.preventDefault();
-    setBookingError('');
-    setBookingSuccess('');
+    setBookingError("");
+    setBookingSuccess("");
 
-    // Validation
-    if (!selectedVenue || !selectedDate || selectedSlots.length === 0 || !eventName || !hostClub) {
-      setBookingError('Please select venue, date, at least one time slot, and enter event details');
+    if (
+      !selectedVenue ||
+      !selectedDate ||
+      selectedSlots.length === 0 ||
+      !eventName ||
+      !hostClub ||
+      !photo ||
+      !description ||
+      !eligibility ||
+      !attendance ||
+      !feedback ||
+      !studentCoordinators
+    ) {
+      setBookingError(
+        "Please complete every required field, including the photo upload and event details.",
+      );
       return;
     }
 
-    // Check if slots are consecutive
     if (!areSlotConsecutive(selectedSlots)) {
-      setBookingError('Selected time slots must be consecutive');
+      setBookingError("Selected time slots must be consecutive");
       return;
     }
 
-    // Check availability
-    if (!slotsAvailability || !slotsAvailability.available) {
-      setBookingError(slotsAvailability?.message || 'Selected time slots are not available');
+    if (!activeToken && !isEditing) {
+      setBookingError(
+        "Please sign in as a student coordinator to request a venue.",
+      );
       return;
     }
 
-    // Create booking with multiple slots
     try {
-      const slotsData = allTimeSlots.filter(s => selectedSlots.includes(s.startTime));
+      const slotsData = allTimeSlots.filter((slot) =>
+        selectedSlots.includes(slot.startTime),
+      );
       const firstSlot = slotsData[0];
       const lastSlot = slotsData[slotsData.length - 1];
-
-      const booking = addBooking({
-        venueId: parseInt(selectedVenue),
+      const payload = {
+        venueId: parseInt(selectedVenue, 10),
         date: selectedDate,
-        timeSlots: slotsData.map(s => ({ startTime: s.startTime, endTime: s.endTime })),
+        timeSlots: slotsData.map((slot) => ({
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+        })),
         eventName,
-        hostClub
-      });
+        hostClub,
+        photo,
+        photoFileName,
+        description,
+        eligibility,
+        attendance,
+        feedback,
+        studentCoordinators,
+      };
+
+      const result = isEditing
+        ? await resubmitVenueBooking(activeToken, booking.id, payload)
+        : await createVenueBooking(activeToken, payload);
 
       const durationMins = selectedSlots.length * 50;
       const durationHours = Math.floor(durationMins / 60);
       const durationRemainingMins = durationMins % 60;
-      const durationStr = durationHours > 0 
-        ? `${durationHours}h ${durationRemainingMins}m`
-        : `${durationMins}m`;
+      const durationStr =
+        durationHours > 0
+          ? `${durationHours}h ${durationRemainingMins}m`
+          : `${durationMins}m`;
 
-      setBookingSuccess(`✓ Event "${eventName}" successfully booked at ${venueDetails.name} on ${selectedDate} from ${convertTo12HourFormat(firstSlot.startTime)} to ${convertTo12HourFormat(lastSlot.endTime)} (${durationStr})`);
+      setBookingSuccess(
+        `✓ Event "${eventName}" has been ${isEditing ? "resubmitted" : "sent for approval"} at ${venueDetails?.name || "selected venue"} on ${selectedDate} from ${convertTo12HourFormat(firstSlot.startTime)} to ${convertTo12HourFormat(lastSlot.endTime)} (${durationStr})`,
+      );
 
-      // Reset form
-      setSelectedVenue('');
-      setSelectedDate('');
-      setSelectedSlots([]);
-      setEventName('');
-      setHostClub('');
-
-      // Call success callback if provided
       if (onBookingSuccess) {
-        onBookingSuccess(booking);
+        onBookingSuccess(result.booking);
       }
 
-      // Close modal after 2 seconds
       setTimeout(() => {
         onClose();
-        setBookingSuccess('');
+        setBookingSuccess("");
       }, 2000);
     } catch (error) {
-      setBookingError('Failed to create booking. Please try again.');
+      setBookingError(
+        error.message || "Failed to create booking. Please try again.",
+      );
     }
   };
 
@@ -142,45 +264,102 @@ export default function VenueBookingModal({ isOpen, onClose, onBookingSuccess })
 
   return (
     <div className="booking-modal-overlay" onClick={onClose}>
-      <div className="booking-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
+      <div
+        className="booking-modal"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="booking-modal-header">
-          <h2>Book a Venue</h2>
+          <h2>{isEditing ? "Revise Venue Request" : "Book a Venue"}</h2>
           <button className="close-btn" onClick={onClose}>
             <X size={24} />
           </button>
         </div>
 
-        {/* Messages */}
         {bookingSuccess && (
           <div className="success-message">
-            <CheckCircle size={18} style={{ display: 'inline-block', marginRight: '8px' }} />
+            <CheckCircle
+              size={18}
+              style={{ display: "inline-block", marginRight: "8px" }}
+            />
             {bookingSuccess}
           </div>
         )}
+
         {bookingError && (
           <div className="error-message">
-            <AlertCircle size={18} style={{ display: 'inline-block', marginRight: '8px' }} />
+            <AlertCircle
+              size={18}
+              style={{ display: "inline-block", marginRight: "8px" }}
+            />
             {bookingError}
           </div>
         )}
 
-        {/* Form */}
+        <div className="booking-form-group">
+          <label htmlFor="hostClub">Host Club/Organization *</label>
+          <input
+            id="hostClub"
+            type="text"
+            placeholder="e.g., #DEFINE, IEEE, WIE"
+            value={hostClub}
+            onChange={(event) => setHostClub(event.target.value)}
+            maxLength={50}
+          />
+        </div>
+
+        <div className="booking-form-group">
+          <label htmlFor="eventName">Event Name *</label>
+          <input
+            id="eventName"
+            type="text"
+            placeholder="e.g., Tech Talk on AI, Workshop: DSA Basics"
+            value={eventName}
+            onChange={(event) => setEventName(event.target.value)}
+            maxLength={100}
+          />
+        </div>
+
+        <div className="booking-form-group">
+          <label htmlFor="description">Description *</label>
+          <textarea
+            id="description"
+            placeholder="Provide a detailed description of the event"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            required
+            rows={5}
+          />
+        </div>
+
+        <div className="booking-form-group">
+          <label htmlFor="date">Select Date *</label>
+          <input
+            id="date"
+            type="date"
+            value={selectedDate}
+            onChange={(event) => {
+              setSelectedDate(event.target.value);
+              setSelectedSlots([]);
+              setBookingError("");
+            }}
+            min={getMinDate()}
+          />
+        </div>
+
         <form onSubmit={handleBooking}>
-          {/* Venue Selection */}
           <div className="booking-form-group">
             <label htmlFor="venue">Select Venue *</label>
             <select
               id="venue"
               value={selectedVenue}
-              onChange={(e) => {
-                setSelectedVenue(e.target.value);
+              onChange={(event) => {
+                setSelectedVenue(event.target.value);
                 setSelectedSlots([]);
-                setBookingError('');
+                setBookingError("");
               }}
             >
               <option value="">-- Choose a venue --</option>
-              {venues.map(venue => (
+              {venues.map((venue) => (
                 <option key={venue.id} value={venue.id}>
                   {venue.name} (Capacity: {venue.capacity})
                 </option>
@@ -188,7 +367,32 @@ export default function VenueBookingModal({ isOpen, onClose, onBookingSuccess })
             </select>
           </div>
 
-          {/* Venue Details */}
+          <div className="booking-form-group">
+            <label htmlFor="photo">Photo Upload *</label>
+            <input
+              id="photo"
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+            />
+            {photo && (
+              <div className="photo-preview-card">
+                <img
+                  src={photo}
+                  alt={
+                    photoFileName
+                      ? `Uploaded preview of ${photoFileName}`
+                      : "Uploaded preview"
+                  }
+                  className="photo-preview"
+                />
+                {photoFileName && (
+                  <div className="photo-file-name">{photoFileName}</div>
+                )}
+              </div>
+            )}
+          </div>
+
           {venueDetails && (
             <div className="venue-details-card">
               <h3>{venueDetails.name}</h3>
@@ -211,69 +415,71 @@ export default function VenueBookingModal({ isOpen, onClose, onBookingSuccess })
                 </div>
               </div>
               <div className="venue-facilities">
-                <strong style={{ display: 'block', marginBottom: '8px' }}>Facilities:</strong>
+                <strong style={{ display: "block", marginBottom: "8px" }}>
+                  Facilities:
+                </strong>
                 <div className="venue-facilities-list">
-                  {venueDetails.facilities.map((facility, idx) => (
-                    <span key={idx} className="facility-badge">{facility}</span>
+                  {venueDetails.facilities.map((facility, index) => (
+                    <span key={index} className="facility-badge">
+                      {facility}
+                    </span>
                   ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Date Selection */}
-          <div className="booking-form-group">
-            <label htmlFor="date">Select Date *</label>
-            <input
-              id="date"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => {
-                setSelectedDate(e.target.value);
-                setSelectedSlots([]);
-                setBookingError('');
-              }}
-              min={getMinDate()}
-            />
-          </div>
-
-          {/* Time Slots Selection */}
           {selectedDate && selectedVenue && (
             <>
               <div className="time-slots-info">
-                <p><strong>📌 Select one or more consecutive time slots (50 min each)</strong></p>
+                <p>
+                  <strong>
+                    📌 Select one or more consecutive time slots (50 min each)
+                  </strong>
+                </p>
+                {loadingAvailability && (
+                  <p>Checking current booking requests...</p>
+                )}
               </div>
 
               <div className="available-slots">
                 <h4>✓ Available Time Slots</h4>
                 <div className="slots-grid">
                   {availableSlots.length > 0 ? (
-                    availableSlots.map((slot, idx) => (
+                    availableSlots.map((slot, index) => (
                       <div
-                        key={idx}
-                        className={`slot-badge ${selectedSlots.includes(slot.startTime) ? 'selected' : ''}`}
+                        key={index}
+                        className={`slot-badge ${selectedSlots.includes(slot.startTime) ? "selected" : ""}`}
                         onClick={() => toggleSlotSelection(slot.startTime)}
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: "pointer" }}
                       >
                         {convertTo12HourFormat(slot.startTime)}
                       </div>
                     ))
                   ) : (
-                    <div style={{ color: '#6b7280', fontSize: '13px' }}>No available slots for this date</div>
+                    <div style={{ color: "#6b7280", fontSize: "13px" }}>
+                      No available slots for this date
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Selected Slots Summary */}
               {selectedSlots.length > 0 && (
                 <div className="selected-slots-summary">
                   <h4>📋 Selected Slots</h4>
                   <div className="selected-slots-list">
-                    {selectedSlots.map((startTime, idx) => {
-                      const slot = allTimeSlots.find(s => s.startTime === startTime);
+                    {selectedSlots.map((startTime, index) => {
+                      const slot = allTimeSlots.find(
+                        (item) => item.startTime === startTime,
+                      );
+                      if (!slot) return null;
+
                       return (
-                        <div key={idx} className="selected-slot-item">
-                          <span>{convertTo12HourFormat(slot.startTime)} - {convertTo12HourFormat(slot.endTime)}</span>
+                        <div key={index} className="selected-slot-item">
+                          <span>
+                            {convertTo12HourFormat(slot.startTime)} -{" "}
+                            {convertTo12HourFormat(slot.endTime)}
+                          </span>
                           <button
                             type="button"
                             className="remove-slot-btn"
@@ -287,19 +493,24 @@ export default function VenueBookingModal({ isOpen, onClose, onBookingSuccess })
                     })}
                   </div>
                   <div className="slots-duration">
-                    Total Duration: <strong>{selectedSlots.length * 50} minutes</strong>
+                    Total Duration:{" "}
+                    <strong>{selectedSlots.length * 50} minutes</strong>
                   </div>
                 </div>
               )}
 
-              {/* Booked Slots */}
               {bookedSlots.length > 0 && (
                 <div className="booked-slots">
                   <h4>✗ Booked Time Slots</h4>
-                  {bookedSlots.map((slot, idx) => (
-                    <div key={idx} className="booking-item">
-                      <div className="time">{convertTo12HourFormat(slot.startTime)} - {convertTo12HourFormat(slot.endTime)}</div>
-                      <div className="event">{slot.eventName} by {slot.hostClub}</div>
+                  {bookedSlots.map((slot, index) => (
+                    <div key={index} className="booking-item">
+                      <div className="time">
+                        {convertTo12HourFormat(slot.startTime)} -{" "}
+                        {convertTo12HourFormat(slot.endTime)}
+                      </div>
+                      <div className="event">
+                        {slot.eventName} by {slot.hostClub}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -307,58 +518,80 @@ export default function VenueBookingModal({ isOpen, onClose, onBookingSuccess })
             </>
           )}
 
-          {/* Availability Status */}
-          {selectedSlots.length > 0 && slotsAvailability && (
-            <div className={`availability-status ${slotsAvailability.available ? 'available' : 'unavailable'}`}>
-              {slotsAvailability.available ? (
-                <>
-                  <CheckCircle size={18} />
-                  <span>{slotsAvailability.message}</span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle size={18} />
-                  <span>{slotsAvailability.message}</span>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Event Name */}
           <div className="booking-form-group">
-            <label htmlFor="eventName">Event Name *</label>
+            <label htmlFor="eligibility">Eligibility *</label>
             <input
-              id="eventName"
+              id="eligibility"
               type="text"
-              placeholder="e.g., Tech Talk on AI, Workshop: DSA Basics"
-              value={eventName}
-              onChange={(e) => setEventName(e.target.value)}
-              maxLength={100}
+              placeholder="Who can attend this event?"
+              value={eligibility}
+              onChange={(event) => setEligibility(event.target.value)}
+              required
+              maxLength={120}
             />
           </div>
 
-          {/* Host Club */}
           <div className="booking-form-group">
-            <label htmlFor="hostClub">Host Club/Organization *</label>
-            <input
-              id="hostClub"
+            <label htmlFor="studentCoordinators">Student Coordinators *</label>
+            <textarea
+              id="studentCoordinators"
               type="text"
-              placeholder="e.g., #DEFINE, IEEE, WIE"
-              value={hostClub}
-              onChange={(e) => setHostClub(e.target.value)}
-              maxLength={50}
+              placeholder="Names of student coordinators"
+              value={studentCoordinators}
+              onChange={(event) => setStudentCoordinators(event.target.value)}
+              required
+              maxLength={120}
             />
           </div>
 
-          {/* Actions */}
+          <div className="booking-form-group">
+            <label htmlFor="attendance">Attendance *</label>
+            <input
+              id="attendance"
+              type="text"
+              placeholder="Expected attendance count or range"
+              value={attendance}
+              onChange={(event) => setAttendance(event.target.value)}
+              required
+              maxLength={80}
+            />
+          </div>
+
+          <div className="booking-form-group">
+            <label htmlFor="feedback">Feedback *</label>
+            <input
+              id="feedback"
+              type="text"
+              placeholder="Any feedback or remarks"
+              value={feedback}
+              onChange={(event) => setFeedback(event.target.value)}
+              required
+              maxLength={120}
+            />
+          </div>
+
           <div className="booking-actions">
-            <button type="submit" className="btn btn-primary">
-              Confirm Booking
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onClose}
+            >
               Cancel
             </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={!activeToken && !isEditing}
+            >
+              {isEditing ? "Resubmit Request" : "Request Approval"}
+            </button>
           </div>
+
+          {!activeToken && !isEditing && (
+            <div className="booking-note">
+              Student coordinators must be signed in to submit venue requests.
+            </div>
+          )}
         </form>
       </div>
     </div>

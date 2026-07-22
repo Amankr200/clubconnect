@@ -3,8 +3,8 @@ import { upcomingEvents, clubs } from '../data/clubs';
 import './EventsSection.css';
 
 const STATUS_MAP = {
-  approved: { label: 'Approved & Live',    color: '#1A6B1A', bg: '#EEF8EE', border: '#AADDAA', icon: '✅' },
-  pending:  { label: 'Pending Dean Approval', color: '#805500', bg: '#FFF8E8', border: '#DDCC88', icon: '⏳' },
+  approved: { label: 'Live',    color: '#1A6B1A', bg: '#EEF8EE', border: '#AADDAA', icon: '✅' },
+  upcoming:  { label: 'Upcoming', color: '#805500', bg: '#FFF8E8', border: '#DDCC88', icon: '⏳' },
   rejected: { label: 'Rejected',           color: '#8B1A1A', bg: '#FFF0F0', border: '#FFBBBB', icon: '❌' },
 };
 
@@ -54,36 +54,8 @@ export default function EventsSection({ onLoginClick }) {
           <span>📅</span> Upcoming Events &amp; Programs – BPIT
         </div>
         <p className="section-sub-desc">
-          RSVP for workshops, competitions, orientations, and cultural programs. All events go through
-          faculty and dean approval before being listed here.
+          RSVP for workshops, competitions, orientations, and cultural programs.
         </p>
-
-        {/* ── Approval Workflow Banner ── */}
-        <div className="approval-workflow">
-          <div className="workflow-title">
-            <span>🔄</span> How Events Get Published on ClubConnect
-          </div>
-          <div className="workflow-steps">
-            {[
-              { icon: '📝', label: 'Society creates event proposal', sub: 'Venue, budget, agenda, dates', step: 1, color: '#3B82F6' },
-              { icon: '👨‍🏫', label: 'Faculty Coordinator reviews', sub: 'Verifies content & eligibility', step: 2, color: '#8B5CF6' },
-              { icon: '🏫', label: 'Dean / Authority approves', sub: 'Final sign-off required', step: 3, color: '#F59E0B' },
-              { icon: '✅', label: 'Published to all students', sub: 'RSVP & reminders open', step: 4, color: '#10B981' },
-            ].map((s, i, arr) => (
-              <React.Fragment key={s.step}>
-                <div className="wf-step" style={{ '--wf-color': s.color }}>
-                  <div className="wf-icon-wrap" style={{ background: `${s.color}15`, border: `1px solid ${s.color}40` }}>
-                    <span className="wf-icon">{s.icon}</span>
-                  </div>
-                  <div className="wf-step-num">Step {s.step}</div>
-                  <div className="wf-label">{s.label}</div>
-                  <div className="wf-sub">{s.sub}</div>
-                </div>
-                {i < arr.length - 1 && <div className="wf-arrow">›</div>}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
 
         {/* ── Stats bar ── */}
         <div className="events-stats-bar">
@@ -94,12 +66,12 @@ export default function EventsSection({ onLoginClick }) {
           <div className="evt-stat-div" />
           <div className="evt-stat">
             <span className="evt-stat-num">{upcomingEvents.filter(e => e.status === 'approved').length}</span>
-            <span className="evt-stat-label">Approved & Live</span>
+            <span className="evt-stat-label">Ongoing Events</span>
           </div>
           <div className="evt-stat-div" />
           <div className="evt-stat">
             <span className="evt-stat-num">{upcomingEvents.filter(e => e.status === 'pending').length}</span>
-            <span className="evt-stat-label">Pending Approval</span>
+            <span className="evt-stat-label">Upcoming Events</span>
           </div>
           <div className="evt-stat-div" />
           <div className="evt-stat">
@@ -211,20 +183,14 @@ export default function EventsSection({ onLoginClick }) {
 
                 {/* Actions */}
                 <div className="event-actions">
-                  {event.status === 'approved' ? (
-                    <button
+                  {<button
                       className={`rsvp-btn ${isRsvpd ? 'rsvpd' : ''}`}
                       onClick={() => handleRsvp(event.id, event.status)}
                       id={`rsvp-${event.id}`}
                       style={!isRsvpd ? { background: event.color, borderColor: event.color } : {}}
                     >
                       {isRsvpd ? '✅ RSVP\'d!' : '🎟️ RSVP Now'}
-                    </button>
-                  ) : (
-                    <button className="rsvp-btn pending-btn" disabled>
-                      ⏳ Awaiting Approval
-                    </button>
-                  )}
+                    </button>}
                   <button className="btn-outline event-details-btn" onClick={onLoginClick}>
                     View Details
                   </button>

@@ -71,7 +71,8 @@
 }
 
 .booking-form-group select,
-.booking-form-group input {
+.booking-form-group input,
+.booking-form-group textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #d1d5db;
@@ -82,10 +83,39 @@
 }
 
 .booking-form-group select:focus,
-.booking-form-group input:focus {
+.booking-form-group input:focus,
+.booking-form-group textarea:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.booking-form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.photo-preview-card {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.photo-preview {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.photo-file-name {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  word-break: break-word;
 }
 
 /* Venue Details Card */

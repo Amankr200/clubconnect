@@ -91,6 +91,51 @@
   color: #64748b;
 }
 
+.dash-link-value {
+  color: #7dd3fc;
+  text-decoration: underline;
+  word-break: break-word;
+}
+
+.dash-link-value:hover {
+  color: #bae6fd;
+}
+
+.dash-booking-details {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.9rem 0;
+  padding: 0.9rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dash-booking-photo-wrap {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dash-booking-photo {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.dash-booking-detail-grid {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.dash-booking-detail-grid strong {
+  color: #f8fafc;
+}
+
 .dash-logout-btn {
   display: flex;
   align-items: center;
@@ -224,6 +269,157 @@
   letter-spacing: 0.04em;
 }
 
+.dash-approval-panel {
+  margin-top: 1.6rem;
+  width: 100%;
+  text-align: left;
+}
+
+.dash-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.dash-panel-header h2 {
+  font-size: 1rem;
+  margin-bottom: 0.2rem;
+  color: #f8fafc;
+}
+
+.dash-panel-header p {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.dash-request-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.dash-request-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.dash-request-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.dash-request-main h3 {
+  font-size: 0.95rem;
+  color: #f8fafc;
+  margin-bottom: 0.25rem;
+}
+
+.dash-request-main p,
+.dash-request-meta,
+.dash-change-note {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.dash-status-pill {
+  align-self: flex-start;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  color: #f8fafc;
+  font-size: 0.72rem;
+  text-transform: capitalize;
+}
+
+.dash-request-meta {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.dash-change-note {
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  margin-bottom: 0.7rem;
+}
+
+.dash-student-cta {
+  width: 100%;
+  margin: 1rem 0 0.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(16, 185, 129, 0.12));
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+}
+
+.dash-student-cta strong {
+  display: block;
+  color: #f8fafc;
+  margin-bottom: 0.2rem;
+}
+
+.dash-student-cta p {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  max-width: 420px;
+}
+
+.dash-notes-input {
+  width: 100%;
+  min-height: 72px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(15, 23, 42, 0.7);
+  color: #e2e8f0;
+  padding: 0.75rem;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+
+.dash-action-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.dash-action-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dash-allow-btn {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+}
+
+.dash-disallow-btn {
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+
+.dash-empty-state {
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,0.12);
+  color: #94a3b8;
+  font-size: 0.86rem;
+}
+
 .dash-dots {
   display: flex;
   gap: 0.4rem;
@@ -288,6 +484,20 @@
 
   .dash-modules-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-request-main,
+  .dash-panel-header {
+    flex-direction: column;
+  }
+
+  .dash-action-row {
+    flex-direction: column;
+  }
+
+  .dash-student-cta {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .dash-welcome-title {
