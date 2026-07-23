@@ -11,31 +11,31 @@ export const ROLE_META = {
     label:       'Platform Admin',
     emoji:       '⚙️',
     color:       '#EF4444',
-    description: 'Manage users, societies, settings & system security',
+    description: 'Manage users, societies, venue settings, bug reports & live approvals',
   },
   student_coordinator: {
     label:       'Student Coordinator',
     emoji:       '🏛️',
     color:       '#F59E0B',
-    description: 'Manage society profile, events & member records',
+    description: 'Manage venue bookings, society events & publish 24h stories',
   },
   faculty_coordinator: {
     label:       'Faculty Coordinator',
     emoji:       '👨‍🏫',
     color:       '#10B981',
-    description: 'Review events, verify participation & approve certificates',
+    description: 'Review events, edit society details, track performance & publish stories',
   },
-  dean: {
-    label:       'Dean / HOD',
+  hod: {
+    label:       'Head of Department (HOD)',
     emoji:       '🏫',
     color:       '#8B5CF6',
-    description: 'Approve events, venues, sponsorships & monitor all activities',
+    description: 'Department event approval, coordinator assignments & department analytics',
   },
-  principal: {
-    label:       'Principal',
+  principal_dean: {
+    label:       'Principal / Dean',
     emoji:       '🎓',
     color:       '#3B82F6',
-    description: 'Overall institutional oversight and final authority',
+    description: 'Institutional final approvals and overall college & society analytics',
   },
 };
 

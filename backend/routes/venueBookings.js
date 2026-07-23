@@ -1,5 +1,5 @@
 const express = require('express');
-const VenueBooking = require('../models/VenueBooking');
+const venueBookingModel = require('../models/venueBookingModel');
 const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
@@ -24,7 +24,7 @@ function slotOverlaps(a, b) {
 }
 
 function bookingOverlaps(existingBooking, venueId, date, slots, excludeId = null) {
-  if (String(existingBooking._id) === String(excludeId)) {
+  if (String(existingBooking.id || existingBooking._id) === String(excludeId)) {
     return false;
   }
 
@@ -52,7 +52,7 @@ async function getAssignedFacultyCoordinator(hostClub) {
 
 function toBookingResponse(booking) {
   return {
-    id: booking._id.toString(),
+    id: booking.id,
     venueId: booking.venueId,
     date: booking.date,
     timeSlots: booking.timeSlots,
@@ -79,7 +79,7 @@ function toBookingResponse(booking) {
 }
 
 async function findBookingOr404(req, res) {
-  const booking = await VenueBooking.findById(req.params.bookingId);
+  const booking = await venueBookingModel.findById(req.params.bookingId);
   if (!booking) {
     res.status(404).json({ message: 'Venue booking request not found.' });
     return null;
@@ -90,7 +90,7 @@ async function findBookingOr404(req, res) {
 
 router.get('/public', async (req, res) => {
   const status = String(req.query.status || 'approved');
-  const bookings = await VenueBooking.find({ status }).sort({ date: 1, createdAt: -1 });
+  const bookings = await venueBookingModel.findPublicBookings(status);
   res.json({ bookings: bookings.map(toBookingResponse) });
 });
 
@@ -102,33 +102,38 @@ router.get('/availability', async (req, res) => {
     return res.status(400).json({ message: 'venueId and date are required.' });
   }
 
-  const bookings = await VenueBooking.find({ venueId, date, status: { $in: ACTIVE_STATUSES } }).sort({ createdAt: 1 });
-  return res.json({ bookings: bookings.map(toBookingResponse) });
+  const activeBookings = await venueBookingModel.findAllActiveBookings();
+  const filtered = activeBookings.filter((b) => b.venueId === venueId && b.date === date);
+  return res.json({ bookings: filtered.map(toBookingResponse) });
 });
 
 router.use(requireAuth);
 
 router.get('/mine', async (req, res) => {
-  const bookings = await VenueBooking.find({ 'requestedBy.id': req.user.id }).sort({ createdAt: -1 });
+  const allBookings = await venueBookingModel.findAllBookings();
+  const bookings = allBookings.filter((b) => b.requestedBy?.id === req.user.id);
   res.json({ bookings: bookings.map(toBookingResponse) });
 });
 
 router.get('/inbox', async (req, res) => {
-  let query = { 'requestedBy.id': req.user.id };
+  const allBookings = await venueBookingModel.findAllBookings();
+  let filtered = [];
 
-  if (req.user.role === 'faculty_coordinator') {
-    query = { currentReviewerRole: 'faculty_coordinator' };
-  } else if (req.user.role === 'principal') {
-    query = { currentReviewerRole: 'principal' };
+  if (['faculty_coordinator', 'hod'].includes(req.user.role)) {
+    filtered = allBookings.filter((b) => b.currentReviewerRole === 'faculty_coordinator');
+  } else if (['principal', 'principal_dean'].includes(req.user.role)) {
+    filtered = allBookings.filter((b) => b.currentReviewerRole === 'principal');
+  } else {
+    filtered = allBookings.filter((b) => b.requestedBy?.id === req.user.id);
   }
 
-  const bookings = await VenueBooking.find(query).sort({ updatedAt: -1, createdAt: -1 });
-  res.json({ bookings: bookings.map(toBookingResponse) });
+  res.json({ bookings: filtered.map(toBookingResponse) });
 });
 
 router.post('/', async (req, res) => {
-  if (req.user.role !== 'student_coordinator') {
-    return res.status(403).json({ message: 'Only student coordinators can request venue bookings.' });
+  const allowedBookingRoles = ['student_coordinator', 'faculty_coordinator', 'hod', 'admin'];
+  if (!allowedBookingRoles.includes(req.user.role)) {
+    return res.status(403).json({ message: 'Not authorized to request venue bookings.' });
   }
 
   const venueId = Number(req.body?.venueId);
@@ -148,7 +153,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ message: 'venueId, date, eventName, hostClub, photo, photoFileName, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
   }
 
-  const activeBookings = await VenueBooking.find({ venueId, date, status: { $in: ACTIVE_STATUSES } });
+  const activeBookings = await venueBookingModel.findAllActiveBookings();
   const hasConflict = activeBookings.some((booking) => bookingOverlaps(booking, venueId, date, slots));
   if (hasConflict) {
     return res.status(409).json({ message: 'Selected time slots overlap with an existing booking.' });
@@ -156,7 +161,14 @@ router.post('/', async (req, res) => {
 
   const assignedFacultyCoordinator = await getAssignedFacultyCoordinator(hostClub);
 
-  const booking = await VenueBooking.create({
+  // Approval Routing:
+  // Student -> Faculty -> Principal
+  // HOD / Faculty Dept -> Principal directly
+  const isDeptOrHod = ['hod', 'faculty_coordinator'].includes(req.user.role);
+  const initialStatus = isDeptOrHod ? 'pending_principal' : 'pending_faculty';
+  const initialReviewerRole = isDeptOrHod ? 'principal' : 'faculty_coordinator';
+
+  const booking = await venueBookingModel.createBooking({
     venueId,
     date,
     timeSlots: slots,
@@ -179,8 +191,8 @@ router.post('/', async (req, res) => {
       name: assignedFacultyCoordinator,
       email: '',
     },
-    status: 'pending_faculty',
-    currentReviewerRole: 'faculty_coordinator',
+    status: initialStatus,
+    currentReviewerRole: initialReviewerRole,
     reviewTrail: [],
     changeRequest: {
       fromRole: '',
@@ -192,15 +204,15 @@ router.post('/', async (req, res) => {
   return res.status(201).json({
     booking: toBookingResponse(booking),
     notification: {
-      role: 'faculty_coordinator',
-      message: 'A new venue booking request is waiting for faculty approval.',
+      role: initialReviewerRole,
+      message: `A new venue booking request is waiting for ${initialReviewerRole === 'principal' ? 'Principal/Dean' : 'Faculty'} approval.`,
     },
   });
 });
 
 router.patch('/:bookingId/decision', async (req, res) => {
-  if (!['faculty_coordinator', 'principal'].includes(req.user.role)) {
-    return res.status(403).json({ message: 'Only faculty coordinators and principals can review booking requests.' });
+  if (!['faculty_coordinator', 'hod', 'principal', 'principal_dean'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Only faculty coordinators, HODs, and principals can review booking requests.' });
   }
 
   const decision = String(req.body?.decision || '').trim().toLowerCase();
@@ -214,11 +226,10 @@ router.patch('/:bookingId/decision', async (req, res) => {
     return;
   }
 
-  if (booking.currentReviewerRole !== req.user.role) {
-    return res.status(409).json({ message: 'This request is not pending with your role.' });
-  }
+  const isPrincipalRole = ['principal', 'principal_dean'].includes(req.user.role);
+  const isFacultyOrHodRole = ['faculty_coordinator', 'hod'].includes(req.user.role);
 
-  booking.reviewTrail.push({
+  const reviewTrail = [...booking.reviewTrail, {
     role: req.user.role,
     decision,
     notes,
@@ -228,38 +239,53 @@ router.patch('/:bookingId/decision', async (req, res) => {
       email: req.user.email,
     },
     reviewedAt: new Date(),
-  });
+  }];
+
+  let status = booking.status;
+  let currentReviewerRole = booking.currentReviewerRole;
+  let changeRequest = booking.changeRequest;
+  let approvedAt = booking.approvedAt;
 
   if (decision === 'allow') {
-    booking.status = req.user.role === 'faculty_coordinator' ? 'pending_principal' : 'approved';
-    booking.currentReviewerRole = req.user.role === 'faculty_coordinator' ? 'principal' : null;
-    booking.changeRequest = {
+    if (booking.currentReviewerRole === 'faculty_coordinator' && isFacultyOrHodRole) {
+      // Student request approved by Faculty -> moves to Principal approval
+      status = 'pending_principal';
+      currentReviewerRole = 'principal';
+    } else {
+      // Principal approval (or override approval) -> Final Approval!
+      status = 'approved';
+      currentReviewerRole = null;
+      approvedAt = new Date();
+    }
+    changeRequest = {
       fromRole: '',
       notes: '',
       updatedAt: null,
     };
-
-    if (req.user.role === 'principal') {
-      booking.approvedAt = new Date();
-    }
   } else {
-    booking.status = 'revision_requested';
-    booking.currentReviewerRole = req.user.role === 'faculty_coordinator' ? 'student_coordinator' : 'faculty_coordinator';
-    booking.changeRequest = {
+    status = 'revision_requested';
+    currentReviewerRole = isFacultyOrHodRole ? 'student_coordinator' : 'faculty_coordinator';
+    changeRequest = {
       fromRole: req.user.role,
       notes,
       updatedAt: new Date(),
     };
   }
 
-  await booking.save();
+  const updatedBooking = await venueBookingModel.updateBooking(booking.id, {
+    status,
+    currentReviewerRole,
+    changeRequest,
+    reviewTrail,
+    approvedAt,
+  });
 
   return res.json({
-    booking: toBookingResponse(booking),
+    booking: toBookingResponse(updatedBooking),
     notification: {
-      role: booking.currentReviewerRole || 'student_coordinator',
+      role: updatedBooking.currentReviewerRole || 'student_coordinator',
       message: decision === 'allow'
-        ? 'Venue booking request moved to the next approval stage.'
+        ? (status === 'approved' ? 'Venue booking request has received FINAL APPROVAL and is live!' : 'Venue booking request moved to Principal approval.')
         : 'Venue booking request was returned with requested changes.',
     },
   });
@@ -271,8 +297,8 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
     return;
   }
 
-  const canResubmitAsStudent = req.user.role === 'student_coordinator' && booking.currentReviewerRole === 'student_coordinator';
-  const canResubmitAsFaculty = req.user.role === 'faculty_coordinator' && booking.currentReviewerRole === 'faculty_coordinator';
+  const canResubmitAsStudent = req.user.role === 'student_coordinator';
+  const canResubmitAsFaculty = ['faculty_coordinator', 'hod'].includes(req.user.role);
 
   if (!canResubmitAsStudent && !canResubmitAsFaculty) {
     return res.status(403).json({ message: 'You cannot resubmit this request in its current state.' });
@@ -295,38 +321,21 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
     return res.status(400).json({ message: 'venueId, date, eventName, hostClub, photo, photoFileName, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
   }
 
-  const activeBookings = await VenueBooking.find({
-    venueId,
-    date,
-    status: { $in: ACTIVE_STATUSES },
-    _id: { $ne: booking._id },
-  });
+  const activeBookings = await venueBookingModel.findAllActiveBookings();
+  const hasConflict = activeBookings.some((existingBooking) => bookingOverlaps(existingBooking, venueId, date, slots, booking.id));
 
-  const hasConflict = activeBookings.some((existingBooking) => bookingOverlaps(existingBooking, venueId, date, slots));
   if (hasConflict) {
     return res.status(409).json({ message: 'Updated time slots overlap with an existing booking.' });
   }
 
-  booking.venueId = venueId;
-  booking.date = date;
-  booking.timeSlots = slots;
-  booking.eventName = eventName;
-  booking.hostClub = hostClub;
-  booking.photo = photo;
-  booking.photoFileName = photoFileName;
-  booking.description = description;
-  booking.eligibility = eligibility;
-  booking.attendance = attendance;
-  booking.feedback = feedback;
-  booking.studentCoordinators = studentCoordinators;
-  booking.status = req.user.role === 'student_coordinator' ? 'pending_faculty' : 'pending_principal';
-  booking.currentReviewerRole = req.user.role === 'student_coordinator' ? 'faculty_coordinator' : 'principal';
-  booking.changeRequest = {
+  const status = req.user.role === 'student_coordinator' ? 'pending_faculty' : 'pending_principal';
+  const currentReviewerRole = req.user.role === 'student_coordinator' ? 'faculty_coordinator' : 'principal';
+  const changeRequest = {
     fromRole: '',
     notes: '',
     updatedAt: null,
   };
-  booking.reviewTrail.push({
+  const reviewTrail = [...booking.reviewTrail, {
     role: req.user.role,
     decision: 'resubmitted',
     notes: String(req.body?.notes || '').trim(),
@@ -336,14 +345,31 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
       email: req.user.email,
     },
     reviewedAt: new Date(),
+  }];
+
+  const updatedBooking = await venueBookingModel.updateBooking(booking.id, {
+    venueId,
+    date,
+    timeSlots: slots,
+    eventName,
+    hostClub,
+    photo,
+    photoFileName,
+    description,
+    eligibility,
+    attendance,
+    feedback,
+    studentCoordinators,
+    status,
+    currentReviewerRole,
+    changeRequest,
+    reviewTrail,
   });
 
-  await booking.save();
-
   return res.json({
-    booking: toBookingResponse(booking),
+    booking: toBookingResponse(updatedBooking),
     notification: {
-      role: booking.currentReviewerRole,
+      role: updatedBooking.currentReviewerRole,
       message: 'Venue booking request was resubmitted after changes.',
     },
   });

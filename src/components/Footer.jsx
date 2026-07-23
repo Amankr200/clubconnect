@@ -5,13 +5,13 @@ const SOCIETIES_QUICK = [
   '#DEFINE', 'GDSC', 'IEEE', 'Mavericks', 'Octave', 'E-Cell', 'NSS', 'Kalam'
 ];
 
-export default function Footer({ onNavigate }) {
+export default function Footer({ onNavigate, onReportBugClick }) {
   const QUICK_LINKS = [
     { label: 'Home',                  action: () => onNavigate?.('home') },
     { label: 'Stories',               action: () => onNavigate?.('home') },
     { label: 'Events',                action: () => onNavigate?.('home') },
     { label: 'All Clubs & Societies', action: () => onNavigate?.('clubs') },
-    { label: 'Login / Register',      action: null },
+    { label: '🐛 Report Bug in Site', action: onReportBugClick },
   ];
   return (
     <footer className="footer" id="about" aria-label="Footer">

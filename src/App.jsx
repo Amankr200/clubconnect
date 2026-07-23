@@ -7,28 +7,14 @@ import ClubsSection from './components/ClubsSection';
 import EventsSection from './components/EventsSection';
 import Footer from './components/Footer';
 import LoginModal from './components/LoginModal';
+import ReportBugModal from './components/ReportBugModal';
 import SocietyDashboard from './pages/SocietyDashboard';
 import CalendarPage from './calendar/FullCalendar.jsx';
 import VenueBookingPage from './pages/VenueBookingPage.jsx';
+import DashboardShell from './pages/DashboardShell.jsx';
 import { useAuth } from './context/AuthContext';
 
-// Role → Dashboard lazy imports
-import AdminDashboard               from './pages/AdminDashboard';
-import StudentCoordinatorDashboard  from './pages/StudentCoordinatorDashboard';
-import FacultyCoordinatorDashboard  from './pages/FacultyCoordinatorDashboard';
-import DeanDashboard                from './pages/DeanDashboard';
-import PrincipalDashboard           from './pages/PrincipalDashboard';
-
 import './App.css';
-
-/* ── Role → Dashboard component map ─────────────────────── */
-const DASHBOARD_MAP = {
-  admin:               AdminDashboard,
-  student_coordinator: StudentCoordinatorDashboard,
-  faculty_coordinator: FacultyCoordinatorDashboard,
-  dean:                DeanDashboard,
-  principal:           PrincipalDashboard,
-};
 
 /* ── Loading spinner (while JWT is being verified) ────────── */
 function FullPageLoader() {
@@ -57,23 +43,11 @@ export default function App() {
   const { user, loading } = useAuth();
 
   const [showLogin, setShowLogin] = useState(false);
+  const [showBugModal, setShowBugModal] = useState(false);
   const [toast, setToast]         = useState(null);
   // 'home' | 'clubs' | 'calendar' | 'venues'
   const [page, setPage]           = useState('home');
   const [selectedClubId, setSelectedClubId] = useState(null);
-
-  const handleLogin = ({ role, name }) => {
-    const roleData = ROLES[role] || ROLES.student;
-    setUser({ role: roleData, name });
-    setShowLogin(false);
-    showToast(`Welcome, ${name}! Signed in as ${roleData.label} ${roleData.emoji}`, 'success');
-  };
-
-  const handleLogout = () => {
-    const name = user?.name;
-    setUser(null);
-    showToast(`Goodbye, ${name}! You've been signed out.`, 'info');
-  };
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type });
@@ -88,19 +62,16 @@ export default function App() {
 
   // Lock scroll when modal open
   useEffect(() => {
-    document.body.style.overflow = showLogin ? 'hidden' : '';
+    document.body.style.overflow = (showLogin || showBugModal) ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [showLogin]);
+  }, [showLogin, showBugModal]);
 
   // ── While validating stored JWT ──
   if (loading) return <FullPageLoader />;
 
-  // ── Authenticated: render role dashboard ──
+  // ── Authenticated: render unified role dashboard shell ──
   if (user) {
-    const Dashboard = DASHBOARD_MAP[user.role];
-    if (Dashboard) return <Dashboard />;
-    // Fallback if role doesn't match (shouldn't happen)
-    return <AdminDashboard />;
+    return <DashboardShell onNavigateHome={() => window.location.reload()} />;
   }
 
   // ── Not authenticated: render landing page ──
@@ -119,6 +90,7 @@ export default function App() {
         onLogout={() => {}}
         currentPage={page}
         onNavigate={navigate}
+        onReportBugClick={() => setShowBugModal(true)}
       />
 
       {/* ── Page: Home ── */}
@@ -204,7 +176,7 @@ export default function App() {
         </main>
       )}
 
-      <Footer onNavigate={navigate} />
+      <Footer onNavigate={navigate} onReportBugClick={() => setShowBugModal(true)} />
 
       {/* Login Modal */}
       {showLogin && (
@@ -217,6 +189,12 @@ export default function App() {
         />
       )}
 
+      {/* Report Bug Modal */}
+      <ReportBugModal
+        isOpen={showBugModal}
+        onClose={() => setShowBugModal(false)}
+      />
+
       {/* Toast */}
       {toast && (
         <div className={`toast toast-${toast.type}`} role="alert" aria-live="polite">
@@ -228,15 +206,15 @@ export default function App() {
   );
 }
 
-/* ── Features Section (unchanged) ─────────────────────────── */
+/* ── Features Section ─────────────────────────── */
 function FeaturesSection({ onLoginClick, onNavigateClubs }) {
   const features = [
-    { icon: '📸', title: 'Club Stories',          desc: 'Instagram-style stories from every society. Stay updated on what\'s happening across campus in real time.',                    color: '#EC4899' },
-    { icon: '📅', title: 'Event Management',       desc: 'Create, publish, and RSVP for events. Track attendance, collect feedback, and manage your campus calendar.',                  color: '#3B82F6' },
-    { icon: '✅', title: 'Dean Approval Workflow', desc: 'Transparent event approval — societies submit proposals, faculty reviews, dean approves, then it goes live to students.',     color: '#10B981' },
-    { icon: '🏆', title: 'Certificates & Records', desc: 'Auto-generate certificates for participants. Verified participation records that help during placements and recognition.',    color: '#F59E0B' },
-    { icon: '🔔', title: 'Smart Notifications',    desc: 'Get personalized alerts for events matching your interests. Never miss an orientation, interview, or workshop.',              color: '#8B5CF6' },
-    { icon: '📊', title: 'Analytics Dashboard',    desc: 'Societies get RSVP counts, attendance stats, feedback analysis, and engagement reports — all in one place.',                 color: '#EF4444' },
+    { icon: '📸', title: 'Club Stories',          desc: 'Instagram-style 24h stories from every society. Stay updated on what\'s happening across campus in real time.', color: '#EC4899' },
+    { icon: '📅', title: 'Event Management',       desc: 'Create, publish, and RSVP for events. Track attendance, collect feedback, and manage your campus calendar.', color: '#3B82F6' },
+    { icon: '✅', title: 'Multi-Tier Approval Workflow', desc: 'Transparent event approval — student coordinator requests, faculty coordinator reviews, HOD & Principal approve.', color: '#10B981' },
+    { icon: '🏆', title: 'Certificates & Records', desc: 'Auto-generate certificates for participants. Verified participation records that help during placements and recognition.', color: '#F59E0B' },
+    { icon: '🔔', title: 'Smart Notifications',    desc: 'Get personalized alerts for events matching your interests. Never miss an orientation, interview, or workshop.', color: '#8B5CF6' },
+    { icon: '📊', title: 'Analytics Dashboard',    desc: 'Societies get RSVP counts, attendance stats, feedback analysis, and engagement reports — all in one place.', color: '#EF4444' },
   ];
 
   return (
@@ -244,7 +222,7 @@ function FeaturesSection({ onLoginClick, onNavigateClubs }) {
       <div className="section-container">
         <div className="section-heading-blue"><span>✨</span> Platform Features</div>
         <p className="section-sub-desc">
-          ClubConnect is built for students, societies, faculty coordinators, and college authorities.
+          ClubConnect is built for students, societies, faculty coordinators, HODs, and college administration.
         </p>
 
         <div className="features-grid">

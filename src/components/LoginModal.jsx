@@ -25,16 +25,17 @@ const ROLES = [
     color:       '#10B981',
   },
   {
-    id:          'dean',
-    label:       'Dean / HOD',
+    id:          'hod',
+    label:       'Head of Department (HOD)',
     emoji:       '🏫',
-    description: 'Approve events, venues, sponsorships & monitor all activities',
+    description: 'Approve department events, assign coordinators & monitor analytics',
     color:       '#8B5CF6',
   },
   {
-    id:          'principal',
-    label:       'Principal',
+    id:          'principal_dean',
+    label:       'Principal / Dean',
     emoji:       '🎓',
+    color:       '#3B82F6',
     description: 'Overall institutional oversight and final authority',
     color:       '#3B82F6',
   },
@@ -53,6 +54,27 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     setSelectedRole(roleId);
     setStep('form');
     setError('');
+
+    // Auto-fill default seeded credentials for easy testing
+    const defaultEmails = {
+      admin: 'admin@bpit.ac.in',
+      student_coordinator: 'student.coord@bpit.ac.in',
+      faculty_coordinator: 'faculty.coord@bpit.ac.in',
+      hod: 'hod@bpit.ac.in',
+      principal_dean: 'principal@bpit.ac.in',
+    };
+    const defaultPasswords = {
+      admin: 'Admin@123',
+      student_coordinator: 'Student@123',
+      faculty_coordinator: 'Faculty@123',
+      hod: 'Hod@123',
+      principal_dean: 'Principal@123',
+    };
+
+    setForm({
+      email: defaultEmails[roleId] || '',
+      password: defaultPasswords[roleId] || '',
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -176,7 +198,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
             </form>
 
             <p className="form-footer" style={{ marginTop: '1rem', fontSize: '0.78rem', color: '#64748b', textAlign: 'center' }}>
-              🔒 Credentials are verified securely via JWT
+              🔒 Credentials are verified securely via JWT &amp; Neon PostgreSQL
             </p>
           </div>
         )}

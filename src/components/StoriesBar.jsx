@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { storyData } from '../data/clubs';
 import StoryViewer from './StoryViewer';
 import './StoriesBar.css';
@@ -45,10 +45,22 @@ const storySlides = {
 
 export default function StoriesBar() {
   const [activeStory, setActiveStory] = useState(null);
-  const [seenStories, setSeenStories] = useState(new Set([3, 5, 7, 9]));
+  const [dbStories, setDbStories] = useState([]);
+  const [seenStories, setSeenStories] = useState(new Set());
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/stories')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.stories && data.stories.length > 0) {
+          setDbStories(data.stories);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleScroll = () => {
     const el = scrollRef.current;
@@ -65,7 +77,52 @@ export default function StoriesBar() {
 
   const openStory = (story) => {
     setActiveStory(story);
-    setSeenStories(prev => new Set([...prev, story.id]));
+    setSeenStories((prev) => new Set([...prev, story.id]));
+
+    // Increment view counter for DB stories
+    if (story.isDbStory && story.id) {
+      fetch(`/api/stories/${story.id}/view`, { method: 'POST' }).catch(() => {});
+    }
+  };
+
+  // Merge live 24-hour DB stories and static club stories
+  const displayStories = [
+    ...dbStories.map((s) => ({
+      id: s.id,
+      clubName: s.authorName,
+      clubEmoji: '🔥',
+      timeAgo: '24h Active',
+      color: '#f43f5e',
+      isDbStory: true,
+      title: s.title,
+      mediaUrl: s.mediaUrl,
+      viewsCount: s.viewsCount,
+      clicksCount: s.clicksCount,
+    })),
+    ...storyData,
+  ];
+
+  const getSlidesForStory = (story) => {
+    if (story.isDbStory) {
+      return [
+        {
+          type: 'image',
+          headline: story.title,
+          sub: `👁️ ${story.viewsCount || 0} Views | 🖱️ ${story.clicksCount || 0} Clicks`,
+          bg: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url(${story.mediaUrl}) center/cover no-repeat`,
+          emoji: '📸',
+        },
+      ];
+    }
+    return storySlides[story.id] || [
+      {
+        type: 'text',
+        bg: 'linear-gradient(135deg,#1E3A8A,#3B82F6)',
+        headline: story.clubName,
+        sub: 'Latest updates & announcements from your campus society.',
+        emoji: story.clubEmoji || '✨',
+      },
+    ];
   };
 
   return (
@@ -73,7 +130,7 @@ export default function StoriesBar() {
       <div className="stories-header">
         <h2 className="stories-title">
           <span className="stories-title-icon">📸</span>
-          Club Stories
+          Club &amp; Society Stories (24h Live)
         </h2>
       </div>
 
@@ -82,7 +139,7 @@ export default function StoriesBar() {
           <button className="stories-nav left" onClick={() => scrollTo(-1)} aria-label="Scroll left">‹</button>
         )}
         <div className="stories-track" ref={scrollRef} onScroll={handleScroll}>
-          {storyData.map((story) => {
+          {displayStories.map((story) => {
             const seen = seenStories.has(story.id);
             return (
               <button
@@ -114,9 +171,9 @@ export default function StoriesBar() {
       {activeStory && (
         <StoryViewer
           story={activeStory}
-          slides={storySlides[activeStory.id] || []}
+          slides={getSlidesForStory(activeStory)}
           onClose={() => setActiveStory(null)}
-          allStories={storyData}
+          allStories={displayStories}
           onNavigate={(s) => { openStory(s); }}
         />
       )}

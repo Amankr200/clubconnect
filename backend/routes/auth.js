@@ -1,14 +1,14 @@
 const express  = require('express');
 const bcrypt    = require('bcryptjs');
 const jwt       = require('jsonwebtoken');
-const User      = require('../models/User');
+const userModel = require('../models/userModel');
 
 const router = express.Router();
 
 /* ─── Helper ─────────────────────────────────────────────── */
 const signToken = (user) =>
   jwt.sign(
-    { id: user._id, role: user.role, email: user.email, name: user.name },
+    { id: user.id, role: user.role, email: user.email, name: user.name },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -23,7 +23,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+passwordHash');
+    const user = await userModel.findByEmail(email);
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
@@ -39,7 +39,7 @@ router.post('/login', async (req, res) => {
     res.json({
       token,
       user: {
-        id:    user._id,
+        id:    user.id,
         name:  user.name,
         email: user.email,
         role:  user.role,
@@ -67,13 +67,13 @@ router.get('/me', async (req, res) => {
       return res.status(401).json({ message: 'Invalid or expired token.' });
     }
 
-    const user = await User.findById(decoded.id);
+    const user = await userModel.findById(decoded.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
     res.json({
-      id:    user._id,
+      id:    user.id,
       name:  user.name,
       email: user.email,
       role:  user.role,

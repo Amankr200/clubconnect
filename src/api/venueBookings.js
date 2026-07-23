@@ -1,6 +1,11 @@
 const API_BASE = '/api';
 
 async function parseJsonResponse(res) {
+  const contentType = res.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    throw new Error(`Server returned non-JSON response (${res.status} ${res.statusText}). Please check backend status.`);
+  }
+
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.message || data.error || 'Request failed.');

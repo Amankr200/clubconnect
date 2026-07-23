@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const userModel = require('../models/userModel');
 
 async function requireAuth(req, res, next) {
   try {
@@ -17,13 +17,13 @@ async function requireAuth(req, res, next) {
       return res.status(401).json({ message: 'Invalid or expired token.' });
     }
 
-    const user = await User.findById(decoded.id);
+    const user = await userModel.findById(decoded.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
     req.user = {
-      id: user._id.toString(),
+      id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,

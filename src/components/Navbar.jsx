@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Navbar.css';
 
-export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNavigate }) {
+export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNavigate, onReportBugClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
 
@@ -40,7 +40,6 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
     { label: 'Stories',          href: '#stories',   page: 'home' },
     { label: 'Events',           href: '#events',    page: 'home' },
     { label: 'Calendar',         href: '#calendar',  page: 'calendar' },
-    // { label: 'Venue Booking',    href: '#venues',    page: 'venues' },
     { label: 'Clubs & Societies', href: '#clubs',    page: 'clubs' },
     { label: 'About',            href: '#about',     page: 'home' },
   ];
@@ -74,28 +73,44 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
       {/* ── Row 2: Blue nav links ── */}
       <div className="navbar-inner">
         <div className="navbar-links" role="menubar">
-          {NAV_LINKS.map(link => {
-            const isActive = link.page === 'clubs'
-              ? currentPage === 'clubs'
-              : currentPage === 'home' && link.href !== '#clubs';
-            return (
-              <a
-                key={link.href}
-                href={link.href}
-                className={`nav-link ${currentPage === link.page && link.href === '#clubs' ? 'active' : ''} ${link.href === '#clubs' ? 'nav-link-clubs' : ''}`}
-                role="menuitem"
-                onClick={e => { e.preventDefault(); handleNav(link.href); }}
-                aria-current={link.page === 'clubs' && currentPage === 'clubs' ? 'page' : undefined}
-              >
-                {link.href === '#clubs' && <span>🏛️ </span>}
-                {link.href === '#calendar' && <span>🗓️ </span>}
-                {link.label}
-              </a>
-            );
-          })}
+          {NAV_LINKS.map(link => (
+            <a
+              key={link.href}
+              href={link.href}
+              className={`nav-link ${currentPage === link.page && link.href === '#clubs' ? 'active' : ''} ${link.href === '#clubs' ? 'nav-link-clubs' : ''}`}
+              role="menuitem"
+              onClick={e => { e.preventDefault(); handleNav(link.href); }}
+            >
+              {link.href === '#clubs' && <span>🏛️ </span>}
+              {link.href === '#calendar' && <span>🗓️ </span>}
+              {link.label}
+            </a>
+          ))}
         </div>
 
         <div className="navbar-actions">
+          <button
+            className="nav-bug-btn"
+            onClick={onReportBugClick}
+            title="Report a bug in the site"
+            style={{
+              background: 'rgba(244, 63, 94, 0.15)',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
+              color: '#fb7185',
+              padding: '0.45rem 0.85rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              marginRight: '0.5rem',
+            }}
+          >
+            🐛 Report Bug
+          </button>
+
           {user ? (
             <div className="user-menu" onBlur={() => setTimeout(() => setDropOpen(false), 150)}>
               <button
@@ -115,11 +130,6 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
                     <div className="dropdown-name">{user.name}</div>
                     <div className="dropdown-role">{user.role?.emoji} {user.role?.label}</div>
                   </div>
-                  <a href="#" className="dropdown-item" onClick={e => e.preventDefault()}>📊 Dashboard</a>
-                  <a href="#" className="dropdown-item" onClick={e => e.preventDefault()}>👤 My Profile</a>
-                  <a href="#" className="dropdown-item" onClick={e => e.preventDefault()}>📜 Certificates</a>
-                  <a href="#" className="dropdown-item" onClick={e => e.preventDefault()}>🔔 Notifications</a>
-                  <hr className="dropdown-divider" />
                   <button className="dropdown-item logout" onClick={() => { setDropOpen(false); onLogout(); }}>
                     🚪 Sign Out
                   </button>
@@ -158,6 +168,21 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
               {link.href === '#calendar' ? '🗓️ ' : ''}{link.label}
             </a>
           ))}
+          <button
+            onClick={() => { setMenuOpen(false); onReportBugClick?.(); }}
+            style={{
+              background: 'rgba(244, 63, 94, 0.15)',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
+              color: '#fb7185',
+              padding: '0.65rem',
+              borderRadius: '8px',
+              fontWeight: 600,
+              width: '100%',
+              margin: '0.5rem 0',
+            }}
+          >
+            🐛 Report Bug in Site
+          </button>
           <div className="mobile-actions">
             {user ? (
               <button className="nav-login-btn" onClick={onLogout}>Sign Out</button>
