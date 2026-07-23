@@ -20,6 +20,9 @@ export default function VenueBookingModal({
   token,
   booking,
 }) {
+  const MAX_PHOTO_SIZE_MB = 5;
+  const MAX_PHOTO_SIZE_BYTES = MAX_PHOTO_SIZE_MB * 1024 * 1024;
+
   const { token: authToken } = useAuth();
   const activeToken = token || authToken;
   const [selectedVenue, setSelectedVenue] = useState("");
@@ -51,6 +54,14 @@ export default function VenueBookingModal({
     [existingBookings],
   );
 
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const availableSlots = useMemo(() => {
     if (!selectedVenue || !selectedDate) return [];
 
@@ -64,7 +75,7 @@ export default function VenueBookingModal({
     );
   }, [selectedVenue, selectedDate, allTimeSlots, bookedSlots]);
 
-  const getMinDate = () => new Date().toISOString().split("T")[0];
+  const getMinDate = () => getTodayDate();
 
   const toggleSlotSelection = (startTime) => {
     setSelectedSlots((prev) =>
@@ -81,6 +92,16 @@ export default function VenueBookingModal({
       setPhoto("");
       setPhotoFileName("");
       setBookingError("");
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      setPhoto("");
+      setPhotoFileName("");
+      setBookingError(
+        `Photo must be ${MAX_PHOTO_SIZE_MB} MB or smaller. Please choose a smaller image.`,
+      );
+      event.target.value = "";
       return;
     }
 
@@ -190,6 +211,11 @@ export default function VenueBookingModal({
       setBookingError(
         "Please complete every required field, including the photo upload and event details.",
       );
+      return;
+    }
+
+    if (selectedDate < getMinDate()) {
+      setBookingError("Please select today or a future date.");
       return;
     }
 
@@ -337,8 +363,17 @@ export default function VenueBookingModal({
             id="date"
             type="date"
             value={selectedDate}
+            autoComplete="off"
             onChange={(event) => {
-              setSelectedDate(event.target.value);
+              const nextDate = event.target.value;
+              if (nextDate && nextDate < getMinDate()) {
+                setSelectedDate("");
+                setSelectedSlots([]);
+                setBookingError("Please select today or a future date.");
+                return;
+              }
+
+              setSelectedDate(nextDate);
               setSelectedSlots([]);
               setBookingError("");
             }}
@@ -375,6 +410,9 @@ export default function VenueBookingModal({
               accept="image/*"
               onChange={handlePhotoUpload}
             />
+            <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "6px" }}>
+              Max photo size: {MAX_PHOTO_SIZE_MB} MB
+            </div>
             {photo && (
               <div className="photo-preview-card">
                 <img
