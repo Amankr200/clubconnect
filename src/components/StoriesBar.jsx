@@ -75,7 +75,6 @@ export default function StoriesBar() {
           <span className="stories-title-icon">📸</span>
           Club Stories
         </h2>
-        <span className="stories-subtitle">Latest from your campus societies</span>
       </div>
 
       <div className="stories-track-wrapper">

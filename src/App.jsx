@@ -57,7 +57,6 @@ export default function App() {
   const { user, loading } = useAuth();
 
   const [showLogin, setShowLogin] = useState(false);
-  // const [user, setUser]           = useState(null);
   const [toast, setToast]         = useState(null);
   // 'home' | 'clubs' | 'calendar' | 'venues'
   const [page, setPage]           = useState('home');
@@ -245,7 +244,7 @@ function FeaturesSection({ onLoginClick, onNavigateClubs }) {
       <div className="section-container">
         <div className="section-heading-blue"><span>✨</span> Platform Features</div>
         <p className="section-sub-desc">
-          ClubConnect is built for students, society heads, faculty coordinators, and college authorities.
+          ClubConnect is built for students, societies, faculty coordinators, and college authorities.
         </p>
 
         <div className="features-grid">

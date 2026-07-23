@@ -505,7 +505,7 @@ export const upcomingEvents = [
   {
     id: 3,
     title: "Startup Pitch Day",
-    club: "E-Cell",
+    club: "IIC BPIT",
     clubEmoji: "🚀",
     date: "July 18, 2025",
     time: "2:00 PM",
@@ -515,7 +515,7 @@ export const upcomingEvents = [
     color: "#F59E0B",
     rsvp: 95,
     description: "Pitch your startup idea to industry mentors and win incubation support. Open registrations now!",
-    status: "pending",
+    status: "upcoming",
   },
   {
     id: 4,

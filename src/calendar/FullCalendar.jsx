@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { getAllBookings } from '../data/bookings.js';
+import { getApprovedVenueBookings } from '../api/venueBookings.js';
 import { venues } from '../data/venues.js';
 
 const CALENDAR_EVENTS_STATIC = [
@@ -67,7 +67,6 @@ function formatDateLabel(value) {
 
 function convertBookingsToEvents(bookings) {
   return bookings.map((booking, idx) => {
-    if (booking.status === 'cancelled') return null;
 
     const venue = venues.find(v => v.id === booking.venueId);
     const venueName = venue?.name || 'Unknown Venue';
@@ -95,22 +94,65 @@ function convertBookingsToEvents(bookings) {
         bookingId: booking.id,
         venue: venueName,
         hostClub: booking.hostClub,
+        photo: booking.photo,
+        photoFileName: booking.photoFileName,
+        descriptionText: booking.description,
+        eligibility: booking.eligibility,
+        attendance: booking.attendance,
+        feedback: booking.feedback,
+        studentCoordinators: booking.studentCoordinators,
         isBooked: true
       }
     };
   }).filter(Boolean);
 }
 
+function renderBookingDetailValue(value) {
+  const text = String(value || '').trim();
+  if (!text) {
+    return '—';
+  }
+
+  if (/^https?:\/\//i.test(text)) {
+    return (
+      <a href={text} target="_blank" rel="noreferrer">
+        {text}
+      </a>
+    );
+  }
+
+  return text;
+}
+
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [viewDate, setViewDate] = useState(new Date());
+  const [approvedBookings, setApprovedBookings] = useState([]);
 
-  // Combine static events with booked venue events
-  const events = useMemo(() => {
-    const allBookings = getAllBookings();
-    const bookedEvents = convertBookingsToEvents(allBookings);
-    return [...CALENDAR_EVENTS_STATIC, ...bookedEvents];
+  useEffect(() => {
+    let cancelled = false;
+
+    getApprovedVenueBookings()
+      .then((data) => {
+        if (!cancelled) {
+          setApprovedBookings(data.bookings || []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setApprovedBookings([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const events = useMemo(() => {
+    const bookedEvents = convertBookingsToEvents(approvedBookings);
+    return [...CALENDAR_EVENTS_STATIC, ...bookedEvents];
+  }, [approvedBookings]);
 
   const selectedEvents = useMemo(() => {
     return events.filter(event => {
@@ -176,8 +218,20 @@ export default function CalendarPage() {
                         </span>
                       )}
                     </div>
+                    {event.extendedProps?.photo && (
+                      <img
+                        src={event.extendedProps.photo}
+                        alt={event.extendedProps.photoFileName || event.title}
+                        style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', borderRadius: '10px', marginBottom: '8px' }}
+                      />
+                    )}
                     <small>{event.description}</small>
                     <small>Location: {event.location}</small>
+                    <small>Description: {event.extendedProps?.descriptionText || '—'}</small>
+                    <small>Eligibility: {event.extendedProps?.eligibility || '—'}</small>
+                    <small>Attendance: {renderBookingDetailValue(event.extendedProps?.attendance)}</small>
+                    <small>Feedback: {renderBookingDetailValue(event.extendedProps?.feedback)}</small>
+                    <small>Student Coordinators: {event.extendedProps?.studentCoordinators || '—'}</small>
                     {event.start && event.end && !event.allDay && (
                       <small>
                         Time: {new Date(`${event.start}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(`${event.end}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}

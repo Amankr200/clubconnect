@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
-import VenueBookingModal from '../components/VenueBookingModal.jsx';
-import { getAllBookings } from '../data/bookings.js';
+import React, { useEffect, useState } from 'react';
+import { getApprovedVenueBookings } from '../api/venueBookings.js';
 import { venues } from '../data/venues.js';
 import './VenueBookingPage.css';
 import { Calendar, MapPin, Users } from 'lucide-react';
 
 export default function VenueBookingPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [allBookings, setAllBookings] = useState(getAllBookings());
+  const [allBookings, setAllBookings] = useState([]);
 
-  const handleBookingSuccess = (newBooking) => {
-    // Refresh bookings list
-    setAllBookings(getAllBookings());
-  };
+  useEffect(() => {
+    let cancelled = false;
+
+    getApprovedVenueBookings()
+      .then((data) => {
+        if (!cancelled) {
+          setAllBookings(data.bookings || []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAllBookings([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getVenueName = (venueId) => {
     return venues.find(v => v.id === venueId)?.name || 'Unknown Venue';
@@ -39,7 +52,7 @@ export default function VenueBookingPage() {
     return `${timeSlots.length * 50} min`;
   };
 
-  const confirmedBookings = allBookings.filter(b => b.status === 'confirmed');
+  const approvedBookings = allBookings.filter((booking) => booking.status === 'approved');
 
   return (
     <div className="venue-booking-page">
@@ -48,11 +61,8 @@ export default function VenueBookingPage() {
         <div className="booking-page-header">
           <div>
             <h2>Venue Booking System</h2>
-            <p>Book a campus venue for your club events. Available slots are 50 minutes each, from 9:30 AM to 5:00 PM.</p>
+            <p>Approved venue bookings appear here. Student coordinators create requests from their dashboard, then faculty and principal review them before they reach the calendar.</p>
           </div>
-          <button className="btn-book-now" onClick={() => setIsModalOpen(true)}>
-            + Book a Venue
-          </button>
         </div>
 
         {/* Two Column Layout */}
@@ -62,11 +72,10 @@ export default function VenueBookingPage() {
             <div className="info-section">
               <h3>📋 How It Works</h3>
               <ol>
-                <li>Select a venue from our list</li>
-                <li>Choose your preferred date and time</li>
-                <li>System checks availability instantly</li>
-                <li>If available, confirm your booking</li>
-                <li>If not, select another time slot</li>
+                <li>Student coordinators request a venue from their dashboard</li>
+                <li>Faculty coordinators review the request and add notes if needed</li>
+                <li>Principal gives the final approval or sends it back</li>
+                <li>Approved requests are added to the campus calendar</li>
               </ol>
             </div>
 
@@ -76,7 +85,7 @@ export default function VenueBookingPage() {
                 <li><strong>Duration:</strong> 50 minutes per slot</li>
                 <li><strong>Start Time:</strong> 9:30 AM</li>
                 <li><strong>End Time:</strong> 5:00 PM</li>
-                <li><strong>Time Slots:</strong> Auto-generated</li>
+                <li><strong>Status:</strong> Pending faculty, pending principal, or approved</li>
               </ul>
             </div>
 
@@ -97,12 +106,12 @@ export default function VenueBookingPage() {
           <main className="booking-list-container">
             <div className="booking-list-header">
               <h3>📅 Upcoming Bookings</h3>
-              <span className="booking-count">{confirmedBookings.length} bookings</span>
+              <span className="booking-count">{approvedBookings.length} bookings</span>
             </div>
 
-            {confirmedBookings.length > 0 ? (
+            {approvedBookings.length > 0 ? (
               <div className="bookings-list">
-                {confirmedBookings.map(booking => (
+                {approvedBookings.map((booking) => (
                   <div key={booking.id} className="booking-card">
                     <div className="booking-card-left">
                       <div className="booking-date">
@@ -131,10 +140,24 @@ export default function VenueBookingPage() {
                           <span>{booking.hostClub}</span>
                         </div>
                       </div>
+                      {booking.photo && (
+                        <img
+                          src={booking.photo}
+                          alt={booking.photoFileName || booking.eventName}
+                          style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '10px' }}
+                        />
+                      )}
+                      <div style={{ marginTop: '10px', display: 'grid', gap: '6px', fontSize: '13px', color: '#475569' }}>
+                        <div><strong>Description:</strong> {booking.description || '—'}</div>
+                        <div><strong>Eligibility:</strong> {booking.eligibility || '—'}</div>
+                        <div><strong>Attendance:</strong> {booking.attendance || '—'}</div>
+                        <div><strong>Feedback:</strong> {booking.feedback || '—'}</div>
+                        <div><strong>Student Coordinators:</strong> {booking.studentCoordinators || '—'}</div>
+                      </div>
                     </div>
 
                     <div className="booking-status">
-                      <span className="status-badge confirmed">✓ Confirmed</span>
+                      <span className="status-badge confirmed">✓ Approved</span>
                     </div>
                   </div>
                 ))}
@@ -149,13 +172,6 @@ export default function VenueBookingPage() {
           </main>
         </div>
       </div>
-
-      {/* Venue Booking Modal */}
-      <VenueBookingModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onBookingSuccess={handleBookingSuccess}
-      />
     </div>
   );
 }

@@ -40,7 +40,7 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
     { label: 'Stories',          href: '#stories',   page: 'home' },
     { label: 'Events',           href: '#events',    page: 'home' },
     { label: 'Calendar',         href: '#calendar',  page: 'calendar' },
-    { label: 'Venue Booking',    href: '#venues',    page: 'venues' },
+    // { label: 'Venue Booking',    href: '#venues',    page: 'venues' },
     { label: 'Clubs & Societies', href: '#clubs',    page: 'clubs' },
     { label: 'About',            href: '#about',     page: 'home' },
   ];
