@@ -49,6 +49,7 @@ const CALENDAR_EVENTS_STATIC = [
     title: 'Summer Meetup',
     start: '2026-07-05',
     allDay: true,
+    eligibility: 'Open to all members of the society.',
     description: 'Informal get-together for all club members.',
     location: 'Cafeteria Terrace',
     color: '#16a34a'
@@ -63,6 +64,26 @@ function formatDateLabel(value) {
     month: 'long',
     year: 'numeric'
   }).format(date);
+}
+
+function formatEventTime(event) {
+  if (event.allDay) {
+    return 'All day';
+  }
+
+  if (!event.start) {
+    return 'Time not available';
+  }
+
+  const start = new Date(`${event.start}Z`);
+  const end = event.end ? new Date(`${event.end}Z`) : null;
+  const options = { hour: '2-digit', minute: '2-digit', hour12: true };
+
+  return `${start.toLocaleTimeString('en-US', options)}${end ? ` - ${end.toLocaleTimeString('en-US', options)}` : ''}`;
+}
+
+function getEventRegistrationUrl(event) {
+  return event.extendedProps?.registrationLink || event.extendedProps?.registrationUrl || event.url || '';
 }
 
 function convertBookingsToEvents(bookings) {
@@ -128,6 +149,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [viewDate, setViewDate] = useState(new Date());
   const [approvedBookings, setApprovedBookings] = useState([]);
+  const [activeEvent, setActiveEvent] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,7 +224,14 @@ export default function CalendarPage() {
             {selectedEvents.length > 0 ? (
               <div className="event-list">
                 {selectedEvents.map((event, index) => (
-                  <div key={`${event.id || event.title}-${index}`} className="event-item">
+                  <div
+                    key={`${event.id || event.title}-${index}`}
+                    className="event-item"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setActiveEvent(event)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveEvent(event); }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                       <strong>{event.title}</strong>
                       {event.extendedProps?.isBooked && (
@@ -227,17 +256,14 @@ export default function CalendarPage() {
                     )}
                     <small>{event.description}</small>
                     <small>Location: {event.location}</small>
-                    <small>Description: {event.extendedProps?.descriptionText || '—'}</small>
                     <small>Eligibility: {event.extendedProps?.eligibility || '—'}</small>
-                    <small>Attendance: {renderBookingDetailValue(event.extendedProps?.attendance)}</small>
-                    <small>Feedback: {renderBookingDetailValue(event.extendedProps?.feedback)}</small>
                     <small>Student Coordinators: {event.extendedProps?.studentCoordinators || '—'}</small>
                     {event.start && event.end && !event.allDay && (
                       <small>
-                        Time: {new Date(`${event.start}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(`${event.end}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        Duration: {new Date(`${event.start}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(`${event.end}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </small>
                     )}
-                    {event.allDay && <small>All day</small>}
+                    {event.allDay && <small>Duration: All day</small>}
                   </div>
                 ))}
               </div>
@@ -247,6 +273,82 @@ export default function CalendarPage() {
           </aside>
         </div>
       </div>
+
+      {activeEvent && (
+        <div className="calendar-detail-modal" onClick={() => setActiveEvent(null)} role="presentation">
+          <div className="calendar-detail-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="calendar-detail-header">
+              <div>
+                <h3>{activeEvent.title}</h3>
+                <p>{activeEvent.location || activeEvent.extendedProps?.venue || 'Location not specified'}</p>
+              </div>
+              <button className="calendar-detail-close" onClick={() => setActiveEvent(null)} aria-label="Close event details">✕</button>
+            </div>
+            <div className="calendar-detail-body">
+              {activeEvent.extendedProps?.photo && (
+                <img
+                  src={activeEvent.extendedProps.photo}
+                  alt={activeEvent.extendedProps.photoFileName || activeEvent.title}
+                  className="calendar-detail-image"
+                />
+              )}
+              <div className="calendar-detail-section">
+                <strong>Date</strong>
+                <span>{formatDateLabel(activeEvent.start?.slice(0, 10) || selectedDate)}</span>
+              </div>
+              <div className="calendar-detail-section">
+                <strong>Time</strong>
+                <span>{formatEventTime(activeEvent)}</span>
+              </div>
+              <div className="calendar-detail-section">
+                <strong>Description</strong>
+                <p>{activeEvent.extendedProps?.descriptionText || activeEvent.description || 'No description available.'}</p>
+              </div>
+              {activeEvent.extendedProps?.eligibility && (
+                <div className="calendar-detail-section">
+                  <strong>Eligibility</strong>
+                  <span>{activeEvent.extendedProps.eligibility}</span>
+                </div>
+              )}
+              {activeEvent.extendedProps?.studentCoordinators && (
+                <div className="calendar-detail-section">
+                  <strong>Student Coordinators</strong>
+                  <span>{activeEvent.extendedProps.studentCoordinators}</span>
+                </div>
+              )}
+              {activeEvent.extendedProps?.attendance && (
+                <div className="calendar-detail-section">
+                  <strong>Expected Attendance</strong>
+                  <span>{activeEvent.extendedProps.attendance}</span>
+                </div>
+              )}
+              {activeEvent.extendedProps?.feedback && (
+                <div className="calendar-detail-section">
+                  <strong>Feedback Notes</strong>
+                  <p>{activeEvent.extendedProps.feedback}</p>
+                </div>
+              )}
+              {getEventRegistrationUrl(activeEvent) ? (
+                <div className="calendar-detail-action">
+                  <a
+                    href={getEventRegistrationUrl(activeEvent)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="calendar-detail-button"
+                  >
+                    Open registration link
+                  </a>
+                </div>
+              ) : (
+                <div className="calendar-detail-section">
+                  <strong>Registration</strong>
+                  <span>No registration link provided.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

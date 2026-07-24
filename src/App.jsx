@@ -107,7 +107,7 @@ export default function App() {
               <p className="section-sub-desc" style={{ marginBottom: 20 }}>
                 Latest stories from all BPIT societies. Click any story to view updates from your campus clubs.
               </p>
-              <StoriesBar />
+              <StoriesBar onViewClub={(clubId) => navigate('society', clubId)} />
             </div>
           </section>
 

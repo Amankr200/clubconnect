@@ -328,11 +328,11 @@ export const clubs = [
   // Entrepreneurship
   {
     id: 18,
-    name: "E-Cell",
-    fullName: "Entrepreneurship Cell",
+    name: "IIC",
+    fullName: "Institution's Innovation Council",
     category: "Entrepreneurship",
     tagline: "Build the Future, Own It",
-    description: "E-Cell fosters startup ideas and innovation at BPIT (Shiksha-tech). Organizes startup pitches, guest lectures, mentorship sessions, and incubation support.",
+    description: "IIC fosters startup ideas and innovation at BPIT (Shiksha-tech). Organizes startup pitches, guest lectures, mentorship sessions, and incubation support.",
     color: "#F59E0B",
     gradFrom: "#78350F",
     gradTo:   "#F59E0B",
@@ -342,8 +342,8 @@ export const clubs = [
     founded: 2016,
     tags: ["Startup", "Entrepreneurship", "Innovation", "Pitch"],
     social: { instagram: "#", linkedin: "#", email: "ecell@bpit.ac.in" },
-    head: "Rohan Verma",
-    coordinator: "Prof. Ashish Grover",
+    head: "Aasutosh",
+    coordinator: "Prof. Seema Kharb",
   },
   {
     id: 19,
@@ -426,7 +426,7 @@ export const storyData = [
   },
   {
     id: 5,
-    clubName: "E-Cell",
+    clubName: "IIC",
     clubEmoji: "🚀",
     color: "#F59E0B",
     title: "Startup Pitch",

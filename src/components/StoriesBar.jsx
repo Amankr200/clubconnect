@@ -43,7 +43,7 @@ const storySlides = {
   ],
 };
 
-export default function StoriesBar() {
+export default function StoriesBar({ onViewClub, clubName }) {
   const [activeStory, setActiveStory] = useState(null);
   const [dbStories, setDbStories] = useState([]);
   const [seenStories, setSeenStories] = useState(new Set());
@@ -102,6 +102,15 @@ export default function StoriesBar() {
     ...storyData,
   ];
 
+  const filteredStories = displayStories.filter((story) => {
+    if (!clubName) return true;
+    return String(story.clubName || story.authorName || '')
+      .toLowerCase()
+      .trim() === String(clubName || '')
+      .toLowerCase()
+      .trim();
+  });
+
   const getSlidesForStory = (story) => {
     if (story.isDbStory) {
       return [
@@ -134,39 +143,43 @@ export default function StoriesBar() {
         </h2>
       </div>
 
-      <div className="stories-track-wrapper">
-        {canScrollLeft && (
-          <button className="stories-nav left" onClick={() => scrollTo(-1)} aria-label="Scroll left">‹</button>
-        )}
-        <div className="stories-track" ref={scrollRef} onScroll={handleScroll}>
-          {displayStories.map((story) => {
-            const seen = seenStories.has(story.id);
-            return (
-              <button
-                key={story.id}
-                className={`story-pill ${seen ? 'seen' : 'unseen'}`}
-                onClick={() => openStory(story)}
-                aria-label={`View ${story.clubName} story`}
-                id={`story-${story.id}`}
-              >
-                <div
-                  className="story-avatar-ring"
-                  style={{ '--story-color': story.color }}
+      {filteredStories.length === 0 ? (
+        <div className="stories-empty">No recent stories for this society yet.</div>
+      ) : (
+        <div className="stories-track-wrapper">
+          {canScrollLeft && (
+            <button className="stories-nav left" onClick={() => scrollTo(-1)} aria-label="Scroll left">‹</button>
+          )}
+          <div className="stories-track" ref={scrollRef} onScroll={handleScroll}>
+            {filteredStories.map((story) => {
+              const seen = seenStories.has(story.id);
+              return (
+                <button
+                  key={story.id}
+                  className={`story-pill ${seen ? 'seen' : 'unseen'}`}
+                  onClick={() => openStory(story)}
+                  aria-label={`View ${story.clubName} story`}
+                  id={`story-${story.id}`}
                 >
-                  <div className="story-avatar" style={{ background: `linear-gradient(135deg,${story.color}33,${story.color}66)` }}>
-                    <span className="story-emoji">{story.clubEmoji}</span>
+                  <div
+                    className="story-avatar-ring"
+                    style={{ '--story-color': story.color }}
+                  >
+                    <div className="story-avatar" style={{ background: `linear-gradient(135deg,${story.color}33,${story.color}66)` }}>
+                      <span className="story-emoji">{story.clubEmoji}</span>
+                    </div>
                   </div>
-                </div>
-                <span className="story-club-name">{story.clubName}</span>
-                <span className="story-time">{story.timeAgo}</span>
-              </button>
-            );
-          })}
-        </div>
+                  <span className="story-club-name">{story.clubName}</span>
+                  <span className="story-time">{story.timeAgo}</span>
+                </button>
+              );
+            })}
+          </div>
         {canScrollRight && (
           <button className="stories-nav right" onClick={() => scrollTo(1)} aria-label="Scroll right">›</button>
         )}
       </div>
+      )}
 
       {activeStory && (
         <StoryViewer
@@ -175,6 +188,7 @@ export default function StoriesBar() {
           onClose={() => setActiveStory(null)}
           allStories={displayStories}
           onNavigate={(s) => { openStory(s); }}
+          onViewClub={onViewClub}
         />
       )}
     </section>

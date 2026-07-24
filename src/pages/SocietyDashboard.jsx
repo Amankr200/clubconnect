@@ -5,6 +5,7 @@ import SocietyAbout from '../components/SocietyAbout';
 import SocietyAchievements from '../components/SocietyAchievements';
 import SocietyEventsSection from '../components/SocietyEventsSection';
 import SocietyCoordinators from '../components/SocietyCoordinators';
+import StoriesBar from '../components/StoriesBar';
 import CreateEventModal from '../components/CreateEventModal';
 import './SocietyDashboard.css';
 
@@ -58,6 +59,13 @@ export default function SocietyDashboard({ clubId, user, onNavigateBack }) {
       <section className="society-header-section">
         <div className="section-container">
           <SocietyHeader society={society} />
+        </div>
+      </section>
+
+      {/* Society Stories */}
+      <section className="society-stories-section">
+        <div className="section-container">
+          <StoriesBar clubName={society.name} />
         </div>
       </section>
 
