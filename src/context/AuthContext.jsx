@@ -17,7 +17,7 @@ export const ROLE_META = {
     label:       'Student Coordinator',
     emoji:       '🏛️',
     color:       '#F59E0B',
-    description: 'Manage venue bookings, society events & publish 24h stories',
+    description: 'Manage society events & publish 24h stories',
   },
   faculty_coordinator: {
     label:       'Faculty Coordinator',

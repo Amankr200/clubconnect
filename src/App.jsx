@@ -160,22 +160,6 @@ export default function App() {
         </main>
       )}
 
-      {/* ── Page: Venue Booking ── */}
-      {page === 'venues' && (
-        <main id="venues-page">
-          <div className="page-breadcrumb">
-            <div className="section-container">
-              <button className="breadcrumb-back" onClick={() => navigate('home')}>
-                ← Home
-              </button>
-              <span className="breadcrumb-sep">/</span>
-              <span className="breadcrumb-current">Venue Booking</span>
-            </div>
-          </div>
-          <VenueBookingPage />
-        </main>
-      )}
-
       <Footer onNavigate={navigate} onReportBugClick={() => setShowBugModal(true)} />
 
       {/* Login Modal */}

@@ -19,6 +19,14 @@ function normalizeSlots(slots) {
     .filter((slot) => slot.startTime && slot.endTime);
 }
 
+function getTodayDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function slotOverlaps(a, b) {
   return a.startTime < b.endTime && a.endTime > b.startTime;
 }
@@ -81,7 +89,7 @@ function toBookingResponse(booking) {
 async function findBookingOr404(req, res) {
   const booking = await venueBookingModel.findById(req.params.bookingId);
   if (!booking) {
-    res.status(404).json({ message: 'Venue booking request not found.' });
+    res.status(404).json({ message: 'Event approval request not found.' });
     return null;
   }
 
@@ -133,7 +141,7 @@ router.get('/inbox', async (req, res) => {
 router.post('/', async (req, res) => {
   const allowedBookingRoles = ['student_coordinator', 'faculty_coordinator', 'hod', 'admin'];
   if (!allowedBookingRoles.includes(req.user.role)) {
-    return res.status(403).json({ message: 'Not authorized to request venue bookings.' });
+    return res.status(403).json({ message: 'Not authorized to request event approval.' });
   }
 
   const venueId = Number(req.body?.venueId);
@@ -149,8 +157,8 @@ router.post('/', async (req, res) => {
   const studentCoordinators = String(req.body?.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots);
 
-  if (!venueId || !date || !eventName || !hostClub || !photo || !photoFileName || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
-    return res.status(400).json({ message: 'venueId, date, eventName, hostClub, photo, photoFileName, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
+  if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
+    return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
@@ -205,7 +213,7 @@ router.post('/', async (req, res) => {
     booking: toBookingResponse(booking),
     notification: {
       role: initialReviewerRole,
-      message: `A new venue booking request is waiting for ${initialReviewerRole === 'principal' ? 'Principal/Dean' : 'Faculty'} approval.`,
+      message: `A new event approval request is waiting for ${initialReviewerRole === 'principal' ? 'Principal/Dean' : 'Faculty'} approval.`,
     },
   });
 });
@@ -285,8 +293,8 @@ router.patch('/:bookingId/decision', async (req, res) => {
     notification: {
       role: updatedBooking.currentReviewerRole || 'student_coordinator',
       message: decision === 'allow'
-        ? (status === 'approved' ? 'Venue booking request has received FINAL APPROVAL and is live!' : 'Venue booking request moved to Principal approval.')
-        : 'Venue booking request was returned with requested changes.',
+        ? (status === 'approved' ? 'Event approval request has received FINAL APPROVAL and is live!' : 'Event approval request moved to Principal approval.')
+        : 'Event approval request was returned with requested changes.',
     },
   });
 });
@@ -317,8 +325,8 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
   const studentCoordinators = String(req.body?.studentCoordinators || booking.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots || booking.timeSlots);
 
-  if (!venueId || !date || !eventName || !hostClub || !photo || !photoFileName || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
-    return res.status(400).json({ message: 'venueId, date, eventName, hostClub, photo, photoFileName, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
+  if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
+    return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
@@ -370,8 +378,44 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
     booking: toBookingResponse(updatedBooking),
     notification: {
       role: updatedBooking.currentReviewerRole,
-      message: 'Venue booking request was resubmitted after changes.',
+      message: 'Event approval request was resubmitted after changes.',
     },
+  });
+});
+
+router.patch('/:bookingId/photo', async (req, res) => {
+  const booking = await findBookingOr404(req, res);
+  if (!booking) {
+    return;
+  }
+
+  if (req.user.id !== booking.requestedBy?.id) {
+    return res.status(403).json({ message: 'You can only update photos for your own booking requests.' });
+  }
+
+  if (booking.status !== 'approved') {
+    return res.status(400).json({ message: 'Photo updates are only available for approved bookings.' });
+  }
+
+  if (String(booking.date || '') < getTodayDate()) {
+    return res.status(400).json({ message: 'Photo updates are only available for today or future bookings.' });
+  }
+
+  const photo = String(req.body?.photo || '').trim();
+  const photoFileName = String(req.body?.photoFileName || '').trim();
+
+  if (!photo) {
+    return res.status(400).json({ message: 'photo is required.' });
+  }
+
+  const updatedBooking = await venueBookingModel.updateBooking(booking.id, {
+    photo,
+    photoFileName,
+  });
+
+  return res.json({
+    booking: toBookingResponse(updatedBooking),
+    message: 'Event\'s poster photo updated successfully.',
   });
 });
 

@@ -201,7 +201,6 @@ export default function VenueBookingModal({
       selectedSlots.length === 0 ||
       !eventName ||
       !hostClub ||
-      !photo ||
       !description ||
       !eligibility ||
       !attendance ||
@@ -209,7 +208,7 @@ export default function VenueBookingModal({
       !studentCoordinators
     ) {
       setBookingError(
-        "Please complete every required field, including the photo upload and event details.",
+        "Please complete every required field and event detail.",
       );
       return;
     }
@@ -396,14 +395,14 @@ export default function VenueBookingModal({
               <option value="">-- Choose a venue --</option>
               {venues.map((venue) => (
                 <option key={venue.id} value={venue.id}>
-                  {venue.name} (Capacity: {venue.capacity})
+                  {venue.name}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="booking-form-group">
-            <label htmlFor="photo">Photo Upload *</label>
+            <label htmlFor="photo">Photo Upload</label>
             <input
               id="photo"
               type="file"
@@ -435,10 +434,12 @@ export default function VenueBookingModal({
             <div className="venue-details-card">
               <h3>{venueDetails.name}</h3>
               <div className="venue-info-grid">
+                {/*
                 <div className="venue-info-item">
                   <strong>Capacity</strong>
                   <span>{venueDetails.capacity} persons</span>
                 </div>
+                */}
                 <div className="venue-info-item">
                   <strong>Location</strong>
                   <span>{venueDetails.location}</span>
@@ -583,11 +584,11 @@ export default function VenueBookingModal({
           </div>
 
           <div className="booking-form-group">
-            <label htmlFor="attendance">Attendance *</label>
+            <label htmlFor="attendance">Registration Link *</label>
             <input
               id="attendance"
               type="text"
-              placeholder="Expected attendance count or range"
+              placeholder="Link to registration form"
               value={attendance}
               onChange={(event) => setAttendance(event.target.value)}
               required
@@ -596,11 +597,11 @@ export default function VenueBookingModal({
           </div>
 
           <div className="booking-form-group">
-            <label htmlFor="feedback">Feedback *</label>
+            <label htmlFor="feedback">Feedback Link*</label>
             <input
               id="feedback"
               type="text"
-              placeholder="Any feedback or remarks"
+              placeholder="Link to feedback form"
               value={feedback}
               onChange={(event) => setFeedback(event.target.value)}
               required

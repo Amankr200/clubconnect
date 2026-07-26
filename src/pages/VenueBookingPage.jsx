@@ -95,7 +95,6 @@ export default function VenueBookingPage() {
                 {venues.map(venue => (
                   <div key={venue.id} className="venue-mini-item">
                     <strong>{venue.name}</strong>
-                    <small>{venue.capacity} persons</small>
                   </div>
                 ))}
               </div>
@@ -150,8 +149,8 @@ export default function VenueBookingPage() {
                       <div style={{ marginTop: '10px', display: 'grid', gap: '6px', fontSize: '13px', color: '#475569' }}>
                         <div><strong>Description:</strong> {booking.description || '—'}</div>
                         <div><strong>Eligibility:</strong> {booking.eligibility || '—'}</div>
-                        <div><strong>Attendance:</strong> {booking.attendance || '—'}</div>
-                        <div><strong>Feedback:</strong> {booking.feedback || '—'}</div>
+                        <div><strong>Registration Link:</strong> {booking.attendance || '—'}</div>
+                        <div><strong>Feedback Link:</strong> {booking.feedback || '—'}</div>
                         <div><strong>Student Coordinators:</strong> {booking.studentCoordinators || '—'}</div>
                       </div>
                     </div>

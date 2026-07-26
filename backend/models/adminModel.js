@@ -19,7 +19,6 @@ function formatVenue(row) {
   return {
     id: row.id,
     name: row.name,
-    capacity: row.capacity,
     type: row.type,
     location: row.location,
     isActive: row.is_active,
@@ -54,18 +53,17 @@ async function findAllVenues() {
   return result.rows.map(formatVenue);
 }
 
-async function upsertVenue({ id, name, capacity, type, location, isActive = true }) {
+async function upsertVenue({ id, name, type, location, isActive = true }) {
   const result = await db.query(
-    `INSERT INTO venues (id, name, capacity, type, location, is_active)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO venues (id, name, type, location, is_active)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (id) DO UPDATE SET
        name = EXCLUDED.name,
-       capacity = EXCLUDED.capacity,
        type = EXCLUDED.type,
        location = EXCLUDED.location,
        is_active = EXCLUDED.is_active
      RETURNING *`,
-    [id, name, capacity, type, location, isActive]
+    [id, name, type, location, isActive]
   );
   return formatVenue(result.rows[0]);
 }
