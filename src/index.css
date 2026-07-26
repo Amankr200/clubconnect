@@ -1,11 +1,11 @@
 /* ─────────────────────────────────────────────
-   ClubConnect – BPIT Style (Light Theme)
-   Matching BPIT college website aesthetics
+   ClubConnect – Modern Dynamic Theme System
+   Supports Light Mode (White Pristine UI) & Dark Mode (Sleek Slate)
 ───────────────────────────────────────────── */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
+:root, [data-theme="light"] {
   /* BPIT Brand Colors */
   --bpit-blue:        #1A3A8B;
   --bpit-blue-dark:   #122B6B;
@@ -15,30 +15,47 @@
   --bpit-maroon-light:#B02020;
   --bpit-red-accent:  #CC0000;
 
-  /* Backgrounds */
+  /* Theme Backgrounds */
+  --bg-app:           #FFFFFF;
   --bg-white:         #FFFFFF;
   --bg-light:         #F4F6FA;
   --bg-light2:        #EEF1F8;
-  --bg-section:       #F8F9FC;
+  --bg-section:       #F8FAFC;
+  --bg-card:          #FFFFFF;
+  --bg-card-hover:    #F8FAFC;
+  --bg-modal:         #FFFFFF;
+  --bg-input:         #FFFFFF;
+  --bg-navbar:        #FFFFFF;
+  --bg-subbar:        #1A3A8B;
 
-  /* Text */
-  --text-dark:        #1A1A2E;
-  --text-body:        #333344;
-  --text-secondary:   #555566;
-  --text-muted:       #888899;
+  /* Theme Text */
+  --text-dark:        #0F172A;
+  --text-body:        #334155;
+  --text-secondary:   #475569;
+  --text-muted:       #64748B;
   --text-white:       #FFFFFF;
 
-  /* Borders */
-  --border:           #D0D8E8;
-  --border-blue:      #A0B0D0;
+  /* Theme Borders */
+  --border:           #E2E8F0;
+  --border-subtle:    #F1F5F9;
+  --border-blue:      #93C5FD;
   --border-accent:    #1A3A8B;
 
   /* Shadows */
-  --shadow-sm:  0 2px 8px rgba(26,58,139,0.08);
-  --shadow-md:  0 4px 16px rgba(26,58,139,0.12);
-  --shadow-lg:  0 8px 32px rgba(26,58,139,0.15);
+  --shadow-sm:  0 2px 8px rgba(26,58,139,0.06);
+  --shadow-md:  0 4px 16px rgba(26,58,139,0.1);
+  --shadow-lg:  0 8px 32px rgba(26,58,139,0.14);
 
-  /* Radius - simple & clean */
+  /* Scrollbars */
+  --scrollbar-bg:     #F1F5F9;
+  --scrollbar-thumb:  #1A3A8B;
+
+  /* Theme toggle btn */
+  --theme-btn-bg:     #F1F5F9;
+  --theme-btn-border: #CBD5E1;
+  --theme-btn-color:  #1E293B;
+
+  /* Radius */
   --r-sm:   4px;
   --r-md:   6px;
   --r-lg:   8px;
@@ -50,22 +67,74 @@
   --dur: 0.2s;
 }
 
+[data-theme="dark"] {
+  /* BPIT Brand Colors (Dark adjusted) */
+  --bpit-blue:        #3B82F6;
+  --bpit-blue-dark:   #2563EB;
+  --bpit-blue-light:  #60A5FA;
+  --bpit-blue-pale:   rgba(59, 130, 246, 0.15);
+  --bpit-maroon:      #EF4444;
+  --bpit-maroon-light:#F87171;
+  --bpit-red-accent:  #F87171;
+
+  /* Theme Backgrounds */
+  --bg-app:           #090D16;
+  --bg-white:         #111827;
+  --bg-light:         #161F33;
+  --bg-light2:        #1E293B;
+  --bg-section:       #0F172A;
+  --bg-card:          #111827;
+  --bg-card-hover:    #1F2937;
+  --bg-modal:         #111827;
+  --bg-input:         #1F2937;
+  --bg-navbar:        #0F172A;
+  --bg-subbar:        #1E293B;
+
+  /* Theme Text */
+  --text-dark:        #F9FAFB;
+  --text-body:        #E5E7EB;
+  --text-secondary:   #9CA3AF;
+  --text-muted:       #6B7280;
+  --text-white:       #FFFFFF;
+
+  /* Theme Borders */
+  --border:           #1F2937;
+  --border-subtle:    #374151;
+  --border-blue:      #3B82F6;
+  --border-accent:    #3B82F6;
+
+  /* Shadows */
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.6);
+
+  /* Scrollbars */
+  --scrollbar-bg:     #1F2937;
+  --scrollbar-thumb:  #3B82F6;
+
+  /* Theme toggle btn */
+  --theme-btn-bg:     #1E293B;
+  --theme-btn-border: #374151;
+  --theme-btn-color:  #F9FAFB;
+}
+
 html { scroll-behavior: smooth; }
 
 body {
   font-family: 'Inter', Arial, sans-serif;
-  background: var(--bg-white);
+  background: var(--bg-app);
   color: var(--text-body);
   min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
   font-size: 14px;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-light); }
-::-webkit-scrollbar-thumb { background: var(--bpit-blue); border-radius: 3px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 
 /* ── Common Utilities ── */
 .section-container {
@@ -79,8 +148,40 @@ body {
 /* ── Responsive padding for smaller screens ── */
 @media (max-width: 768px) {
   .section-container {
-    padding: 0 16px;
+    padding: 0 14px;
   }
+}
+
+/* ── Theme Switcher Toggle Button ── */
+.theme-toggle-btn {
+  background: var(--theme-btn-bg);
+  border: 1px solid var(--theme-btn-border);
+  color: var(--theme-btn-color);
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--dur) var(--ease);
+  user-select: none;
+  font-family: inherit;
+}
+.theme-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Table Overflow Container for Mobile Responsiveness ── */
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
 }
 
 /* ── Buttons ── */
@@ -96,6 +197,7 @@ body {
   transition: all var(--dur) var(--ease);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   font-family: inherit;
   text-decoration: none;
@@ -118,13 +220,14 @@ body {
   transition: all var(--dur) var(--ease);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   font-family: inherit;
   text-decoration: none;
 }
 .btn-outline:hover {
   background: var(--bpit-blue);
-  /* color: #fff; */
+  color: #fff;
 }
 
 .btn-maroon {
@@ -139,12 +242,13 @@ body {
   transition: all var(--dur) var(--ease);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   font-family: inherit;
 }
 .btn-maroon:hover { background: var(--bpit-maroon-light); border-color: var(--bpit-maroon-light); }
 
-/* ── Section Headers (BPIT style: blue background, white text) ── */
+/* ── Section Headers ── */
 .section-heading {
   background: var(--bpit-blue);
   color: #fff;
@@ -169,17 +273,17 @@ body {
   letter-spacing: 0.04em;
 }
 .badge-blue   { background: var(--bpit-blue-pale); color: var(--bpit-blue); border: 1px solid var(--border-blue); }
-.badge-maroon { background: #FFF0F0; color: var(--bpit-maroon); border: 1px solid #FFBBBB; }
-.badge-green  { background: #EEF8EE; color: #1A6B1A; border: 1px solid #AADDAA; }
-.badge-gold   { background: #FFF8E8; color: #805500; border: 1px solid #DDCC88; }
+.badge-maroon { background: rgba(239,68,68,0.12); color: var(--bpit-maroon); border: 1px solid rgba(239,68,68,0.3); }
+.badge-green  { background: rgba(16,185,129,0.12); color: #10B981; border: 1px solid rgba(16,185,129,0.3); }
+.badge-gold   { background: rgba(245,158,11,0.12); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
 
 /* ── Cards ── */
 .card {
-  background: var(--bg-white);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .card:hover {
   box-shadow: var(--shadow-md);
@@ -217,10 +321,12 @@ body {
 /* ── Overlay ── */
 .overlay-backdrop {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.2s var(--ease);
+  padding: 12px;
 }

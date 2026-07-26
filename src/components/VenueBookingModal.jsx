@@ -320,6 +320,26 @@ export default function VenueBookingModal({
           </div>
         )}
 
+        {isEditing && (booking?.changeRequest?.notes || booking?.status === "revision_requested") && (
+          <div
+            style={{
+              background: "rgba(245, 158, 11, 0.12)",
+              border: "1px solid #f59e0b",
+              borderRadius: "12px",
+              padding: "12px 16px",
+              marginBottom: "20px",
+              color: "var(--text-dark)",
+            }}
+          >
+            <strong style={{ color: "#d97706", display: "block", marginBottom: "4px" }}>
+              ⚠️ Revision Requested {booking?.changeRequest?.fromRole ? `by ${booking.changeRequest.fromRole.replace("_", " ").toUpperCase()}` : ""}
+            </strong>
+            <span style={{ fontSize: "0.9rem", lineHeight: "1.4" }}>
+              {booking?.changeRequest?.notes || "Please review and modify the event details below before resubmitting your request."}
+            </span>
+          </div>
+        )}
+
         <div className="booking-form-group">
           <label htmlFor="hostClub">Host Club/Organization *</label>
           <input

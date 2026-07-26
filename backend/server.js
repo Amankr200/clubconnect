@@ -1,8 +1,8 @@
-require('dotenv').config();
+const path    = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors    = require('cors');
 const fs      = require('fs');
-const path    = require('path');
 const db      = require('./db');
 
 const authRoutes = require('./routes/auth');
@@ -13,7 +13,7 @@ const bugRoutes = require('./routes/bugs');
 const adminRoutes = require('./routes/admin');
 
 const app  = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 const frontendDistPath = path.resolve(__dirname, '..', 'dist');
 const frontendIndexPath = path.join(frontendDistPath, 'index.html');

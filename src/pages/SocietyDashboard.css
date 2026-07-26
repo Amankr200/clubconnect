@@ -1,16 +1,18 @@
 #society-page {
   padding-top: 144px;
+  background: var(--bg-app);
+  min-height: 100vh;
+  transition: background 0.2s var(--ease);
 }
 
 .society-header-section {
-  padding: 40px 0;
-  background: var(--bg-white);
+  padding: 36px 0;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border);
 }
 
-/* Breadcrumb styling - same as clubs page */
 .page-breadcrumb {
-  background: var(--bg-light);
+  background: var(--bg-section);
   border-bottom: 1px solid var(--border);
   padding: 10px 0;
   position: sticky;
@@ -22,14 +24,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
 }
 
 .breadcrumb-back {
   background: none;
   border: none;
   color: var(--bpit-blue);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
@@ -50,14 +52,14 @@
 }
 
 .breadcrumb-current {
-  color: var(--text-body);
+  color: var(--text-dark);
   font-weight: 600;
 }
 
 /* 404 / Not Found */
 .society-not-found {
   padding: 100px 0;
-  background: var(--bg-light);
+  background: var(--bg-app);
   text-align: center;
 }
 
@@ -76,7 +78,7 @@
   font-size: 2rem;
   font-weight: 700;
   margin: 0;
-  color: var(--text-heading);
+  color: var(--text-dark);
 }
 
 .not-found-content p {
@@ -87,11 +89,11 @@
 
 @media (max-width: 768px) {
   #society-page {
-    padding-top: 144px;
+    padding-top: 130px;
   }
 
   .society-header-section {
-    padding: 32px 0;
+    padding: 24px 0;
   }
 
   .not-found-icon {

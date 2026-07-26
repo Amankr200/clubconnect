@@ -1,8 +1,8 @@
 .bug-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 15, 30, 0.85);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,16 +11,17 @@
 }
 
 .bug-modal-container {
-  background: rgba(20, 25, 45, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
   border-radius: 20px;
   width: 100%;
   max-width: 500px;
   padding: 2rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.2);
-  color: #fff;
+  box-shadow: var(--shadow-lg);
+  color: var(--text-dark);
   position: relative;
   animation: bugModalSlideUp 0.3s ease-out;
+  transition: background 0.2s var(--ease);
 }
 
 @keyframes bugModalSlideUp {
@@ -47,22 +48,20 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #f43f5e;
 }
 
 .bug-modal-close {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 1.5rem;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .bug-modal-close:hover {
-  color: #fff;
+  color: var(--text-dark);
 }
 
 .bug-form-group {
@@ -73,27 +72,28 @@
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--text-dark);
   margin-bottom: 0.5rem;
 }
 
 .bug-form-input,
 .bug-form-textarea {
   width: 100%;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.75rem 1rem;
-  color: #fff;
+  color: var(--text-dark);
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
 }
 
 .bug-form-input:focus,
 .bug-form-textarea:focus {
   border-color: #f43f5e;
-  box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.25);
 }
 
 .bug-form-textarea {
@@ -128,7 +128,7 @@
 .bug-success-msg {
   background: rgba(34, 197, 94, 0.15);
   border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #4ade80;
+  color: #10b981;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   font-size: 0.9rem;

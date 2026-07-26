@@ -1,16 +1,90 @@
-import React, { useState } from 'react';
-import { clubs, categories } from '../data/clubs';
+import React, { useState, useEffect } from 'react';
+import { clubs as staticClubs, categories } from '../data/clubs';
 import './ClubsSection.css';
+
+function normalizeSociety(s, idx) {
+  const categoryColors = {
+    Technical: { color: '#3B82F6', gradFrom: '#1E3A8A', gradTo: '#3B82F6', emoji: '💻' },
+    Cultural: { color: '#EC4899', gradFrom: '#831843', gradTo: '#EC4899', emoji: '🎭' },
+    Sports: { color: '#10B981', gradFrom: '#064E3B', gradTo: '#10B981', emoji: '⚽' },
+    Literary: { color: '#F59E0B', gradFrom: '#78350F', gradTo: '#F59E0B', emoji: '📚' },
+    'Social & Environment': { color: '#8B5CF6', gradFrom: '#4C1D95', gradTo: '#8B5CF6', emoji: '🌱' },
+  };
+  const catMeta = categoryColors[s.category] || { color: '#8B5CF6', gradFrom: '#4C1D95', gradTo: '#8B5CF6', emoji: '🏛️' };
+
+  const facultyObj = typeof s.facultyCoordinator === 'object' ? s.facultyCoordinator : { name: s.facultyCoordinator || 'Faculty Lead', email: '' };
+  const studentObj = Array.isArray(s.studentCoordinators) && s.studentCoordinators.length > 0
+    ? s.studentCoordinators[0]
+    : { name: s.head || 'Student Lead', email: '' };
+
+  const socialObj = s.social || {
+    instagram: '#',
+    linkedin: '#',
+    email: facultyObj.email || studentObj.email || `${(s.name || 'society').toLowerCase().replace(/\s+/g, '')}@bpit.ac.in`,
+  };
+
+  const dbId = s.id ? `db-${s.id}` : `db-custom-${s.name}-${idx}`;
+
+  return {
+    id: dbId,
+    dbId: s.id,
+    name: s.name || 'Unnamed Society',
+    fullName: s.fullName || `${s.name} Society`,
+    category: s.category || 'Technical',
+    tagline: s.tagline || (s.description ? s.description.slice(0, 60) + '...' : 'Active Campus Society'),
+    description: s.description || 'No description provided.',
+    color: s.color || catMeta.color,
+    gradFrom: s.gradFrom || catMeta.gradFrom,
+    gradTo: s.gradTo || catMeta.gradTo,
+    emoji: s.emoji || catMeta.emoji,
+    members: s.members || 50,
+    events: s.events || 3,
+    founded: s.founded || 2026,
+    tags: Array.isArray(s.tags) && s.tags.length > 0 ? s.tags : [s.category || 'Society', 'BPIT'],
+    head: s.head || studentObj.name || 'Student Lead',
+    coordinator: s.coordinator || facultyObj.name || 'Faculty Lead',
+    social: socialObj,
+    logo: s.logo || '',
+    banner: s.banner || '',
+    rating: s.rating || 4.5,
+  };
+}
 
 export default function ClubsSection({ onNavigateSociety }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const [allClubs, setAllClubs] = useState(staticClubs);
 
-  const filtered = clubs.filter(c => {
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/societies')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data.societies) && data.societies.length > 0) {
+          const fetchedClubs = data.societies.map(normalizeSociety);
+
+          // Merge fetched database societies with static clubs (avoiding duplicates by name)
+          const merged = [...fetchedClubs];
+          staticClubs.forEach((sc) => {
+            if (!merged.some((c) => c.name.toLowerCase() === sc.name.toLowerCase())) {
+              merged.push(sc);
+            }
+          });
+          setAllClubs(merged);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = allClubs.filter(c => {
     const matchCat = activeCategory === 'All' || c.category === activeCategory;
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      c.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
+      (c.tags && c.tags.some(t => t.toLowerCase().includes(search.toLowerCase())));
     return matchCat && matchSearch;
   });
 

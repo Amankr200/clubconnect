@@ -128,21 +128,16 @@ function convertBookingsToEvents(bookings) {
   }).filter(Boolean);
 }
 
-function renderBookingDetailValue(value) {
-  const text = String(value || '').trim();
-  if (!text) {
-    return '—';
+function getYYYYMMDD(val) {
+  if (!val) return '';
+  if (typeof val === 'string') return val.slice(0, 10);
+  if (val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
-
-  if (/^https?:\/\//i.test(text)) {
-    return (
-      <a href={text} target="_blank" rel="noreferrer">
-        {text}
-      </a>
-    );
-  }
-
-  return text;
+  return '';
 }
 
 export default function CalendarPage() {
@@ -176,9 +171,43 @@ export default function CalendarPage() {
     return [...CALENDAR_EVENTS_STATIC, ...bookedEvents];
   }, [approvedBookings]);
 
+  const eventDatesSet = useMemo(() => {
+    const set = new Set();
+    events.forEach((event) => {
+      if (!event.start) return;
+      const startStr = getYYYYMMDD(event.start);
+      if (!startStr) return;
+
+      set.add(startStr);
+
+      if (event.end) {
+        const endStr = getYYYYMMDD(event.end);
+        if (endStr && endStr > startStr) {
+          const [sy, sm, sd] = startStr.split('-').map(Number);
+          const [ey, em, ed] = endStr.split('-').map(Number);
+          let cur = new Date(sy, sm - 1, sd);
+          const end = new Date(ey, em - 1, ed);
+
+          if (event.allDay && end > cur) {
+            end.setDate(end.getDate() - 1);
+          }
+
+          while (cur <= end) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const d = String(cur.getDate()).padStart(2, '0');
+            set.add(`${y}-${m}-${d}`);
+            cur.setDate(cur.getDate() + 1);
+          }
+        }
+      }
+    });
+    return set;
+  }, [events]);
+
   const selectedEvents = useMemo(() => {
     return events.filter(event => {
-      const eventStart = event.start?.slice(0, 10) || '';
+      const eventStart = getYYYYMMDD(event.start);
       return eventStart === selectedDate;
     });
   }, [events, selectedDate]);
@@ -212,6 +241,18 @@ export default function CalendarPage() {
               eventClick={(info) => setSelectedDate(info.event.startStr.slice(0, 10))}
               dateClick={(info) => setSelectedDate(info.dateStr)}
               datesSet={(arg) => setViewDate(arg.view.currentStart)}
+              dayCellClassNames={(arg) => {
+                const classes = [];
+                const cellDateStr = arg.dateStr || getYYYYMMDD(arg.date);
+
+                if (eventDatesSet.has(cellDateStr)) {
+                  classes.push('has-event-day');
+                }
+                if (cellDateStr === selectedDate) {
+                  classes.push('is-selected-day');
+                }
+                return classes;
+              }}
               dayCellDidMount={(arg) => {
                 arg.el.addEventListener('dblclick', () => setSelectedDate(arg.date.toISOString().slice(0, 10)));
               }}

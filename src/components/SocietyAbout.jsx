@@ -22,11 +22,11 @@ export default function SocietyAbout({ society }) {
             <div className="vision-content">
               <div className="mission-item">
                 <strong>Vision:</strong>
-                <p>To foster innovation, creativity, and excellence within the {society.fullName} community.</p>
+                <p>{society.vision || `To foster innovation, creativity, and excellence within the ${society.fullName} community.`}</p>
               </div>
               <div className="mission-item">
                 <strong>Mission:</strong>
-                <p>Organize impactful events, develop skills, build networks, and create meaningful opportunities for our members.</p>
+                <p>{society.mission || 'Organize impactful events, develop skills, build networks, and create meaningful opportunities for our members.'}</p>
               </div>
             </div>
           </div>

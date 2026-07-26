@@ -8,6 +8,8 @@ function formatSociety(row) {
     fullName: row.full_name,
     category: row.category,
     description: row.description,
+    vision: row.vision || '',
+    mission: row.mission || '',
     logo: row.logo,
     banner: row.banner,
     rating: parseFloat(row.rating || 4.5),
@@ -28,22 +30,48 @@ async function findSocietyByName(name) {
 }
 
 async function createSociety(data) {
-  const { name, fullName, category, description, logo, banner, rating = 4.5, facultyCoordinator = {}, studentCoordinators = [] } = data;
-  const result = await db.query(
-    `INSERT INTO societies (name, full_name, category, description, logo, banner, rating, faculty_coordinator, student_coordinators)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     ON CONFLICT (name) DO UPDATE SET
-       full_name = EXCLUDED.full_name,
-       category = EXCLUDED.category,
-       description = EXCLUDED.description,
-       logo = EXCLUDED.logo,
-       banner = EXCLUDED.banner,
-       faculty_coordinator = EXCLUDED.faculty_coordinator,
-       student_coordinators = EXCLUDED.student_coordinators
-     RETURNING *`,
-    [name, fullName, category, description, logo, banner, rating, JSON.stringify(facultyCoordinator), JSON.stringify(studentCoordinators)]
-  );
-  return formatSociety(result.rows[0]);
+  const { name, fullName, category, description, vision = '', mission = '', logo, banner, rating = 4.5, facultyCoordinator = {}, studentCoordinators = [] } = data;
+  const facultyJson = typeof facultyCoordinator === 'string' ? facultyCoordinator : JSON.stringify(facultyCoordinator);
+  const studentJson = typeof studentCoordinators === 'string' ? studentCoordinators : JSON.stringify(studentCoordinators);
+
+  try {
+    const result = await db.query(
+      `INSERT INTO societies (name, full_name, category, description, vision, mission, logo, banner, rating, faculty_coordinator, student_coordinators)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (name) DO UPDATE SET
+         full_name = EXCLUDED.full_name,
+         category = EXCLUDED.category,
+         description = EXCLUDED.description,
+         vision = EXCLUDED.vision,
+         mission = EXCLUDED.mission,
+         logo = EXCLUDED.logo,
+         banner = EXCLUDED.banner,
+         faculty_coordinator = EXCLUDED.faculty_coordinator,
+         student_coordinators = EXCLUDED.student_coordinators
+       RETURNING *`,
+      [name, fullName || `${name} Society`, category, description, vision, mission, logo, banner, rating, facultyJson, studentJson]
+    );
+    return formatSociety(result.rows[0]);
+  } catch (err) {
+    try {
+      const updateRes = await db.query(
+        `UPDATE societies SET full_name = $1, category = $2, description = $3, vision = $4, mission = $5, logo = $6, banner = $7, faculty_coordinator = $8, student_coordinators = $9
+         WHERE LOWER(name) = LOWER($10) RETURNING *`,
+        [fullName || `${name} Society`, category, description, vision, mission, logo, banner, facultyJson, studentJson, name]
+      );
+      if (updateRes.rows.length > 0) {
+        return formatSociety(updateRes.rows[0]);
+      }
+    } catch {}
+
+    const fallbackRes = await db.query(
+      `INSERT INTO societies (name, full_name, category, description, vision, mission, logo, banner, rating, faculty_coordinator, student_coordinators)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
+      [name, fullName || `${name} Society`, category, description, vision, mission, logo, banner, rating, facultyJson, studentJson]
+    );
+    return formatSociety(fallbackRes.rows[0]);
+  }
 }
 
 async function updateSociety(name, updates) {

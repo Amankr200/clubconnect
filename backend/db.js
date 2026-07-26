@@ -35,16 +35,33 @@ async function initDb() {
       CREATE TABLE IF NOT EXISTS societies (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) UNIQUE NOT NULL,
-        full_name VARCHAR(255) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        description TEXT NOT NULL,
-        logo TEXT NOT NULL,
-        banner TEXT NOT NULL,
+        full_name VARCHAR(255) DEFAULT '',
+        category VARCHAR(100) DEFAULT 'Technical',
+        description TEXT DEFAULT '',
+        vision TEXT DEFAULT '',
+        mission TEXT DEFAULT '',
+        logo TEXT DEFAULT '',
+        banner TEXT DEFAULT '',
         rating NUMERIC(3,2) DEFAULT 4.50,
         faculty_coordinator JSONB DEFAULT '{}'::jsonb,
         student_coordinators JSONB DEFAULT '[]'::jsonb,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
+
+    // Ensure all missing columns exist in existing societies table
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS full_name VARCHAR(255) DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Technical';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS vision TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS mission TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS logo TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS banner TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2) DEFAULT 4.50;`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS faculty_coordinator JSONB DEFAULT '{}'::jsonb;`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS student_coordinators JSONB DEFAULT '[]'::jsonb;`);
+
+    await client.query(`
 
       CREATE TABLE IF NOT EXISTS venues (
         id INT PRIMARY KEY,

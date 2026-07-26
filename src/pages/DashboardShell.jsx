@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
+import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import './DashboardShell.css';
 
 export default function DashboardShell({ onNavigateHome }) {
   const { user, token, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('');
   const [isVenueModalOpen, setIsVenueModalOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [isAddSocietyModalOpen, setIsAddSocietyModalOpen] = useState(false);
 
   // Shared Data States
   const [inbox, setInbox] = useState([]);
@@ -304,6 +309,15 @@ export default function DashboardShell({ onNavigateHome }) {
         </div>
 
         <div className="dash-topbar-right">
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+            style={{ marginRight: '4px' }}
+          >
+            {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+          </button>
+
           <div className="dash-user-info">
             <span className="dash-user-name">{user?.name}</span>
             <span className="dash-user-email">{user?.email}</span>
@@ -328,6 +342,9 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'registrations' ? 'active' : ''}`} onClick={() => setActiveTab('registrations')}>
                 🏛️ Society Registrations
               </button>
+              <button className="dash-tab-btn" onClick={() => setIsAddSocietyModalOpen(true)}>
+                ➕ Add New Society
+              </button>
               <button className={`dash-tab-btn ${activeTab === 'venues' ? 'active' : ''}`} onClick={() => setActiveTab('venues')}>
                 📍 Venue Availability
               </button>
@@ -345,7 +362,7 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'my_bookings' ? 'active' : ''}`} onClick={() => setActiveTab('my_bookings')}>
                 📅 My Event Requests
               </button>
-              <button className="dash-tab-btn" onClick={() => { setSelectedPhotoBookingId(null); setIsVenueModalOpen(true); }}>
+              <button className="dash-tab-btn" onClick={() => { setSelectedPhotoBookingId(null); setEditingBooking(null); setIsVenueModalOpen(true); }}>
                 ➕ Request Event Approval
               </button>
               <button className={`dash-tab-btn ${activeTab === 'story' ? 'active' : ''}`} onClick={() => setActiveTab('story')}>
@@ -359,7 +376,7 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'approvals' ? 'active' : ''}`} onClick={() => setActiveTab('approvals')}>
                 📋 Pending Approvals ({inbox.filter((b) => b.currentReviewerRole === 'faculty_coordinator').length})
               </button>
-              <button className="dash-tab-btn" onClick={() => setIsVenueModalOpen(true)}>
+              <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
                 ➕ Book Department Event
               </button>
               <button className={`dash-tab-btn ${activeTab === 'edit_society' ? 'active' : ''}`} onClick={() => setActiveTab('edit_society')}>
@@ -379,7 +396,7 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'dept_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('dept_approvals')}>
                 📋 Department Approvals
               </button>
-              <button className="dash-tab-btn" onClick={() => setIsVenueModalOpen(true)}>
+              <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
                 ➕ Department Booking
               </button>
               <button className={`dash-tab-btn ${activeTab === 'assign' ? 'active' : ''}`} onClick={() => setActiveTab('assign')}>
@@ -406,8 +423,15 @@ export default function DashboardShell({ onNavigateHome }) {
         {/* ── ADMIN: Society Registrations ── */}
         {user?.role === 'admin' && activeTab === 'registrations' && (
           <div className="dash-card">
-            <h2 className="dash-card-title">🏛️ New Society Registration Approvals</h2>
-            <p className="dash-card-subtitle">Review applications submitted by students and faculty for new college societies.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div>
+                <h2 className="dash-card-title" style={{ marginBottom: '0.25rem' }}>🏛️ New Society Registration Approvals</h2>
+                <p className="dash-card-subtitle" style={{ marginBottom: 0 }}>Review applications submitted by students and faculty, or directly add a new society to BPIT ClubConnect.</p>
+              </div>
+              <button className="btn-action-primary" style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem', whiteSpace: 'nowrap' }} onClick={() => setIsAddSocietyModalOpen(true)}>
+                ➕ Add New Society
+              </button>
+            </div>
             <div className="dash-table-wrapper">
               <table className="dash-table">
                 <thead>
@@ -1051,7 +1075,8 @@ export default function DashboardShell({ onNavigateHome }) {
                                   className="btn-action-primary"
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    handleResubmit(b);
+                                    setEditingBooking(b);
+                                    setIsVenueModalOpen(true);
                                   }}
                                 >
                                   Resubmit Request
@@ -1220,10 +1245,24 @@ export default function DashboardShell({ onNavigateHome }) {
       <VenueBookingModal
         isOpen={isVenueModalOpen}
         token={token}
-        booking={null}
-        onClose={() => setIsVenueModalOpen(false)}
+        booking={editingBooking}
+        onClose={() => {
+          setIsVenueModalOpen(false);
+          setEditingBooking(null);
+        }}
         onBookingSuccess={async () => {
           setIsVenueModalOpen(false);
+          setEditingBooking(null);
+          refreshData();
+        }}
+      />
+
+      {/* Add New Society Modal */}
+      <AddSocietyModal
+        isOpen={isAddSocietyModalOpen}
+        token={token}
+        onClose={() => setIsAddSocietyModalOpen(false)}
+        onSocietyCreated={async () => {
           refreshData();
         }}
       />

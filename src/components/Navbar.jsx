@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import './Navbar.css';
 
 export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNavigate, onReportBugClick }) {
+  const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
 
@@ -66,7 +68,7 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
         </div>
       </div>
 
-      {/* ── Row 2: Blue nav links ── */}
+      {/* ── Row 2: Blue nav links & actions ── */}
       <div className="navbar-inner">
         <div className="navbar-links" role="menubar">
           {NAV_LINKS.map(link => (
@@ -85,24 +87,20 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
         </div>
 
         <div className="navbar-actions">
+          {/* Theme Toggle Button */}
+          <button
+            className="theme-toggle-btn nav-theme-toggle"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+            aria-label="Toggle theme mode"
+          >
+            {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+          </button>
+
           <button
             className="nav-bug-btn"
             onClick={onReportBugClick}
             title="Report a bug in the site"
-            style={{
-              background: 'rgba(244, 63, 94, 0.15)',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
-              color: '#fb7185',
-              padding: '0.45rem 0.85rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              marginRight: '0.5rem',
-            }}
           >
             🐛 Report Bug
           </button>
@@ -164,6 +162,17 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
               {link.href === '#calendar' ? '🗓️ ' : ''}{link.label}
             </a>
           ))}
+
+          <div style={{ display: 'flex', gap: '8px', margin: '0.75rem 0' }}>
+            <button
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              style={{ flex: 1, justifyContent: 'center', padding: '0.6rem' }}
+            >
+              {theme === 'light' ? '🌙 Switch to Dark Mode' : '☀️ Switch to Light Mode'}
+            </button>
+          </div>
+
           <button
             onClick={() => { setMenuOpen(false); onReportBugClick?.(); }}
             style={{
@@ -174,7 +183,7 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
               borderRadius: '8px',
               fontWeight: 600,
               width: '100%',
-              margin: '0.5rem 0',
+              margin: '0 0 0.5rem 0',
             }}
           >
             🐛 Report Bug in Site

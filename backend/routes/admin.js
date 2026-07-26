@@ -39,6 +39,76 @@ router.use((req, res, next) => {
   next();
 });
 
+// POST /api/admin/societies - Direct creation of a new society by Admin
+router.post('/societies', async (req, res) => {
+  try {
+    const {
+      name,
+      fullName,
+      category,
+      description,
+      vision,
+      mission,
+      logo,
+      banner,
+      facultyCoordinatorName,
+      facultyCoordinatorEmail,
+      studentCoordinatorName,
+      studentCoordinatorEmail,
+    } = req.body;
+
+    if (!name || !category || !description) {
+      return res.status(400).json({ message: 'Society Name, Category, and Description are required.' });
+    }
+
+    const facultyCoordObj = {
+      name: (facultyCoordinatorName || 'Assigned Faculty').trim(),
+      email: (facultyCoordinatorEmail || '').trim(),
+    };
+
+    const studentCoordObj = [{
+      name: (studentCoordinatorName || 'Student Lead').trim(),
+      email: (studentCoordinatorEmail || '').trim(),
+    }];
+
+    const newSociety = await societyModel.createSociety({
+      name: name.trim(),
+      fullName: (fullName || `${name} Society`).trim(),
+      category: category.trim(),
+      description: description.trim(),
+      vision: vision?.trim() || '',
+      mission: mission?.trim() || '',
+      logo: logo?.trim() || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=150',
+      banner: banner?.trim() || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800',
+      rating: 4.5,
+      facultyCoordinator: facultyCoordObj,
+      studentCoordinators: studentCoordObj,
+    });
+
+    // Create and auto-approve a registration record for tracking
+    try {
+      const reg = await adminModel.createSocietyRegistration({
+        societyName: name.trim(),
+        category: category.trim(),
+        description: description.trim(),
+        requestedByEmail: req.user.email || 'admin@bpit.ac.in',
+        requestedByName: req.user.name || 'Platform Admin',
+      });
+      if (reg?.id) {
+        await adminModel.updateSocietyRegistrationStatus(reg.id, 'approved');
+      }
+    } catch {}
+
+    res.status(201).json({
+      society: newSociety,
+      message: `Society "${name}" created and published successfully!`,
+    });
+  } catch (err) {
+    console.error('[/api/admin/societies POST]', err);
+    res.status(500).json({ message: err.message || 'Failed to create society.' });
+  }
+});
+
 // GET /api/admin/society-registrations - List pending/approved registrations
 router.get('/society-registrations', async (_req, res) => {
   try {

@@ -2,6 +2,8 @@
   position: relative;
   padding: 40px 0;
   overflow: hidden;
+  background: var(--bg-card);
+  transition: background 0.2s var(--ease);
 }
 
 .society-hero {
@@ -31,6 +33,7 @@
   justify-content: center;
   box-shadow: var(--shadow-md);
   flex-shrink: 0;
+  background: var(--bg-light);
 }
 
 .society-emoji {
@@ -62,8 +65,9 @@
 }
 
 .badge-founded {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--text-body);
+  background: var(--bg-light);
+  color: var(--text-dark);
+  border: 1px solid var(--border);
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 0.75rem;
@@ -74,7 +78,7 @@
   font-size: 2.2rem;
   font-weight: 800;
   margin: 8px 0;
-  color: var(--text-heading);
+  color: var(--text-dark);
 }
 
 .society-fullname {
@@ -106,7 +110,7 @@
 .stat-number {
   font-size: 1.6rem;
   font-weight: 700;
-  color: var(--text-heading);
+  color: var(--text-dark);
 }
 
 .stat-label {
@@ -128,8 +132,8 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   font-size: 1.2rem;
   text-decoration: none;
   transition: all 0.2s;
@@ -137,8 +141,9 @@
 }
 
 .social-link:hover {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.3);
+  background: var(--bpit-blue);
+  border-color: var(--bpit-blue);
+  color: #fff;
   transform: translateY(-2px);
 }
 

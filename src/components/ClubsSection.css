@@ -1,15 +1,13 @@
 .clubs-section {
   padding: 36px 0;
-  margin: 10px;
   background: var(--bg-section);
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   display: block;
   width: 100%;
+  transition: background 0.2s var(--ease);
 }
 
-
-/* ── Section Header (BPIT blue heading style) ── */
 .section-header {
   margin-bottom: 24px;
   display: block;
@@ -44,24 +42,22 @@
   gap: 12px;
   align-items: start;
   margin-bottom: 14px;
-  padding: 14px;
-  /* background: var(--bg-white); */
-  /* border: 1px solid var(--border); */
+  padding: 14px 0;
   border-radius: var(--r-lg);
-  /* box-shadow: var(--shadow-sm); */
 }
 
 .search-box {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-light);
+  background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 8px 14px;
   min-width: 240px;
   flex: 1;
-  max-width: 320px;
+  width: 100%;
+  max-width: 420px;
   transition: border-color 0.15s;
 }
 .search-box:focus-within { border-color: var(--bpit-blue); }
@@ -72,7 +68,7 @@
   border: none;
   outline: none;
   font-size: 0.86rem;
-  color: var(--text-body);
+  color: var(--text-dark);
   font-family: inherit;
 }
 .search-box input::placeholder { color: var(--text-muted); }
@@ -128,15 +124,13 @@
   gap: 16px;
 }
 
-/* Medium screens (tablets): 2 columns */
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .clubs-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Large screens (desktop): 3 columns */
-@media (min-width: 1200px) {
+@media (min-width: 1024px) {
   .clubs-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -146,9 +140,15 @@
 .club-card {
   position: relative;
   overflow: hidden;
-  transition: all 0.2s;
+  transition: all 0.2s var(--ease);
   border-radius: var(--r-lg);
-  background: var(--bg-white);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.club-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-blue);
 }
 
 .club-color-bar {
@@ -171,6 +171,7 @@
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
+  background: var(--bg-light);
 }
 .club-emoji-big { font-size: 1.8rem; position: relative; z-index: 1; }
 .club-img-placeholder { position: absolute; inset: 0; }
@@ -231,8 +232,6 @@
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
-
-/* ── Removed expanded content styles ── */
 
 /* Empty state */
 .clubs-empty {

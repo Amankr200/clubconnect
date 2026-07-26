@@ -7,18 +7,18 @@ export default function SocietyCoordinators({ society }) {
   const coordinators = [
     {
       id: 1,
-      name: society.coordinator,
+      name: society.coordinator || 'Faculty Lead',
       role: 'Faculty Coordinator',
       emoji: '👨‍🏫',
-      email: society.social.email,
+      email: society?.social?.email || 'faculty@bpit.ac.in',
       contact: '+91 XXXXXXXXXX'
     },
     {
       id: 2,
-      name: society.head,
+      name: society.head || 'Student Lead',
       role: 'Student Coordinator',
       emoji: '👨‍💼',
-      email: society.social.email,
+      email: society?.social?.email || 'student@bpit.ac.in',
       contact: '+91 XXXXXXXXXX'
     },
   ];

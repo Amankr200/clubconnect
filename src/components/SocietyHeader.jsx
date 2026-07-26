@@ -47,9 +47,15 @@ export default function SocietyHeader({ society }) {
 
           {/* Social Links */}
           <div className="society-social">
-            <a href={society.social.instagram} className="social-link" title="Instagram">📱</a>
-            <a href={society.social.linkedin} className="social-link" title="LinkedIn">💼</a>
-            <a href={`mailto:${society.social.email}`} className="social-link" title="Email">✉️</a>
+            {society?.social?.instagram && (
+              <a href={society.social.instagram} className="social-link" title="Instagram">📱</a>
+            )}
+            {society?.social?.linkedin && (
+              <a href={society.social.linkedin} className="social-link" title="LinkedIn">💼</a>
+            )}
+            {society?.social?.email && (
+              <a href={`mailto:${society.social.email}`} className="social-link" title="Email">✉️</a>
+            )}
           </div>
         </div>
       </div>

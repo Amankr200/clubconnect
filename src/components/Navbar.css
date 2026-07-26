@@ -3,20 +3,21 @@
   top: 34px;
   left: 0; right: 0;
   z-index: 900;
-  background: var(--bg-white);
+  background: var(--bg-navbar);
   border-bottom: 2px solid var(--bpit-blue);
-  box-shadow: 0 2px 8px rgba(26,58,139,0.1);
+  box-shadow: var(--shadow-sm);
+  transition: background 0.2s var(--ease), border-color 0.2s var(--ease);
 }
 
 /* Top BPIT identity bar */
 .navbar-identity {
-  background: var(--bg-white);
+  background: var(--bg-navbar);
   border-bottom: 1px solid var(--border);
   padding: 8px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -78,14 +79,15 @@
 
 /* Navigation bar row */
 .navbar-inner {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
-  height: 42px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bpit-blue);
+  background: var(--bg-subbar);
+  transition: background 0.2s var(--ease);
 }
 
 .navbar-links {
@@ -97,11 +99,11 @@
 
 .nav-link {
   text-decoration: none;
-  color: rgba(255,255,255,0.9);
-  font-size: 0.83rem;
+  color: rgba(255,255,255,0.92);
+  font-size: 0.85rem;
   font-weight: 500;
   padding: 0 16px;
-  height: 42px;
+  height: 44px;
   display: flex;
   align-items: center;
   border-right: 1px solid rgba(255,255,255,0.15);
@@ -113,7 +115,6 @@
   background: var(--bpit-maroon);
   color: #fff;
 }
-/* Clubs link gets a slightly lighter highlight to stand out */
 .nav-link-clubs {
   background: rgba(255,255,255,0.08);
   font-weight: 700;
@@ -130,10 +131,27 @@
   margin-left: 16px;
 }
 
+.nav-bug-btn {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fb7185;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.nav-bug-btn:hover {
+  background: rgba(244, 63, 94, 0.25);
+}
+
 .nav-login-btn {
-  background: var(--bg-white);
+  background: var(--bg-card);
   color: var(--bpit-blue);
-  border: none;
+  border: 1px solid var(--border);
   border-radius: var(--r-sm);
   padding: 6px 14px;
   font-size: 0.8rem;
@@ -145,7 +163,10 @@
   align-items: center;
   gap: 5px;
 }
-.nav-login-btn:hover { background: #FFE066; }
+.nav-login-btn:hover {
+  background: var(--bg-light);
+  box-shadow: var(--shadow-sm);
+}
 
 /* ── User Menu ── */
 .user-menu { position: relative; }
@@ -187,7 +208,7 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background: var(--bg-white);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   min-width: 200px;
@@ -199,7 +220,6 @@
 .dropdown-header { padding: 12px 14px 10px; background: var(--bg-light); border-bottom: 1px solid var(--border); }
 .dropdown-name { font-weight: 700; font-size: 0.9rem; color: var(--text-dark); }
 .dropdown-role { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-.dropdown-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
 
 .dropdown-item {
   display: block;
@@ -217,7 +237,7 @@
 }
 .dropdown-item:hover { background: var(--bg-light); color: var(--bpit-blue); }
 .dropdown-item.logout { color: var(--bpit-maroon); }
-.dropdown-item.logout:hover { background: #FFF0F0; }
+.dropdown-item.logout:hover { background: rgba(239,68,68,0.12); }
 
 /* ── Hamburger ── */
 .hamburger {
@@ -244,32 +264,35 @@
 .mobile-menu {
   display: none;
   flex-direction: column;
-  background: var(--bpit-blue);
+  background: var(--bg-subbar);
   border-top: 1px solid rgba(255,255,255,0.15);
   animation: fadeIn 0.15s var(--ease);
+  padding: 8px 14px 16px;
 }
 .mobile-nav-link {
   text-decoration: none;
-  color: rgba(255,255,255,0.9);
-  padding: 12px 20px;
+  color: rgba(255,255,255,0.92);
+  padding: 12px 14px;
   font-size: 0.9rem;
   font-weight: 500;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.mobile-nav-link:hover { background: var(--bpit-maroon); color: #fff; }
-.mobile-nav-clubs { font-weight: 700; background: rgba(255,255,255,0.06); }
-.mobile-actions { display: flex; gap: 10px; padding: 12px 20px; }
+.mobile-nav-link:hover { background: var(--bpit-maroon); color: #fff; border-radius: var(--r-sm); }
+.mobile-nav-clubs { font-weight: 700; background: rgba(255,255,255,0.06); border-radius: var(--r-sm); }
+.mobile-actions { display: flex; gap: 10px; padding: 12px 0 0; }
 .mobile-actions button { flex: 1; justify-content: center; }
 
-@media (max-width: 860px) {
+@media (max-width: 960px) {
   .navbar-links { display: none; }
   .hamburger { display: flex; }
   .mobile-menu { display: flex; }
-  .navbar-bpit-title { font-size: 0.85rem; }
+  .navbar-bpit-title { font-size: 0.88rem; }
   .user-name, .user-role-badge, .chevron { display: none; }
-  .navbar-platform-name { display: none; }
+  .nav-theme-toggle { display: none; } /* Show in mobile drawer menu instead */
 }
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .navbar-identity { padding: 6px 12px; }
-  .navbar-bpit-logo-box { width: 40px; height: 40px; font-size: 0.7rem; }
+  .navbar-bpit-logo-box { width: 38px; height: 38px; font-size: 0.68rem; }
+  .navbar-bpit-subtitle { display: none; }
+  .navbar-platform-name { display: none; }
 }

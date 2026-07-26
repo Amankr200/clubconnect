@@ -34,6 +34,7 @@
   padding: 4px 2px 12px;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 .stories-track::-webkit-scrollbar { display: none; }
 
@@ -42,11 +43,11 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--bg-white);
+  background: var(--bg-card);
   border: 1px solid var(--border-blue);
   color: var(--bpit-blue);
   border-radius: 50%;
-  width: 30px; height: 30px;
+  width: 32px; height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,7 +89,7 @@
   background: linear-gradient(135deg, var(--story-color, var(--bpit-blue)), var(--bpit-maroon));
 }
 .seen .story-avatar-ring {
-  background: linear-gradient(135deg, #AAAAAA, #CCCCCC);
+  background: linear-gradient(135deg, #666666, #999999);
 }
 
 .story-avatar {
@@ -98,8 +99,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2.5px solid var(--bg-white);
-  background: var(--bg-light2);
+  border: 2.5px solid var(--bg-card);
+  background: var(--bg-light);
   position: relative;
 }
 
@@ -112,13 +113,13 @@
   width: 10px; height: 10px;
   background: #22AA22;
   border-radius: 50%;
-  border: 2px solid var(--bg-white);
+  border: 2px solid var(--bg-card);
 }
 
 .story-club-name {
   font-size: 0.68rem;
   font-weight: 600;
-  color: var(--text-body);
+  color: var(--text-dark);
   max-width: 64px;
   text-align: center;
   white-space: nowrap;
