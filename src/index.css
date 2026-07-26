@@ -124,7 +124,7 @@ body {
 }
 .btn-outline:hover {
   background: var(--bpit-blue);
-  color: #fff;
+  /* color: #fff; */
 }
 
 .btn-maroon {

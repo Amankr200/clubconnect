@@ -49,7 +49,6 @@ async function initDb() {
       CREATE TABLE IF NOT EXISTS venues (
         id INT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
-        capacity INT NOT NULL,
         type VARCHAR(100) NOT NULL,
         location VARCHAR(255) NOT NULL,
         is_active BOOLEAN DEFAULT TRUE,
@@ -97,8 +96,8 @@ async function initDb() {
         time_slots JSONB NOT NULL,
         event_name VARCHAR(255) NOT NULL,
         host_club VARCHAR(255) NOT NULL,
-        photo TEXT NOT NULL,
-        photo_file_name VARCHAR(255) NOT NULL,
+        photo TEXT,
+        photo_file_name VARCHAR(255),
         description TEXT NOT NULL,
         eligibility TEXT NOT NULL,
         attendance VARCHAR(100) NOT NULL,

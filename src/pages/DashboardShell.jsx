@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
-import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking } from '../api/venueBookings.js';
+import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import './DashboardShell.css';
 
@@ -13,6 +13,11 @@ export default function DashboardShell({ onNavigateHome }) {
   const [inbox, setInbox] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
   const [selectedNotes, setSelectedNotes] = useState({});
+  const [selectedPhotoBookingId, setSelectedPhotoBookingId] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [photoFileName, setPhotoFileName] = useState('');
+  const [photoUpdateError, setPhotoUpdateError] = useState('');
+  const [photoUpdateSaving, setPhotoUpdateSaving] = useState(false);
 
   // Admin Data States
   const [societyRegs, setSocietyRegs] = useState([]);
@@ -31,6 +36,8 @@ export default function DashboardShell({ onNavigateHome }) {
   });
 
   const [expandedBookingIds, setExpandedBookingIds] = useState(new Set());
+  const MAX_PHOTO_SIZE_MB = 5;
+  const MAX_PHOTO_SIZE_BYTES = MAX_PHOTO_SIZE_MB * 1024 * 1024;
 
   const toggleExpandBooking = (id) => {
     setExpandedBookingIds((prev) => {
@@ -39,6 +46,83 @@ export default function DashboardShell({ onNavigateHome }) {
       else next.add(id);
       return next;
     });
+  };
+
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const canUpdatePhoto = (booking) => booking.status === 'approved' && String(booking.date || '') >= getTodayDate();
+
+  const handleApprovedBookingClick = (booking) => {
+    if (!canUpdatePhoto(booking)) {
+      return;
+    }
+
+    setSelectedPhotoBookingId((prev) => (prev === booking.id ? null : booking.id));
+    setPhotoPreview('');
+    setPhotoFileName('');
+    setPhotoUpdateError('');
+  };
+
+  const handlePhotoSelection = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setPhotoPreview('');
+      setPhotoFileName('');
+      setPhotoUpdateError('');
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      setPhotoPreview('');
+      setPhotoFileName('');
+      setPhotoUpdateError(`Photo must be ${MAX_PHOTO_SIZE_MB} MB or smaller.`);
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotoPreview(String(reader.result || ''));
+      setPhotoFileName(file.name);
+      setPhotoUpdateError('');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoUpdate = async () => {
+    const booking = myRequests.find((item) => item.id === selectedPhotoBookingId);
+    if (!booking) {
+      return;
+    }
+
+    if (!photoPreview) {
+      setPhotoUpdateError('Choose a new photo before saving.');
+      return;
+    }
+
+    setPhotoUpdateSaving(true);
+    setPhotoUpdateError('');
+
+    try {
+      await updateVenueBookingPhoto(token, booking.id, {
+        photo: photoPreview,
+        photoFileName,
+      });
+      setSelectedPhotoBookingId(null);
+      setPhotoPreview('');
+      setPhotoFileName('');
+      await refreshData();
+    } catch (error) {
+      setPhotoUpdateError(error.message || 'Failed to update photo. Please try again.');
+    } finally {
+      setPhotoUpdateSaving(false);
+    }
   };
 
   // 24h Story Publishing State
@@ -259,10 +343,10 @@ export default function DashboardShell({ onNavigateHome }) {
           {user?.role === 'student_coordinator' && (
             <>
               <button className={`dash-tab-btn ${activeTab === 'my_bookings' ? 'active' : ''}`} onClick={() => setActiveTab('my_bookings')}>
-                📅 My Venue Requests
+                📅 My Event Requests
               </button>
-              <button className="dash-tab-btn active" onClick={() => setIsVenueModalOpen(true)}>
-                ➕ Request Venue Booking
+              <button className="dash-tab-btn" onClick={() => { setSelectedPhotoBookingId(null); setIsVenueModalOpen(true); }}>
+                ➕ Request Event Approval
               </button>
               <button className={`dash-tab-btn ${activeTab === 'story' ? 'active' : ''}`} onClick={() => setActiveTab('story')}>
                 📸 Publish 24h Story
@@ -382,7 +466,6 @@ export default function DashboardShell({ onNavigateHome }) {
                   <tr>
                     <th>ID</th>
                     <th>Venue Name</th>
-                    <th>Capacity</th>
                     <th>Type</th>
                     <th>Location</th>
                     <th>Current Status</th>
@@ -394,7 +477,6 @@ export default function DashboardShell({ onNavigateHome }) {
                     <tr key={v.id}>
                       <td>#{v.id}</td>
                       <td><strong>{v.name}</strong></td>
-                      <td>{v.capacity} seats</td>
                       <td>{v.type}</td>
                       <td>{v.location}</td>
                       <td>
@@ -843,7 +925,7 @@ export default function DashboardShell({ onNavigateHome }) {
                             </div>
 
                             <div>
-                              <strong style={{ color: '#6366f1' }}>Expected Attendance:</strong>
+                              <strong style={{ color: '#6366f1' }}>Attendance Link:</strong>
                               <div style={{ color: '#cbd5e1' }}>{booking.attendance || 'N/A'}</div>
                             </div>
 
@@ -925,11 +1007,11 @@ export default function DashboardShell({ onNavigateHome }) {
           </div>
         )}
 
-        {/* ── STUDENT: My Venue Requests ── */}
+        {/* ── STUDENT: My Event Requests ── */}
         {user?.role === 'student_coordinator' && activeTab === 'my_bookings' && (
           <div className="dash-card">
-            <h2 className="dash-card-title">📅 My Venue Requests &amp; Status</h2>
-            <p className="dash-card-subtitle">Track venue booking requests sent to faculty coordinators and principal.</p>
+            <h2 className="dash-card-title">📅 My Event Requests &amp; Status</h2>
+            <p className="dash-card-subtitle">Track event approval requests sent to faculty coordinators and principal.</p>
 
             <div className="dash-table-wrapper">
               <table className="dash-table">
@@ -945,30 +1027,121 @@ export default function DashboardShell({ onNavigateHome }) {
                 </thead>
                 <tbody>
                   {myRequests.length > 0 ? (
-                    myRequests.map((b) => (
-                      <tr key={b.id}>
-                        <td><strong>{b.eventName}</strong></td>
-                        <td>Venue #{b.venueId}</td>
-                        <td>{b.date}</td>
-                        <td>{b.timeSlots?.[0]?.startTime} - {b.timeSlots?.[0]?.endTime}</td>
-                        <td>
-                          <span style={{ color: b.status === 'approved' ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
-                            {b.status}
-                          </span>
-                        </td>
-                        <td>
-                          {b.status === 'revision_requested' && (
-                            <button className="btn-action-primary" onClick={() => handleResubmit(b)}>
-                              Resubmit Request
-                            </button>
+                    myRequests.map((b) => {
+                      const isPhotoPanelOpen = selectedPhotoBookingId === b.id && canUpdatePhoto(b);
+
+                      return (
+                        <React.Fragment key={b.id}>
+                          <tr
+                            onClick={() => handleApprovedBookingClick(b)}
+                            style={{ cursor: canUpdatePhoto(b) ? 'pointer' : 'default' }}
+                          >
+                            <td><strong>{b.eventName}</strong></td>
+                            <td>Venue #{b.venueId}</td>
+                            <td>{b.date}</td>
+                            <td>{b.timeSlots?.[0]?.startTime} - {b.timeSlots?.[0]?.endTime}</td>
+                            <td>
+                              <span style={{ color: b.status === 'approved' ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
+                                {b.status}
+                              </span>
+                            </td>
+                            <td>
+                              {b.status === 'revision_requested' && (
+                                <button
+                                  className="btn-action-primary"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleResubmit(b);
+                                  }}
+                                >
+                                  Resubmit Request
+                                </button>
+                              )}
+                              {canUpdatePhoto(b) && b.status === 'approved' && (
+                                <button
+                                  className="btn-action-primary"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleApprovedBookingClick(b);
+                                  }}
+                                >
+                                  Update Photo
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+
+                          {isPhotoPanelOpen && (
+                            <tr>
+                              <td colSpan="6">
+                                <div style={{ display: 'grid', gap: '0.85rem', padding: '1rem', borderRadius: '12px', background: 'rgba(15, 23, 42, 0.55)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <div>
+                                      <div style={{ fontWeight: 700, color: '#fff' }}>Update approved event photo</div>
+                                      <div style={{ color: '#94a3b8', fontSize: '0.86rem' }}>This option is available because the booking is approved and scheduled for today or later.</div>
+                                    </div>
+                                    <button
+                                      className="btn-action-primary"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        handlePhotoUpdate();
+                                      }}
+                                      disabled={photoUpdateSaving}
+                                    >
+                                      {photoUpdateSaving ? 'Saving...' : 'Save Photo Update'}
+                                    </button>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                                    {b.photo && (
+                                      <div style={{ display: 'grid', gap: '0.4rem' }}>
+                                        <span style={{ color: '#cbd5e1', fontSize: '0.84rem', fontWeight: 600 }}>Current photo</span>
+                                        <img src={b.photo} alt={b.photoFileName || b.eventName} style={{ width: '100%', maxWidth: '280px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.08)' }} />
+                                      </div>
+                                    )}
+
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.45rem', fontWeight: 600 }} htmlFor={`photo-update-${b.id}`}>
+                                        Choose replacement photo
+                                      </label>
+                                      <input
+                                        id={`photo-update-${b.id}`}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handlePhotoSelection}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                        }}
+                                        style={{ width: '100%' }}
+                                      />
+                                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.35rem' }}>
+                                        Max photo size: {MAX_PHOTO_SIZE_MB} MB
+                                      </div>
+                                    </div>
+
+                                    {photoPreview && (
+                                      <div style={{ display: 'grid', gap: '0.35rem' }}>
+                                        <span style={{ color: '#cbd5e1', fontSize: '0.84rem', fontWeight: 600 }}>New photo preview</span>
+                                        <img src={photoPreview} alt={photoFileName || 'Selected new photo'} style={{ width: '100%', maxWidth: '280px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.08)' }} />
+                                        {photoFileName && <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{photoFileName}</span>}
+                                      </div>
+                                    )}
+
+                                    {photoUpdateError && (
+                                      <div style={{ color: '#fca5a5', fontSize: '0.84rem' }}>{photoUpdateError}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                      </tr>
-                    ))
+                        </React.Fragment>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan="6" style={{ textAlign: 'center', color: '#94a3b8' }}>
-                        No venue requests submitted yet. Click "Request Venue Booking" above!
+                        No event approval requests submitted yet. Click "Request Event Approval" above!
                       </td>
                     </tr>
                   )}
@@ -1047,6 +1220,7 @@ export default function DashboardShell({ onNavigateHome }) {
       <VenueBookingModal
         isOpen={isVenueModalOpen}
         token={token}
+        booking={null}
         onClose={() => setIsVenueModalOpen(false)}
         onBookingSuccess={async () => {
           setIsVenueModalOpen(false);

@@ -9,7 +9,7 @@ export default function CreateEventModal({ society, onClose, onCreateEvent }) {
     time: '',
     location: '',
     eventType: 'Technical',
-    capacity: '',
+    // capacity: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -37,7 +37,7 @@ export default function CreateEventModal({ society, onClose, onCreateEvent }) {
     if (!formData.date) newErrors.date = 'Date is required';
     if (!formData.time) newErrors.time = 'Time is required';
     if (!formData.location.trim()) newErrors.location = 'Location is required';
-    if (!formData.capacity || formData.capacity <= 0) newErrors.capacity = 'Capacity must be greater than 0';
+    // if (!formData.capacity || formData.capacity <= 0) newErrors.capacity = 'Capacity must be greater than 0';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -97,6 +97,7 @@ export default function CreateEventModal({ society, onClose, onCreateEvent }) {
               </select>
             </label>
 
+            {/*
             <label className="form-label">
               Expected Capacity
               <input
@@ -109,6 +110,7 @@ export default function CreateEventModal({ society, onClose, onCreateEvent }) {
               />
               {errors.capacity && <span className="form-error">{errors.capacity}</span>}
             </label>
+            */}
           </div>
 
           <div className="form-row">

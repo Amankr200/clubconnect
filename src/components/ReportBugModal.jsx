@@ -86,7 +86,7 @@ export default function ReportBugModal({ isOpen, onClose }) {
               <input
                 type="text"
                 className="bug-form-input"
-                placeholder="e.g. Venue booking calendar doesn't load on Safari"
+                placeholder="e.g. Event calendar doesn't load on Safari"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}

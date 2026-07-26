@@ -254,16 +254,19 @@ export default function CalendarPage() {
                         style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', borderRadius: '10px', marginBottom: '8px' }}
                       />
                     )}
-                    <small>{event.description}</small>
+                    {/* <small>{event.description}</small> */}
                     <small>Location: {event.location}</small>
-                    <small>Eligibility: {event.extendedProps?.eligibility || '—'}</small>
-                    <small>Student Coordinators: {event.extendedProps?.studentCoordinators || '—'}</small>
                     {event.start && event.end && !event.allDay && (
                       <small>
                         Duration: {new Date(`${event.start}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(`${event.end}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </small>
                     )}
-                    {event.allDay && <small>Duration: All day</small>}
+                    {/* <small>Description: {event.extendedProps?.descriptionText || '—'}</small> */}
+                    <small>Eligibility: {event.extendedProps?.eligibility || '—'}</small>
+                    <small>Student Coordinators: {event.extendedProps?.studentCoordinators || '—'}</small>
+                    {/* <small>Registration Link: {renderBookingDetailValue(event.extendedProps?.attendance)}</small>
+                    <small>Feedback Link: {renderBookingDetailValue(event.extendedProps?.feedback)}</small> */}
+                    {event.allDay && <small>All day</small>}
                   </div>
                 ))}
               </div>

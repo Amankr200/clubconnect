@@ -121,7 +121,6 @@ function ClubCard({ club, onNavigateSociety }) {
             <span className="badge badge-blue">
               {club.category}
             </span>
-            <span className="club-founded">Est. {club.founded}</span>
           </div>
 
           <h3 className="club-name">{club.name}</h3>

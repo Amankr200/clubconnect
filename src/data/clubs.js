@@ -236,7 +236,7 @@ export const clubs = [
     fullName: "Kalam – Literary Society",
     category: "Cultural",
     tagline: "Words That Move the World",
-    description: "Literary society named after Dr. APJ Abdul Kalam. Organizes debates, poetry slams, creative writing workshops, MUNs, and the annual literary fest.",
+    description: "Kalam is 'Pen' in Hindi. Organizes debates, poetry slams, creative writing workshops, MUNs, and the annual literary fest.",
     color: "#0EA5E9",
     gradFrom: "#0C4A6E",
     gradTo:   "#0EA5E9",
