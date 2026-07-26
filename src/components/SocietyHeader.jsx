@@ -27,7 +27,6 @@ export default function SocietyHeader({ society }) {
         <div className="society-info">
           <div className="society-meta">
             <span className="badge badge-category">{society.category}</span>
-            <span className="badge badge-founded">Est. {society.founded}</span>
           </div>
 
           <h1 className="society-name">{society.name}</h1>

@@ -18,10 +18,6 @@ export default function Navbar({ onLoginClick, user, onLogout, currentPage, onNa
       onNavigate('calendar');
       return;
     }
-    if (href === '#venues') {
-      onNavigate('venues');
-      return;
-    }
     // For home-page anchors
     if (currentPage !== 'home') {
       onNavigate('home');

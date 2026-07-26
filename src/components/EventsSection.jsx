@@ -110,7 +110,7 @@ export default function EventsSection({ onLoginClick }) {
           <div className="evt-stat-div" />
           <div className="evt-stat">
             <span className="evt-stat-num">{allEvents.reduce((a, e) => a + e.rsvp, 0)}+</span>
-            <span className="evt-stat-label">Total RSVPs</span>
+            <span className="evt-stat-label">Total Registrations</span>
           </div>
         </div>
 
@@ -200,12 +200,13 @@ export default function EventsSection({ onLoginClick }) {
                     <span className="edv">{event.venue}</span>
                   </div>
                   <div className="event-detail-item">
-                    <span className="edl">👥 RSVPs</span>
+                    <span className="edl">👥 SIGN-UPS</span>
                     <span className="edv">{event.rsvp + (isRsvpd ? 1 : 0)} registered</span>
                   </div>
                 </div>
 
                 {/* RSVP progress bar */}
+                {/*
                 <div className="rsvp-bar-wrap">
                   <div className="rsvp-bar-label">
                     <span>RSVP Progress</span>
@@ -221,18 +222,19 @@ export default function EventsSection({ onLoginClick }) {
                     />
                   </div>
                 </div>
+                */}
 
                 {/* Actions */}
                 <div className="event-actions">
                   <button
                     className={`rsvp-btn ${isRsvpd ? 'rsvpd' : ''}`}
-                    onClick={() => handleRsvp(event.id, event.status)}
-                    id={`rsvp-${event.id}`}
+                    onClick={onLoginClick}
+                    // id={`rsvp-${event.id}`}
                     style={!isRsvpd ? { background: event.color, borderColor: event.color } : {}}
                   >
-                    {isRsvpd ? '✅ RSVP\'d!' : '🎟️ RSVP Now'}
+                    Register Here
                   </button>
-                  <button className="btn-outline event-details-btn" onClick={onLoginClick}>
+                  <button className="btn-outline event-details-btn">
                     View Details
                   </button>
                 </div>
@@ -243,7 +245,7 @@ export default function EventsSection({ onLoginClick }) {
 
         {/* Load more / view all */}
         <div className="events-footer-row">
-          <button className="btn-primary" onClick={onLoginClick} id="view-all-events">
+          <button className="btn-primary" id="view-all-events">
             📅 View All Events &amp; History
           </button>
           <button className="btn-outline" onClick={onLoginClick}>
