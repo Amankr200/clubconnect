@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './StoryViewer.css';
+import { clubs } from '../data/clubs';
 
 const STORY_DURATION = 5000;
 
-export default function StoryViewer({ story, slides, onClose, allStories, onNavigate }) {
+function getClubIdForStory(story) {
+  const normalizedName = (story.clubName || '').toLowerCase();
+  const match = clubs.find((club) => {
+    const clubName = String(club.name || '').toLowerCase();
+    const clubFullName = String(club.fullName || '').toLowerCase();
+    return clubName === normalizedName || clubFullName.includes(normalizedName);
+  });
+  return match?.id || null;
+}
+
+export default function StoryViewer({ story, slides, onClose, allStories, onNavigate, onViewClub }) {
   const [slideIdx, setSlideIdx] = useState(0);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -134,7 +145,17 @@ export default function StoryViewer({ story, slides, onClose, allStories, onNavi
           <div className="sv-slide-emoji">{slide.emoji}</div>
           <h2 className="sv-headline">{slide.headline}</h2>
           <p className="sv-sub">{slide.sub}</p>
-          <button className="sv-cta" onClick={onClose}>
+          <button
+            className="sv-cta"
+            onClick={() => {
+              const clubId = getClubIdForStory(story);
+              if (clubId && onViewClub) {
+                onViewClub(clubId);
+              } else {
+                onClose();
+              }
+            }}
+          >
             View Club Profile →
           </button>
         </div>
