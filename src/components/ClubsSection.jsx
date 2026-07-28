@@ -53,6 +53,7 @@ function normalizeSociety(s, idx) {
 export default function ClubsSection({ onNavigateSociety }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
   const [allClubs, setAllClubs] = useState(staticClubs);
 
   useEffect(() => {
@@ -88,6 +89,11 @@ export default function ClubsSection({ onNavigateSociety }) {
     return matchCat && matchSearch;
   });
 
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    return a.fullName.localeCompare(b.fullName, undefined, { sensitivity: 'base' }) * direction;
+  });
+
   return (
     <section className="clubs-section" id="clubs" aria-label="Clubs Directory">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -116,6 +122,26 @@ export default function ClubsSection({ onNavigateSociety }) {
             {search && (
               <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear search">✕</button>
             )}
+          </div>
+          <div className="sort-controls" role="group" aria-label="Sort societies">
+            <button
+              type="button"
+              className={`sort-btn ${sortDirection === 'asc' ? 'active' : ''}`}
+              onClick={() => setSortDirection('asc')}
+              aria-pressed={sortDirection === 'asc'}
+              aria-label="Sort societies A to Z"
+            >
+              A‑Z ↑
+            </button>
+            <button
+              type="button"
+              className={`sort-btn ${sortDirection === 'desc' ? 'active' : ''}`}
+              onClick={() => setSortDirection('desc')}
+              aria-pressed={sortDirection === 'desc'}
+              aria-label="Sort societies Z to A"
+            >
+              Z‑A ↓
+            </button>
           </div>
           <div className="category-tabs" role="tablist" aria-label="Club categories">
             {categories.map(cat => (
@@ -150,7 +176,7 @@ export default function ClubsSection({ onNavigateSociety }) {
           </div>
         ) : (
           <div className="clubs-grid">
-            {filtered.map(club => (
+            {sortedFiltered.map(club => (
               <ClubCard
                 key={club.id}
                 club={club}
@@ -168,8 +194,8 @@ function ClubCard({ club, onNavigateSociety }) {
   const catColor = {
     Technical: '#3B82F6',
     Cultural: '#EC4899',
-    'Social Service': '#10B981',
-    Entrepreneurship: '#F59E0B',
+    'Social & Environment': '#10B981',
+    'Research & Innovation': '#F59E0B',
   }[club.category] || '#8B5CF6';
 
   return (
@@ -184,9 +210,11 @@ function ClubCard({ club, onNavigateSociety }) {
       <div className="club-card-inner">
         {/* Avatar */}
         <div className="club-avatar" style={{ background: `linear-gradient(135deg, ${club.gradFrom}, ${club.gradTo})` }}>
-          <span className="club-emoji-big">{club.emoji}</span>
-          {/* Leave image space */}
-          <div className="club-img-placeholder" title="Club image coming soon" />
+          {club.logo ? (
+            <img className="club-avatar-image" src={club.logo} alt={`${club.name} logo`} />
+          ) : (
+            <span className="club-emoji-big">{club.emoji}</span>
+          )}
         </div>
 
         {/* Info */}

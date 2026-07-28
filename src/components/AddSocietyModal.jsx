@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import './AddSocietyModal.css';
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || '');
+    reader.onerror = () => reject(new Error('Unable to read selected file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreated }) {
   const [name, setName] = useState('');
   const [fullName, setFullName] = useState('');
@@ -12,8 +21,10 @@ export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreat
   const [facultyEmail, setFacultyEmail] = useState('');
   const [studentName, setStudentName] = useState('');
   const [studentEmail, setStudentEmail] = useState('');
-  const [logo, setLogo] = useState('');
-  const [banner, setBanner] = useState('');
+  const [logoFile, setLogoFile] = useState(null);
+  const [bannerFile, setBannerFile] = useState(null);
+  const [logoFileName, setLogoFileName] = useState('');
+  const [bannerFileName, setBannerFileName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,8 +55,8 @@ export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreat
         facultyCoordinatorEmail: facultyEmail.trim(),
         studentCoordinatorName: studentName.trim(),
         studentCoordinatorEmail: studentEmail.trim(),
-        logo: logo.trim(),
-        banner: banner.trim(),
+        logo: logoFile ? await readFileAsDataUrl(logoFile) : '',
+        banner: bannerFile ? await readFileAsDataUrl(bannerFile) : '',
       };
 
       let response = await fetch('/api/societies', {
@@ -102,8 +113,10 @@ export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreat
         setFacultyEmail('');
         setStudentName('');
         setStudentEmail('');
-        setLogo('');
-        setBanner('');
+        setLogoFile(null);
+        setBannerFile(null);
+        setLogoFileName('');
+        setBannerFileName('');
         setSuccessMsg('');
         setIsSubmitting(false);
         onClose();
@@ -152,6 +165,7 @@ export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreat
                 <option value="Sports">Sports</option>
                 <option value="Literary">Literary</option>
                 <option value="Social & Environment">Social &amp; Environment</option>
+                <option value="Innovation & Research">Innovation &amp; Research</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -254,25 +268,45 @@ export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreat
 
           <div className="add-society-grid-2">
             <div className="add-society-form-group">
-              <label className="add-society-form-label">Logo Image URL (Optional)</label>
+              <label className="add-society-form-label">Upload Logo (PNG only)</label>
               <input
-                type="url"
+                type="file"
                 className="add-society-form-input"
-                placeholder="https://..."
-                value={logo}
-                onChange={(e) => setLogo(e.target.value)}
+                accept="image/png"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (file && file.type !== 'image/png') {
+                    setErrorMsg('Please choose a PNG file for the logo.');
+                    e.target.value = '';
+                    return;
+                  }
+                  setErrorMsg('');
+                  setLogoFile(file);
+                  setLogoFileName(file ? file.name : '');
+                }}
               />
+              {logoFileName && <small className="add-society-form-hint">Selected: {logoFileName}</small>}
             </div>
 
             <div className="add-society-form-group">
-              <label className="add-society-form-label">Banner Image URL (Optional)</label>
+              <label className="add-society-form-label">Upload Banner (PNG only)</label>
               <input
-                type="url"
+                type="file"
                 className="add-society-form-input"
-                placeholder="https://..."
-                value={banner}
-                onChange={(e) => setBanner(e.target.value)}
+                accept="image/png"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (file && file.type !== 'image/png') {
+                    setErrorMsg('Please choose a PNG file for the banner.');
+                    e.target.value = '';
+                    return;
+                  }
+                  setErrorMsg('');
+                  setBannerFile(file);
+                  setBannerFileName(file ? file.name : '');
+                }}
               />
+              {bannerFileName && <small className="add-society-form-hint">Selected: {bannerFileName}</small>}
             </div>
           </div>
 

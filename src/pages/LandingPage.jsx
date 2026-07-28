@@ -118,7 +118,7 @@ const FEATURES = [
 ];
 
 const ABOUT_CARDS = [
-  { icon: '🏛️', color: '#EFF6FF', title: '20+ Active Societies', desc: 'Technical, Cultural, Sports, Social & Entrepreneurship clubs' },
+  { icon: '🏛️', color: '#EFF6FF', title: '20+ Active Societies', desc: 'Technical, Cultural, Sports, Social & Research & Innovation clubs' },
   { icon: '📅', color: '#F0FDF4', title: '100+ Events Per Year', desc: 'Workshops, hackathons, fests, cultural nights & more' },
   { icon: '🏆', color: '#FFFBEB', title: 'Digital Certificates', desc: 'Auto-generated, verifiable participation records' },
   { icon: '🔐', color: '#FFF1F2', title: 'Role-Based Access', desc: 'Secure login for students, faculty, HODs & administration' },

@@ -6,54 +6,54 @@ import { getApprovedVenueBookings } from '../api/venueBookings.js';
 import { venues } from '../data/venues.js';
 
 const CALENDAR_EVENTS_STATIC = [
-  {
-    title: 'Club Orientation',
-    start: '2026-06-03T10:00:00',
-    end: '2026-06-03T12:00:00',
-    description: 'Meet the society leads and explore campus clubs.',
-    location: 'Main Auditorium',
-    color: '#2563eb'
-  },
-  {
-    title: 'Hackathon Sprint',
-    start: '2026-06-07',
-    allDay: true,
-    description: 'A full-day innovation challenge open to all students.',
-    location: 'Innovation Lab',
-    color: '#7c3aed'
-  },
-  {
-    title: 'Cultural Fest Rehearsal',
-    start: '2026-06-14T18:00:00',
-    end: '2026-06-14T21:00:00',
-    description: 'Final rehearsal for the evening showcase.',
-    location: 'Open Air Theatre',
-    color: '#0f766e'
-  },
-  {
-    title: 'Dean Approval Review',
-    start: '2026-06-21T15:00:00',
-    description: 'Review upcoming student society proposals.',
-    location: 'Conference Room',
-    color: '#dc2626'
-  },
-  {
-    title: 'Campus Career Fair',
-    start: '2026-06-28T09:30:00',
-    end: '2026-06-28T16:00:00',
-    description: 'Industry partners and placement opportunities.',
-    location: 'Sports Complex',
-    color: '#ea580c'
-  },
-  {
-    title: 'Summer Meetup',
-    start: '2026-07-05',
-    allDay: true,
-    eligibility: 'Open to all members of the society.',
-    description: 'Informal get-together for all club members.',
-    location: 'Cafeteria Terrace',
-    color: '#16a34a'
-  }
+//   {
+//     title: 'Club Orientation',
+//     start: '2026-06-03T10:00:00',
+//     end: '2026-06-03T12:00:00',
+//     description: 'Meet the society leads and explore campus clubs.',
+//     location: 'Main Auditorium',
+//     color: '#2563eb'
+//   },
+//   {
+//     title: 'Hackathon Sprint',
+//     start: '2026-06-07',
+//     allDay: true,
+//     description: 'A full-day innovation challenge open to all students.',
+//     location: 'Innovation Lab',
+//     color: '#7c3aed'
+//   },
+//   {
+//     title: 'Cultural Fest Rehearsal',
+//     start: '2026-06-14T18:00:00',
+//     end: '2026-06-14T21:00:00',
+//     description: 'Final rehearsal for the evening showcase.',
+//     location: 'Open Air Theatre',
+//     color: '#0f766e'
+//   },
+//   {
+//     title: 'Dean Approval Review',
+//     start: '2026-06-21T15:00:00',
+//     description: 'Review upcoming student society proposals.',
+//     location: 'Conference Room',
+//     color: '#dc2626'
+//   },
+//   {
+//     title: 'Campus Career Fair',
+//     start: '2026-06-28T09:30:00',
+//     end: '2026-06-28T16:00:00',
+//     description: 'Industry partners and placement opportunities.',
+//     location: 'Sports Complex',
+//     color: '#ea580c'
+//   },
+//   {
+//     title: 'Summer Meetup',
+//     start: '2026-07-05',
+//     allDay: true,
+//     eligibility: 'Open to all members of the society.',
+//     description: 'Informal get-together for all club members.',
+//     location: 'Cafeteria Terrace',
+//     color: '#16a34a'
+//   }
 ];
 
 function formatDateLabel(value) {
@@ -296,15 +296,15 @@ export default function CalendarPage() {
                       />
                     )}
                     {/* <small>{event.description}</small> */}
-                    <small>Location: {event.location}</small>
+                    <small><b>Location:</b> {event.location}</small>
                     {event.start && event.end && !event.allDay && (
                       <small>
-                        Duration: {new Date(`${event.start}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(`${event.end}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        <b>Duration:</b> {new Date(`${event.start}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(`${event.end}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </small>
                     )}
                     {/* <small>Description: {event.extendedProps?.descriptionText || '—'}</small> */}
-                    <small>Eligibility: {event.extendedProps?.eligibility || '—'}</small>
-                    <small>Student Coordinators: {event.extendedProps?.studentCoordinators || '—'}</small>
+                    <small><b>Eligibility:</b> {event.extendedProps?.eligibility || '—'}</small>
+                    <small><b>Student Coordinators:</b> {event.extendedProps?.studentCoordinators || '—'}</small>
                     {/* <small>Registration Link: {renderBookingDetailValue(event.extendedProps?.attendance)}</small>
                     <small>Feedback Link: {renderBookingDetailValue(event.extendedProps?.feedback)}</small> */}
                     {event.allDay && <small>All day</small>}

@@ -82,9 +82,21 @@ async function updateSociety(name, updates) {
   const values = [];
   let idx = 1;
 
+  if (updates.fullName !== undefined) {
+    setClauses.push(`full_name = $${idx++}`);
+    values.push(updates.fullName);
+  }
   if (updates.description !== undefined) {
     setClauses.push(`description = $${idx++}`);
     values.push(updates.description);
+  }
+  if (updates.vision !== undefined) {
+    setClauses.push(`vision = $${idx++}`);
+    values.push(updates.vision);
+  }
+  if (updates.mission !== undefined) {
+    setClauses.push(`mission = $${idx++}`);
+    values.push(updates.mission);
   }
   if (updates.banner !== undefined) {
     setClauses.push(`banner = $${idx++}`);

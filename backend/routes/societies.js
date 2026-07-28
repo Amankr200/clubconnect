@@ -58,8 +58,8 @@ router.post('/', requireAuth, async (req, res) => {
       description: description.trim(),
       vision: vision?.trim() || '',
       mission: mission?.trim() || '',
-      logo: logo?.trim() || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=150',
-      banner: banner?.trim() || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800',
+      logo: String(logo || '').trim() || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=150',
+      banner: String(banner || '').trim() || 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800',
       rating: 4.5,
       facultyCoordinator: facultyCoordObj,
       studentCoordinators: studentCoordObj,
@@ -93,9 +93,12 @@ router.patch('/:name', requireAuth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to edit society details.' });
     }
 
-    const { description, banner, logo, rating, facultyCoordinator, studentCoordinators } = req.body;
+    const { fullName, description, vision, mission, banner, logo, rating, facultyCoordinator, studentCoordinators } = req.body;
     const updated = await societyModel.updateSociety(req.params.name, {
+      fullName,
       description,
+      vision,
+      mission,
       banner,
       logo,
       rating,

@@ -14,7 +14,7 @@ export default function CreateEventModal({ society, onClose, onCreateEvent }) {
 
   const [errors, setErrors] = useState({});
 
-  const eventTypes = ['Technical', 'Cultural', 'Entrepreneurship', 'Social Service', 'Competition'];
+  const eventTypes = ['Technical', 'Cultural', 'Research & Innovation', 'Social & Environment', 'Competition'];
 
   const handleChange = (e) => {
     const { name, value } = e.target;

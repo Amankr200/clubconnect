@@ -12,9 +12,9 @@ const STATUS_MAP = {
 const EVENT_TYPE_ICONS = {
   Competition: '🏆',
   Cultural: '🎭',
-  Entrepreneurship: '🚀',
+  'Research & Innovation': '🚀',
   Technical: '💻',
-  'Social Service': '🤝',
+  'Social & Environment': '🤝',
 };
 
 function getVenueName(venueId) {
@@ -38,7 +38,7 @@ export default function EventsSection({ onLoginClick }) {
       .catch(() => {});
   }, []);
 
-  const filters = ['All', 'Technical', 'Cultural', 'Entrepreneurship', 'Social Service', 'Competition'];
+  const filters = ['All', 'Technical', 'Cultural', 'Research & Innovation', 'Social & Environment', 'Competition'];
 
   // Convert live approved venue bookings to event card format
   const liveApprovedEvents = approvedBookings.map((b) => ({

@@ -422,7 +422,7 @@ export default function VenueBookingModal({
           </div>
 
           <div className="booking-form-group">
-            <label htmlFor="photo">Photo Upload</label>
+            <label htmlFor="photo">Poster Upload</label>
             <input
               id="photo"
               type="file"
