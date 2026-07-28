@@ -32,10 +32,22 @@ export const ROLE_META = {
     description: 'Department event approval, coordinator assignments & department analytics',
   },
   principal_dean: {
-    label:       'Principal / Dean',
+    label:       'Principal',
     emoji:       '🎓',
-    color:       '#3B82F6',
+    color:       '#1A3A8B',
     description: 'Institutional final approvals and overall college & society analytics',
+  },
+  dean: {
+    label:       'Dean',
+    emoji:       '📋',
+    color:       '#2550B8',
+    description: 'Academic affairs oversight, department coordination & policy management',
+  },
+  student: {
+    label:       'Student',
+    emoji:       '🎒',
+    color:       '#06B6D4',
+    description: 'Browse clubs, RSVP for events & view participation records',
   },
 };
 

@@ -296,3 +296,253 @@
   .navbar-bpit-subtitle { display: none; }
   .navbar-platform-name { display: none; }
 }
+
+/* ══════════════════════════════════════════════════
+   PROFILE AVATAR BUTTON + DROPDOWN — Navbar
+══════════════════════════════════════════════════ */
+
+/* Wrapper */
+.nav-profile-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Avatar pill button */
+.nav-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.14);
+  border: 1.5px solid rgba(255,255,255,0.35);
+  border-radius: 999px;
+  padding: 3px 12px 3px 3px;
+  cursor: pointer;
+  font-family: inherit;
+  color: #fff;
+  transition: all 0.2s ease;
+}
+.nav-profile-btn:hover {
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.55);
+}
+
+/* Avatar circle with initials */
+.nav-profile-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Name text */
+.nav-profile-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Caret */
+.nav-profile-caret {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.75);
+  transition: transform 0.25s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Dropdown Panel ── */
+.nav-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.06);
+  z-index: 1000;
+  overflow: hidden;
+  animation: navDropIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes navDropIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Identity block */
+.npd-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 18px 14px;
+}
+
+.npd-avatar-lg {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.npd-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.npd-name {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 190px;
+}
+
+.npd-email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 190px;
+}
+
+.npd-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.71rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* Divider */
+.npd-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+}
+
+/* ── Open My Dashboard CTA ── */
+.npd-dashboard-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: var(--role-color, #1A3A8B);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: left;
+  transition: filter 0.18s ease;
+  position: relative;
+}
+.npd-dashboard-btn:hover {
+  filter: brightness(1.10);
+}
+.npd-dashboard-arrow {
+  margin-left: auto;
+  font-size: 1rem;
+  opacity: 0.8;
+  transition: transform 0.2s ease;
+}
+.npd-dashboard-btn:hover .npd-dashboard-arrow {
+  transform: translateX(4px);
+}
+
+/* Section label */
+.npd-section-label {
+  padding: 9px 18px 3px;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Actions list */
+.npd-actions-list {
+  padding: 4px 8px;
+}
+
+.npd-action-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+.npd-action-item:hover {
+  background: var(--bg-light);
+  color: var(--text-dark);
+}
+.npd-action-icon {
+  font-size: 1rem;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Logout item */
+.npd-logout { color: var(--bpit-maroon); margin-bottom: 4px; }
+.npd-logout:hover { background: rgba(239,68,68,0.10) !important; color: var(--bpit-maroon-light) !important; }
+
+/* Responsive */
+@media (max-width: 960px) {
+  .nav-profile-name { display: none; }
+  .nav-profile-dropdown { min-width: 270px; }
+}
+
+@media (max-width: 480px) {
+  .nav-profile-dropdown {
+    min-width: calc(100vw - 24px);
+    right: -8px;
+  }
+  .npd-name, .npd-email { max-width: 160px; }
+}
+

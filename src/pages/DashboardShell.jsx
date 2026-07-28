@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
@@ -158,13 +158,15 @@ export default function DashboardShell({ onNavigateHome }) {
     else if (user?.role === 'faculty_coordinator') setActiveTab('approvals');
     else if (user?.role === 'hod') setActiveTab('dept_approvals');
     else if (user?.role === 'principal_dean') setActiveTab('final_approvals');
+    else if (user?.role === 'dean') setActiveTab('dean_overview');
+    else if (user?.role === 'student') setActiveTab('student_overview');
   }, [user?.role]);
 
   // Fetch role-specific backend data
   const refreshData = async () => {
     if (!token) return;
 
-    if (['faculty_coordinator', 'hod', 'principal_dean'].includes(user?.role)) {
+    if (['faculty_coordinator', 'hod', 'principal_dean', 'dean'].includes(user?.role)) {
       getVenueBookingInbox(token).then((data) => setInbox(data.bookings || [])).catch(() => {});
     }
 
@@ -294,6 +296,65 @@ export default function DashboardShell({ onNavigateHome }) {
     refreshData();
   };
 
+  // ── Profile dropdown state ──
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    if (!profileOpen) return;
+    const handleClick = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [profileOpen]);
+
+  // Get initials from user name
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  };
+
+  // Quick-action tabs per role for the profile dropdown
+  const roleQuickActions = {
+    admin: [
+      { icon: '🏛️', label: 'Society Registrations', tab: 'registrations' },
+      { icon: '📍', label: 'Venue Availability', tab: 'venues' },
+      { icon: '🐛', label: 'Bug Reports', tab: 'bugs' },
+      { icon: '📅', label: 'Weekly Events', tab: 'weekly' },
+    ],
+    student_coordinator: [
+      { icon: '📅', label: 'My Event Requests', tab: 'my_bookings' },
+      { icon: '📸', label: 'Publish 24h Story', tab: 'story' },
+    ],
+    faculty_coordinator: [
+      { icon: '📋', label: 'Pending Approvals', tab: 'approvals' },
+      { icon: '🏛️', label: 'Edit Society Page', tab: 'edit_society' },
+      { icon: '📊', label: 'History & Analytics', tab: 'analytics' },
+      { icon: '📸', label: 'Publish 24h Story', tab: 'story' },
+    ],
+    hod: [
+      { icon: '📋', label: 'Department Approvals', tab: 'dept_approvals' },
+      { icon: '👥', label: 'Assign Coordinators', tab: 'assign' },
+      { icon: '📈', label: 'Department Analytics', tab: 'dept_analytics' },
+    ],
+    principal_dean: [
+      { icon: '🎓', label: 'Final Approvals Queue', tab: 'final_approvals' },
+      { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
+    ],
+    dean: [
+      { icon: '🎓', label: 'Dean Overview', tab: 'dean_overview' },
+      { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
+    ],
+    student: [
+      { icon: '🎒', label: 'Student Overview', tab: 'student_overview' },
+    ],
+  };
+  const quickActions = roleQuickActions[user?.role] || [];
+
   return (
     <div className="dashboard-root" style={{ '--role-color': meta.color }}>
       {/* Glassmorphic Topbar */}
@@ -309,27 +370,94 @@ export default function DashboardShell({ onNavigateHome }) {
         </div>
 
         <div className="dash-topbar-right">
+          {/* Theme Toggle */}
           <button
             className="theme-toggle-btn"
             onClick={toggleTheme}
             title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
-            style={{ marginRight: '4px' }}
           >
             {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
           </button>
 
-          <div className="dash-user-info">
-            <span className="dash-user-name">{user?.name}</span>
-            <span className="dash-user-email">{user?.email}</span>
+          {/* ── Profile Avatar + Dropdown ── */}
+          <div className="dash-profile-wrap" ref={profileRef}>
+            <button
+              className="dash-profile-avatar-btn"
+              onClick={() => setProfileOpen(v => !v)}
+              aria-expanded={profileOpen}
+              aria-label="Open user profile"
+              id="profile-avatar-btn"
+              style={{ '--role-color': meta.color }}
+            >
+              <span className="dash-avatar-initials" style={{ background: meta.color }}>
+                {getInitials(user?.name)}
+              </span>
+              <span className="dash-avatar-caret" style={{ transform: profileOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+            </button>
+
+            {/* Dropdown Panel */}
+            {profileOpen && (
+              <div className="dash-profile-dropdown" role="menu">
+                {/* User Identity */}
+                <div className="dash-pd-identity">
+                  <div className="dash-pd-avatar-lg" style={{ background: meta.color }}>
+                    {getInitials(user?.name)}
+                  </div>
+                  <div className="dash-pd-info">
+                    <span className="dash-pd-name">{user?.name}</span>
+                    <span className="dash-pd-email">{user?.email}</span>
+                    <span className="dash-pd-role-badge" style={{ background: `${meta.color}18`, color: meta.color, border: `1px solid ${meta.color}40` }}>
+                      {meta.emoji} {meta.label}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="dash-pd-divider" />
+
+                {/* Quick Actions */}
+                {quickActions.length > 0 && (
+                  <>
+                    <div className="dash-pd-section-label">Quick Actions</div>
+                    <div className="dash-pd-actions">
+                      {quickActions.map((action) => (
+                        <button
+                          key={action.tab}
+                          className="dash-pd-action-btn"
+                          onClick={() => { setActiveTab(action.tab); setProfileOpen(false); }}
+                          role="menuitem"
+                        >
+                          <span className="dash-pd-action-icon">{action.icon}</span>
+                          <span>{action.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="dash-pd-divider" />
+                  </>
+                )}
+
+                {/* Navigation & Auth */}
+                <div className="dash-pd-actions">
+                  <button
+                    className="dash-pd-action-btn"
+                    onClick={() => { onNavigateHome(); setProfileOpen(false); }}
+                    role="menuitem"
+                  >
+                    <span className="dash-pd-action-icon">🏠</span>
+                    <span>Back to Landing</span>
+                  </button>
+                  <button
+                    className="dash-pd-action-btn dash-pd-action-logout"
+                    onClick={() => { logout(); setProfileOpen(false); }}
+                    role="menuitem"
+                    id="profile-logout-btn"
+                  >
+                    <span className="dash-pd-action-icon">🚪</span>
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-
-          <button className="dash-nav-btn" onClick={onNavigateHome}>
-            🏠 Main Landing Page
-          </button>
-
-          <button className="dash-logout-btn" onClick={logout}>
-            🚪 Sign Out
-          </button>
         </div>
       </header>
 
@@ -418,6 +546,27 @@ export default function DashboardShell({ onNavigateHome }) {
               </button>
             </>
           )}
+
+          {/* ── Dean Tabs ── */}
+          {user?.role === 'dean' && (
+            <>
+              <button className={`dash-tab-btn ${activeTab === 'dean_overview' ? 'active' : ''}`} onClick={() => setActiveTab('dean_overview')}>
+                📋 Dean Overview
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
+                🏛️ College Analytics
+              </button>
+            </>
+          )}
+
+          {/* ── Student Tabs ── */}
+          {user?.role === 'student' && (
+            <>
+              <button className={`dash-tab-btn ${activeTab === 'student_overview' ? 'active' : ''}`} onClick={() => setActiveTab('student_overview')}>
+                🎒 My Student Overview
+              </button>
+            </>
+          )}
         </div>
 
         {/* ── ADMIN: Society Registrations ── */}
@@ -468,7 +617,7 @@ export default function DashboardShell({ onNavigateHome }) {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', color: '#94a3b8' }}>
+                      <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                         No pending society registrations found.
                       </td>
                     </tr>
@@ -548,7 +697,7 @@ export default function DashboardShell({ onNavigateHome }) {
                         <td><strong>{bug.title}</strong></td>
                         <td>{bug.description}</td>
                         <td>{bug.userEmail}</td>
-                        <td><span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{bug.pageUrl || 'Landing Page'}</span></td>
+                        <td><span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{bug.pageUrl || 'Landing Page'}</span></td>
                         <td>
                           <span style={{ color: bug.status === 'open' ? '#f43f5e' : '#10b981', fontWeight: 600 }}>
                             {bug.status}
@@ -566,7 +715,7 @@ export default function DashboardShell({ onNavigateHome }) {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', color: '#94a3b8' }}>No bug reports found.</td>
+                      <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No bug reports found.</td>
                     </tr>
                   )}
                 </tbody>
@@ -610,7 +759,7 @@ export default function DashboardShell({ onNavigateHome }) {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', color: '#94a3b8' }}>No upcoming events scheduled for this week.</td>
+                      <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No upcoming events scheduled for this week.</td>
                     </tr>
                   )}
                 </tbody>
@@ -629,24 +778,24 @@ export default function DashboardShell({ onNavigateHome }) {
 
             <form onSubmit={handlePublishStory} style={{ maxWidth: '600px' }}>
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Story Headline / Title</label>
+                <label className="dash-field-label">Story Headline / Title</label>
                 <input
                   type="text"
+                  className="dash-input"
                   placeholder="e.g. Hackathon 2026 Round 1 Results Out!"
                   required
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                   value={storyTitle}
                   onChange={(e) => setStoryTitle(e.target.value)}
                 />
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Media Image URL</label>
+                <label className="dash-field-label">Media Image URL</label>
                 <input
                   type="url"
+                  className="dash-input"
                   placeholder="https://images.unsplash.com/photo-..."
                   required
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                   value={storyMediaUrl}
                   onChange={(e) => setStoryMediaUrl(e.target.value)}
                 />
@@ -667,38 +816,42 @@ export default function DashboardShell({ onNavigateHome }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Society Full Name</label>
+                <label className="dash-field-label">Society Full Name</label>
                 <input
                   type="text"
+                  className="dash-input"
                   value={mySociety.fullName}
                   onChange={(e) => setMySociety({ ...mySociety, fullName: e.target.value })}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', marginBottom: '1rem' }}
+                  style={{ marginBottom: '1rem' }}
                 />
 
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Society Description</label>
+                <label className="dash-field-label">Society Description</label>
                 <textarea
+                  className="dash-textarea"
                   value={mySociety.description}
                   onChange={(e) => setMySociety({ ...mySociety, description: e.target.value })}
                   rows="4"
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', marginBottom: '1rem' }}
+                  style={{ marginBottom: '1rem' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Banner Image URL</label>
+                <label className="dash-field-label">Banner Image URL</label>
                 <input
                   type="url"
+                  className="dash-input"
                   value={mySociety.banner}
                   onChange={(e) => setMySociety({ ...mySociety, banner: e.target.value })}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', marginBottom: '1rem' }}
+                  style={{ marginBottom: '1rem' }}
                 />
 
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Logo URL</label>
+                <label className="dash-field-label">Logo URL</label>
                 <input
                   type="url"
+                  className="dash-input"
                   value={mySociety.logo}
                   onChange={(e) => setMySociety({ ...mySociety, logo: e.target.value })}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', marginBottom: '1rem' }}
+                  style={{ marginBottom: '1rem' }}
                 />
               </div>
             </div>
@@ -800,11 +953,11 @@ export default function DashboardShell({ onNavigateHome }) {
 
             <div style={{ maxWidth: '500px' }}>
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Department / Society</label>
+                <label className="dash-field-label">Department / Society</label>
                 <select
                   value={assignDept}
                   onChange={(e) => setAssignDept(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                  className="dash-select"
                 >
                   <option value="CSE">Computer Science &amp; Engineering (CSE)</option>
                   <option value="IT">Information Technology (IT)</option>
@@ -813,22 +966,22 @@ export default function DashboardShell({ onNavigateHome }) {
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Assigned Faculty Coordinator</label>
+                <label className="dash-field-label">Assigned Faculty Coordinator</label>
                 <input
                   type="text"
                   value={assignFaculty}
                   onChange={(e) => setAssignFaculty(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                  className="dash-input"
                 />
               </div>
 
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 600 }}>Assigned Student Coordinator</label>
+                <label className="dash-field-label">Assigned Student Coordinator</label>
                 <input
                   type="text"
                   value={assignStudent}
                   onChange={(e) => setAssignStudent(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                  className="dash-input"
                 />
               </div>
 
@@ -855,26 +1008,17 @@ export default function DashboardShell({ onNavigateHome }) {
                 {inbox.map((booking) => {
                   const isExpanded = expandedBookingIds.has(booking.id);
                   return (
-                    <div
-                      key={booking.id}
-                      style={{
-                        background: 'rgba(30, 41, 59, 0.6)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '16px',
-                        padding: '1.5rem',
-                        transition: 'border-color 0.2s ease',
-                      }}
-                    >
+                    <div key={booking.id} className="dash-booking-card">
                       {/* Top Summary Header */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: '#fff' }}>{booking.eventName}</h3>
+                            <h3 className="dash-booking-title">{booking.eventName}</h3>
                             <span
                               style={{
                                 background: 'rgba(245, 158, 11, 0.15)',
                                 border: '1px solid rgba(245, 158, 11, 0.3)',
-                                color: '#fbbf24',
+                                color: '#d97706',
                                 padding: '0.2rem 0.6rem',
                                 borderRadius: '9999px',
                                 fontSize: '0.78rem',
@@ -884,7 +1028,7 @@ export default function DashboardShell({ onNavigateHome }) {
                               ⏳ {booking.status}
                             </span>
                           </div>
-                          <div style={{ color: '#94a3b8', fontSize: '0.88rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                          <div className="dash-booking-meta">
                             <span>🏛️ <strong>Host Club:</strong> {booking.hostClub}</span>
                             <span>📍 <strong>Venue ID:</strong> #{booking.venueId}</span>
                             <span>📅 <strong>Date &amp; Time:</strong> {booking.date} ({booking.timeSlots?.[0]?.startTime} - {booking.timeSlots?.[0]?.endTime})</span>
@@ -894,16 +1038,7 @@ export default function DashboardShell({ onNavigateHome }) {
 
                         <button
                           onClick={() => toggleExpandBooking(booking.id)}
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.08)',
-                            border: '1px solid rgba(255, 255, 255, 0.15)',
-                            color: '#cbd5e1',
-                            padding: '0.45rem 0.85rem',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontWeight: 600,
-                          }}
+                          className="dash-btn-outline"
                         >
                           {isExpanded ? '▲ Hide Details' : '👁️ View Full Details'}
                         </button>
@@ -912,26 +1047,17 @@ export default function DashboardShell({ onNavigateHome }) {
                       {/* Expandable Details Section */}
                       {isExpanded && (
                         <div
-                          style={{
-                            marginTop: '1.25rem',
-                            paddingTop: '1.25rem',
-                            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                            display: 'grid',
-                            gridTemplateColumns: booking.photo ? '180px 1fr' : '1fr',
-                            gap: '1.5rem',
-                            background: 'rgba(15, 23, 42, 0.5)',
-                            padding: '1.25rem',
-                            borderRadius: '12px',
-                          }}
+                          className="dash-booking-details-box"
+                          style={{ gridTemplateColumns: booking.photo ? '180px 1fr' : '1fr' }}
                         >
                           {booking.photo && (
                             <div>
                               <img
                                 src={booking.photo}
                                 alt={booking.photoFileName || 'Event Poster'}
-                                style={{ width: '100%', borderRadius: '10px', objectFit: 'cover', maxHeight: '200px', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                                style={{ width: '100%', borderRadius: '10px', objectFit: 'cover', maxHeight: '200px', border: '1px solid var(--border)' }}
                               />
-                              <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.35rem', textAlign: 'center' }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem', textAlign: 'center' }}>
                                 📄 {booking.photoFileName || 'Poster'}
                               </div>
                             </div>
@@ -939,34 +1065,34 @@ export default function DashboardShell({ onNavigateHome }) {
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.88rem' }}>
                             <div style={{ gridColumn: 'span 2' }}>
-                              <strong style={{ color: '#6366f1' }}>Description:</strong>
-                              <p style={{ margin: '0.25rem 0 0 0', color: '#e2e8f0', lineHeight: '1.5' }}>{booking.description || 'No description provided.'}</p>
+                              <strong style={{ color: 'var(--bpit-blue)' }}>Description:</strong>
+                              <p style={{ margin: '0.25rem 0 0 0', color: 'var(--text-body)', lineHeight: '1.5' }}>{booking.description || 'No description provided.'}</p>
                             </div>
 
                             <div>
-                              <strong style={{ color: '#6366f1' }}>Eligibility:</strong>
-                              <div style={{ color: '#cbd5e1' }}>{booking.eligibility || 'Open'}</div>
+                              <strong style={{ color: 'var(--bpit-blue)' }}>Eligibility:</strong>
+                              <div style={{ color: 'var(--text-secondary)' }}>{booking.eligibility || 'Open'}</div>
                             </div>
 
                             <div>
-                              <strong style={{ color: '#6366f1' }}>Attendance Link:</strong>
-                              <div style={{ color: '#cbd5e1' }}>{booking.attendance || 'N/A'}</div>
+                              <strong style={{ color: 'var(--bpit-blue)' }}>Attendance Link:</strong>
+                              <div style={{ color: 'var(--text-secondary)' }}>{booking.attendance || 'N/A'}</div>
                             </div>
 
                             <div>
-                              <strong style={{ color: '#6366f1' }}>Student Coordinators:</strong>
-                              <div style={{ color: '#cbd5e1' }}>{booking.studentCoordinators || 'N/A'}</div>
+                              <strong style={{ color: 'var(--bpit-blue)' }}>Student Coordinators:</strong>
+                              <div style={{ color: 'var(--text-secondary)' }}>{booking.studentCoordinators || 'N/A'}</div>
                             </div>
 
                             <div>
-                              <strong style={{ color: '#6366f1' }}>Feedback &amp; QR Link:</strong>
-                              <div style={{ color: '#cbd5e1' }}>{booking.feedback || 'N/A'}</div>
+                              <strong style={{ color: 'var(--bpit-blue)' }}>Feedback &amp; QR Link:</strong>
+                              <div style={{ color: 'var(--text-secondary)' }}>{booking.feedback || 'N/A'}</div>
                             </div>
 
                             {booking.reviewTrail && booking.reviewTrail.length > 0 && (
-                              <div style={{ gridColumn: 'span 2', marginTop: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px' }}>
-                                <strong style={{ color: '#f59e0b' }}>Review History &amp; Previous Notes:</strong>
-                                <ul style={{ margin: '0.35rem 0 0 1rem', padding: 0, fontSize: '0.82rem', color: '#94a3b8' }}>
+                              <div className="dash-trail-box">
+                                <strong style={{ color: '#d97706' }}>Review History &amp; Previous Notes:</strong>
+                                <ul className="dash-trail-list">
                                   {booking.reviewTrail.map((trail, idx) => (
                                     <li key={idx}>
                                       <strong>{trail.role}</strong> [{trail.decision}]: "{trail.notes || 'No notes'}" — {new Date(trail.reviewedAt).toLocaleString()}
@@ -980,26 +1106,17 @@ export default function DashboardShell({ onNavigateHome }) {
                       )}
 
                       {/* Review Remarks Textarea & Decision Action Row */}
-                      <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 600, marginBottom: '0.4rem' }}>
+                      <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+                        <label className="dash-field-label">
                           ✏️ Decision Remarks / Notes for Requester (Write reason for disallowing or revision requirements here)
                         </label>
                         <textarea
                           rows="2"
+                          className="dash-textarea"
                           placeholder="e.g. Disallowed due to time conflict with CSE Dept Seminar. Please change slot to afternoon."
                           value={selectedNotes[booking.id] || ''}
                           onChange={(e) => setSelectedNotes((prev) => ({ ...prev, [booking.id]: e.target.value }))}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            borderRadius: '10px',
-                            background: 'rgba(15, 23, 42, 0.8)',
-                            border: '1px solid rgba(255, 255, 255, 0.15)',
-                            color: '#fff',
-                            fontSize: '0.9rem',
-                            outline: 'none',
-                            marginBottom: '0.85rem',
-                          }}
+                          style={{ marginBottom: '0.85rem' }}
                         />
 
                         <div style={{ display: 'flex', gap: '0.85rem' }}>
@@ -1024,7 +1141,7 @@ export default function DashboardShell({ onNavigateHome }) {
                 })}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '3rem 1rem', background: 'rgba(30, 41, 59, 0.4)', borderRadius: '12px' }}>
+              <div className="dash-empty-state">
                 🎉 No pending venue approvals currently awaiting your review!
               </div>
             )}
@@ -1099,11 +1216,11 @@ export default function DashboardShell({ onNavigateHome }) {
                           {isPhotoPanelOpen && (
                             <tr>
                               <td colSpan="6">
-                                <div style={{ display: 'grid', gap: '0.85rem', padding: '1rem', borderRadius: '12px', background: 'rgba(15, 23, 42, 0.55)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                <div style={{ display: 'grid', gap: '0.85rem', padding: '1rem', borderRadius: '12px', background: 'var(--bg-light)', border: '1px solid var(--border)' }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                     <div>
-                                      <div style={{ fontWeight: 700, color: '#fff' }}>Update approved event photo</div>
-                                      <div style={{ color: '#94a3b8', fontSize: '0.86rem' }}>This option is available because the booking is approved and scheduled for today or later.</div>
+                                      <div style={{ fontWeight: 700, color: 'var(--text-dark)' }}>Update approved event photo</div>
+                                      <div style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>This option is available because the booking is approved and scheduled for today or later.</div>
                                     </div>
                                     <button
                                       className="btn-action-primary"
@@ -1120,13 +1237,13 @@ export default function DashboardShell({ onNavigateHome }) {
                                   <div style={{ display: 'grid', gap: '0.75rem' }}>
                                     {b.photo && (
                                       <div style={{ display: 'grid', gap: '0.4rem' }}>
-                                        <span style={{ color: '#cbd5e1', fontSize: '0.84rem', fontWeight: 600 }}>Current photo</span>
-                                        <img src={b.photo} alt={b.photoFileName || b.eventName} style={{ width: '100%', maxWidth: '280px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.08)' }} />
+                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', fontWeight: 600 }}>Current photo</span>
+                                        <img src={b.photo} alt={b.photoFileName || b.eventName} style={{ width: '100%', maxWidth: '280px', borderRadius: '10px', objectFit: 'cover', border: '1px solid var(--border)' }} />
                                       </div>
                                     )}
 
                                     <div>
-                                      <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.45rem', fontWeight: 600 }} htmlFor={`photo-update-${b.id}`}>
+                                      <label className="dash-field-label" htmlFor={`photo-update-${b.id}`}>
                                         Choose replacement photo
                                       </label>
                                       <input
@@ -1139,21 +1256,21 @@ export default function DashboardShell({ onNavigateHome }) {
                                         }}
                                         style={{ width: '100%' }}
                                       />
-                                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.35rem' }}>
+                                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
                                         Max photo size: {MAX_PHOTO_SIZE_MB} MB
                                       </div>
                                     </div>
 
                                     {photoPreview && (
                                       <div style={{ display: 'grid', gap: '0.35rem' }}>
-                                        <span style={{ color: '#cbd5e1', fontSize: '0.84rem', fontWeight: 600 }}>New photo preview</span>
-                                        <img src={photoPreview} alt={photoFileName || 'Selected new photo'} style={{ width: '100%', maxWidth: '280px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.08)' }} />
-                                        {photoFileName && <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{photoFileName}</span>}
+                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', fontWeight: 600 }}>New photo preview</span>
+                                        <img src={photoPreview} alt={photoFileName || 'Selected new photo'} style={{ width: '100%', maxWidth: '280px', borderRadius: '10px', objectFit: 'cover', border: '1px solid var(--border)' }} />
+                                        {photoFileName && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{photoFileName}</span>}
                                       </div>
                                     )}
 
                                     {photoUpdateError && (
-                                      <div style={{ color: '#fca5a5', fontSize: '0.84rem' }}>{photoUpdateError}</div>
+                                      <div style={{ color: '#ef4444', fontSize: '0.84rem' }}>{photoUpdateError}</div>
                                     )}
                                   </div>
                                 </div>
@@ -1165,7 +1282,7 @@ export default function DashboardShell({ onNavigateHome }) {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center', color: '#94a3b8' }}>
+                      <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 1rem' }}>
                         No event approval requests submitted yet. Click "Request Event Approval" above!
                       </td>
                     </tr>
@@ -1233,6 +1350,131 @@ export default function DashboardShell({ onNavigateHome }) {
                       <td>1,850 Students</td>
                       <td>⭐ 4.9 / 5.0</td>
                     </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── DEAN: Overview Panel ── */}
+        {user?.role === 'dean' && activeTab === 'dean_overview' && (
+          <div>
+            <div className="dash-analytics-grid">
+              <div className="dash-stat-box">
+                <span className="dash-stat-label">Pending Policy Reviews</span>
+                <span className="dash-stat-value">7 Items</span>
+                <span className="dash-stat-desc">Requires your sign-off</span>
+              </div>
+              <div className="dash-stat-box">
+                <span className="dash-stat-label">Academic Events This Term</span>
+                <span className="dash-stat-value">34 Events</span>
+                <span className="dash-stat-desc">Across all departments</span>
+              </div>
+              <div className="dash-stat-box">
+                <span className="dash-stat-label">Active Societies</span>
+                <span className="dash-stat-value">20 Clubs</span>
+                <span className="dash-stat-desc">In 5 categories</span>
+              </div>
+              <div className="dash-stat-box">
+                <span className="dash-stat-label">Student Participation</span>
+                <span className="dash-stat-value">2,400+</span>
+                <span className="dash-stat-desc">Students actively engaged</span>
+              </div>
+            </div>
+            <div className="dash-card">
+              <h2 className="dash-card-title">📋 Dean — Academic Affairs Overview</h2>
+              <p className="dash-card-subtitle">
+                Logged in as <strong>Dr. Sunita Verma</strong> · Academic Affairs Department ·{' '}
+                <span style={{ color: '#2550B8', fontWeight: 700 }}>Dean</span>
+              </p>
+              <div className="dash-table-wrapper">
+                <table className="dash-table">
+                  <thead>
+                    <tr>
+                      <th>Department</th>
+                      <th>Events Conducted</th>
+                      <th>HOD</th>
+                      <th>Approval Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { dept: 'CSE', events: 12, hod: 'Dr. A. Gupta', status: '✅ All Approved' },
+                      { dept: 'ECE', events: 8, hod: 'Dr. R. Mehta', status: '⏳ 2 Pending' },
+                      { dept: 'ME',  events: 5, hod: 'Prof. S. Kumar', status: '✅ All Approved' },
+                      { dept: 'Civil', events: 3, hod: 'Dr. P. Sharma', status: '❌ 1 Rejected' },
+                    ].map((row, i) => (
+                      <tr key={i}>
+                        <td><strong>{row.dept}</strong></td>
+                        <td>{row.events} Events</td>
+                        <td>{row.hod}</td>
+                        <td>{row.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── STUDENT: Overview Panel ── */}
+        {user?.role === 'student' && activeTab === 'student_overview' && (
+          <div>
+            <div className="dash-analytics-grid">
+              <div className="dash-stat-box">
+                <span className="dash-stat-label">Club Memberships</span>
+                <span className="dash-stat-value">3 Clubs</span>
+                <span className="dash-stat-desc">ACM, Rotaract, IEEE</span>
+              </div>
+              <div className="dash-stat-box">
+                <span className="dash-stat-label">Events Attended</span>
+                <span className="dash-stat-value">11 Events</span>
+                <span className="dash-stat-desc">This academic year</span>
+              </div>
+              <div className="dash-stat-box">
+                <span className="dash-stat-label">Certificates Earned</span>
+                <span className="dash-stat-value">4 Certs</span>
+                <span className="dash-stat-desc">Verified & downloadable</span>
+              </div>
+              <div className="dash-stat-box">
+                <span className="dash-stat-label">Upcoming RSVPs</span>
+                <span className="dash-stat-value">2 Events</span>
+                <span className="dash-stat-desc">Registered this week</span>
+              </div>
+            </div>
+
+            <div className="dash-card">
+              <h2 className="dash-card-title">🎒 Your Activity Feed</h2>
+              <p className="dash-card-subtitle">
+                Logged in as <strong>{user?.name}</strong> · {user?.department} ·{' '}
+                <span style={{ color: '#06B6D4', fontWeight: 700 }}>Regular Student</span>
+              </p>
+              <div className="dash-table-wrapper">
+                <table className="dash-table">
+                  <thead>
+                    <tr>
+                      <th>Event</th>
+                      <th>Club</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { event: 'ACM Hackathon 2026', club: 'ACM', date: 'Aug 15', status: '🎟️ RSVP Done' },
+                      { event: 'Rangmanch Drama Fest', club: 'Rotaract', date: 'Aug 22', status: '🎟️ RSVP Done' },
+                      { event: 'IEEE AI Workshop', club: 'IEEE', date: 'Sep 5', status: '⏳ Upcoming' },
+                      { event: 'Startup Pitch Night', club: 'E-Cell', date: 'Sep 12', status: '📋 Registered' },
+                    ].map((row, i) => (
+                      <tr key={i}>
+                        <td><strong>{row.event}</strong></td>
+                        <td>{row.club}</td>
+                        <td>{row.date}</td>
+                        <td>{row.status}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
