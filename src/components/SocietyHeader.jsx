@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './SocietyHeader.css';
 
 export default function SocietyHeader({ society }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [society?.logo]);
+
   if (!society) return null;
+
+  const showLogo = Boolean(society.logo) && !imageFailed;
 
   return (
     <section className="society-header" style={{
@@ -20,7 +28,15 @@ export default function SocietyHeader({ society }) {
         <div className="society-logo" style={{
           background: `linear-gradient(135deg, ${society.gradFrom}, ${society.gradTo})`
         }}>
-          <span className="society-emoji">{society.emoji}</span>
+          {showLogo ? (
+            <img
+              className="society-logo-image"
+              src={society.logo}
+              alt={`${society.name} logo`}
+              onError={() => setImageFailed(true)}
+            />
+          ) : null}
+          <span className="society-emoji" style={{ display: showLogo ? 'none' : 'block' }}>{society.emoji}</span>
         </div>
 
         {/* Info */}

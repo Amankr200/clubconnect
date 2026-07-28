@@ -133,7 +133,7 @@
   font-family: inherit;
 }
 .cat-tab:hover { border-color: var(--bpit-blue); color: var(--bpit-blue); }
-.cat-tab.active {
+..active {
   background: var(--bpit-blue);
   border-color: var(--bpit-blue);
   color: #fff;
@@ -204,8 +204,13 @@
   overflow: hidden;
   background: var(--bg-light);
 }
+.club-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .club-emoji-big { font-size: 1.8rem; position: relative; z-index: 1; }
-.club-img-placeholder { position: absolute; inset: 0; }
 
 .club-info { flex: 1; min-width: 0; }
 .club-meta-row {

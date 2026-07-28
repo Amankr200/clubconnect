@@ -194,8 +194,8 @@ function ClubCard({ club, onNavigateSociety }) {
   const catColor = {
     Technical: '#3B82F6',
     Cultural: '#EC4899',
-    'Social Service': '#10B981',
-    Entrepreneurship: '#F59E0B',
+    'Social & Environment': '#10B981',
+    'Research & Innovation': '#F59E0B',
   }[club.category] || '#8B5CF6';
 
   return (
@@ -210,9 +210,11 @@ function ClubCard({ club, onNavigateSociety }) {
       <div className="club-card-inner">
         {/* Avatar */}
         <div className="club-avatar" style={{ background: `linear-gradient(135deg, ${club.gradFrom}, ${club.gradTo})` }}>
-          <span className="club-emoji-big">{club.emoji}</span>
-          {/* Leave image space */}
-          <div className="club-img-placeholder" title="Club image coming soon" />
+          {club.logo ? (
+            <img className="club-avatar-image" src={club.logo} alt={`${club.name} logo`} />
+          ) : (
+            <span className="club-emoji-big">{club.emoji}</span>
+          )}
         </div>
 
         {/* Info */}

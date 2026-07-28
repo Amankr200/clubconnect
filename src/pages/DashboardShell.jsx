@@ -6,6 +6,15 @@ import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import './DashboardShell.css';
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || '');
+    reader.onerror = () => reject(new Error('Unable to read selected file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function DashboardShell({ onNavigateHome }) {
   const { user, token, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -35,10 +44,20 @@ export default function DashboardShell({ onNavigateHome }) {
     name: 'ACM',
     fullName: 'ACM Student Chapter',
     description: 'Premier computing society focusing on algorithms, hackathons, and software engineering.',
+    vision: 'To foster innovation, creativity, and technical excellence.',
+    mission: 'Organize workshops, hackathons, and community events.',
     banner: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800',
     logo: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=150',
     rating: 4.8,
+    facultyCoordinator: { name: 'Dr. Ananya Sharma', email: 'ananya@bpit.ac.in' },
+    studentCoordinators: [{ name: 'Aman Kumar', enrollmentNumber: '00123456', email: 'aman@bpit.ac.in' }],
   });
+  const [societyUpdateError, setSocietyUpdateError] = useState('');
+  const [societyUpdateSuccess, setSocietyUpdateSuccess] = useState('');
+  const [societyUpdateSaving, setSocietyUpdateSaving] = useState(false);
+  const [societyLookupName, setSocietyLookupName] = useState('ACM');
+  const [societyLookupStatus, setSocietyLookupStatus] = useState('idle');
+  const [selectedEditFields, setSelectedEditFields] = useState([]);
 
   const [expandedBookingIds, setExpandedBookingIds] = useState(new Set());
   const MAX_PHOTO_SIZE_MB = 5;
@@ -127,6 +146,175 @@ export default function DashboardShell({ onNavigateHome }) {
       setPhotoUpdateError(error.message || 'Failed to update photo. Please try again.');
     } finally {
       setPhotoUpdateSaving(false);
+    }
+  };
+
+  const normalizeSocietyRecord = (society) => ({
+    name: society?.name || '',
+    fullName: society?.fullName || '',
+    description: society?.description || '',
+    vision: society?.vision || '',
+    mission: society?.mission || '',
+    banner: society?.banner || '',
+    logo: society?.logo || '',
+    rating: society?.rating || 4.8,
+    facultyCoordinator: society?.facultyCoordinator || { name: '', email: '' },
+    studentCoordinators: Array.isArray(society?.studentCoordinators) && society.studentCoordinators.length > 0
+      ? society.studentCoordinators.map((coordinator) => ({
+          name: coordinator?.name || '',
+          enrollmentNumber: coordinator?.enrollmentNumber || '',
+          email: coordinator?.email || '',
+        }))
+      : [{ name: '', enrollmentNumber: '', email: '' }],
+  });
+
+  useEffect(() => {
+    if (!societyLookupName.trim()) {
+      setSocietyLookupStatus('idle');
+      setSelectedEditFields([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSocietyLookupStatus('checking');
+      setSocietyUpdateError('');
+      setSocietyUpdateSuccess('');
+
+      try {
+        const response = await fetch(`/api/societies/${encodeURIComponent(societyLookupName.trim())}`);
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || !data.society) {
+          setSocietyLookupStatus('not-found');
+          setSelectedEditFields([]);
+          return;
+        }
+
+        setMySociety((prev) => ({
+          ...prev,
+          ...normalizeSocietyRecord(data.society),
+          name: data.society.name || prev.name,
+        }));
+        setSocietyLookupStatus('found');
+      } catch (error) {
+        setSocietyLookupStatus('not-found');
+        setSelectedEditFields([]);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [societyLookupName]);
+
+  const toggleEditField = (field) => {
+    setSelectedEditFields((prev) => (
+      prev.includes(field) ? prev.filter((item) => item !== field) : [...prev, field]
+    ));
+  };
+
+  const handleSocietyImageSelection = async (event, field) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      setSocietyUpdateError('Image must be 5 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setMySociety((prev) => ({ ...prev, [field]: dataUrl }));
+      setSocietyUpdateError('');
+      setSocietyUpdateSuccess('');
+    } catch (error) {
+      setSocietyUpdateError(error.message || 'Unable to read selected image.');
+    }
+  };
+
+  const updateStudentCoordinator = (index, field, value) => {
+    setMySociety((prev) => ({
+      ...prev,
+      studentCoordinators: prev.studentCoordinators.map((coordinator, coordinatorIndex) => (
+        coordinatorIndex === index ? { ...coordinator, [field]: value } : coordinator
+      )),
+    }));
+  };
+
+  const addStudentCoordinator = () => {
+    setMySociety((prev) => ({
+      ...prev,
+      studentCoordinators: [...prev.studentCoordinators, { name: '', enrollmentNumber: '', email: '' }],
+    }));
+  };
+
+  const removeStudentCoordinator = (index) => {
+    setMySociety((prev) => ({
+      ...prev,
+      studentCoordinators: prev.studentCoordinators.filter((_, coordinatorIndex) => coordinatorIndex !== index),
+    }));
+  };
+
+  const handleSaveSocietyUpdates = async () => {
+    if (!token || !mySociety.name) {
+      setSocietyUpdateError('Unable to save because the society identity is missing.');
+      return;
+    }
+
+    if (selectedEditFields.length === 0) {
+      setSocietyUpdateError('Select at least one field to update.');
+      return;
+    }
+
+    setSocietyUpdateSaving(true);
+    setSocietyUpdateError('');
+    setSocietyUpdateSuccess('');
+
+    try {
+      const payload = {};
+      if (selectedEditFields.includes('fullName')) payload.fullName = mySociety.fullName;
+      if (selectedEditFields.includes('description')) payload.description = mySociety.description;
+      if (selectedEditFields.includes('vision')) payload.vision = mySociety.vision;
+      if (selectedEditFields.includes('mission')) payload.mission = mySociety.mission;
+      if (selectedEditFields.includes('banner')) payload.banner = mySociety.banner;
+      if (selectedEditFields.includes('logo')) payload.logo = mySociety.logo;
+      if (selectedEditFields.includes('facultyCoordinator')) payload.facultyCoordinator = mySociety.facultyCoordinator || { name: '', email: '' };
+      if (selectedEditFields.includes('studentCoordinators')) {
+        payload.studentCoordinators = (mySociety.studentCoordinators || [])
+          .filter((coordinator) => coordinator?.name?.trim() || coordinator?.enrollmentNumber?.trim() || coordinator?.email?.trim())
+          .map((coordinator) => ({
+            name: coordinator.name?.trim() || '',
+            enrollmentNumber: coordinator.enrollmentNumber?.trim() || '',
+            email: coordinator.email?.trim() || '',
+          }));
+      }
+
+      const response = await fetch(`/api/societies/${encodeURIComponent(mySociety.name)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update society.');
+      }
+
+      setMySociety((prev) => ({
+        ...prev,
+        ...data.society,
+        facultyCoordinator: data.society?.facultyCoordinator || prev.facultyCoordinator,
+        studentCoordinators: data.society?.studentCoordinators || prev.studentCoordinators,
+      }));
+      setSocietyUpdateSuccess('Society details updated successfully.');
+    } catch (error) {
+      setSocietyUpdateError(error.message || 'Failed to update society.');
+    } finally {
+      setSocietyUpdateSaving(false);
     }
   };
 
@@ -812,52 +1000,206 @@ export default function DashboardShell({ onNavigateHome }) {
         {user?.role === 'faculty_coordinator' && activeTab === 'edit_society' && (
           <div className="dash-card">
             <h2 className="dash-card-title">🏛️ Edit Society Page ({mySociety.name})</h2>
-            <p className="dash-card-subtitle">Update public society profile details shown on the main landing page.</p>
+            <p className="dash-card-subtitle">Update public society details and coordinator information for the existing society record.</p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div>
-                <label className="dash-field-label">Society Full Name</label>
-                <input
-                  type="text"
-                  className="dash-input"
-                  value={mySociety.fullName}
-                  onChange={(e) => setMySociety({ ...mySociety, fullName: e.target.value })}
-                  style={{ marginBottom: '1rem' }}
-                />
+            {societyUpdateError && <div style={{ marginBottom: '1rem', padding: '0.8rem', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>{societyUpdateError}</div>}
+            {societyUpdateSuccess && <div style={{ marginBottom: '1rem', padding: '0.8rem', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>{societyUpdateSuccess}</div>}
 
-                <label className="dash-field-label">Society Description</label>
-                <textarea
-                  className="dash-textarea"
-                  value={mySociety.description}
-                  onChange={(e) => setMySociety({ ...mySociety, description: e.target.value })}
-                  rows="4"
-                  style={{ marginBottom: '1rem' }}
-                />
-              </div>
-
-              <div>
-                <label className="dash-field-label">Banner Image URL</label>
-                <input
-                  type="url"
-                  className="dash-input"
-                  value={mySociety.banner}
-                  onChange={(e) => setMySociety({ ...mySociety, banner: e.target.value })}
-                  style={{ marginBottom: '1rem' }}
-                />
-
-                <label className="dash-field-label">Logo URL</label>
-                <input
-                  type="url"
-                  className="dash-input"
-                  value={mySociety.logo}
-                  onChange={(e) => setMySociety({ ...mySociety, logo: e.target.value })}
-                  style={{ marginBottom: '1rem' }}
-                />
-              </div>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label className="dash-field-label">Society Name</label>
+              <input
+                type="text"
+                className="dash-input"
+                value={societyLookupName}
+                onChange={(e) => setSocietyLookupName(e.target.value)}
+                placeholder="Type society name and it will be checked instantly"
+              />
+              {societyLookupStatus === 'checking' && <div style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>Checking society...</div>}
+              {societyLookupStatus === 'found' && <div style={{ marginTop: '0.5rem', color: '#10b981' }}>Society found. Select the fields you want to change.</div>}
+              {societyLookupStatus === 'not-found' && <div style={{ marginTop: '0.5rem', color: '#ef4444' }}>Society not found. Please enter a valid existing society name.</div>}
             </div>
 
-            <button className="btn-action-primary" onClick={() => alert('Society profile updated successfully!')}>
-              💾 Save Society Page Updates
+            {societyLookupStatus === 'found' && (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label className="dash-field-label">Select fields to update</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  {[
+                    { key: 'fullName', label: 'Full Name' },
+                    { key: 'description', label: 'Description' },
+                    { key: 'vision', label: 'Vision' },
+                    { key: 'mission', label: 'Mission' },
+                    { key: 'banner', label: 'Banner' },
+                    { key: 'logo', label: 'Logo' },
+                    { key: 'facultyCoordinator', label: 'Faculty Coordinator' },
+                    { key: 'studentCoordinators', label: 'Student Coordinators' },
+                  ].map((option) => (
+                    <label key={option.key} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'var(--bg-light)', padding: '0.45rem 0.7rem', borderRadius: '999px', border: '1px solid var(--border)' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedEditFields.includes(option.key)}
+                        onChange={() => toggleEditField(option.key)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {societyLookupStatus === 'found' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  {selectedEditFields.includes('fullName') && (
+                    <>
+                      <label className="dash-field-label">Society Full Name</label>
+                      <input
+                        type="text"
+                        className="dash-input"
+                        value={mySociety.fullName}
+                        onChange={(e) => setMySociety({ ...mySociety, fullName: e.target.value })}
+                        style={{ marginBottom: '1rem' }}
+                      />
+                    </>
+                  )}
+
+                  {selectedEditFields.includes('description') && (
+                    <>
+                      <label className="dash-field-label">Society Description</label>
+                      <textarea
+                        className="dash-textarea"
+                        value={mySociety.description}
+                        onChange={(e) => setMySociety({ ...mySociety, description: e.target.value })}
+                        rows="4"
+                        style={{ marginBottom: '1rem' }}
+                      />
+                    </>
+                  )}
+
+                  {selectedEditFields.includes('vision') && (
+                    <>
+                      <label className="dash-field-label">Society Vision</label>
+                      <textarea
+                        className="dash-textarea"
+                        value={mySociety.vision}
+                        onChange={(e) => setMySociety({ ...mySociety, vision: e.target.value })}
+                        rows="3"
+                        style={{ marginBottom: '1rem' }}
+                      />
+                    </>
+                  )}
+
+                  {selectedEditFields.includes('mission') && (
+                    <>
+                      <label className="dash-field-label">Society Mission</label>
+                      <textarea
+                        className="dash-textarea"
+                        value={mySociety.mission}
+                        onChange={(e) => setMySociety({ ...mySociety, mission: e.target.value })}
+                        rows="3"
+                        style={{ marginBottom: '1rem' }}
+                      />
+                    </>
+                  )}
+                </div>
+
+                <div>
+                  {selectedEditFields.includes('banner') && (
+                    <>
+                      <label className="dash-field-label">Upload Banner Image</label>
+                      <input
+                        type="file"
+                        className="dash-input"
+                        accept="image/png,image/jpeg,image/jpg"
+                        onChange={(e) => handleSocietyImageSelection(e, 'banner')}
+                        style={{ marginBottom: '0.75rem' }}
+                      />
+                    </>
+                  )}
+
+                  {selectedEditFields.includes('logo') && (
+                    <>
+                      <label className="dash-field-label">Upload Logo Image</label>
+                      <input
+                        type="file"
+                        className="dash-input"
+                        accept="image/png,image/jpeg,image/jpg"
+                        onChange={(e) => handleSocietyImageSelection(e, 'logo')}
+                        style={{ marginBottom: '1rem' }}
+                      />
+                    </>
+                  )}
+
+                  {selectedEditFields.includes('facultyCoordinator') && (
+                    <>
+                      <label className="dash-field-label">Faculty Coordinator</label>
+                      <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1rem' }}>
+                        <input
+                          type="text"
+                          className="dash-input"
+                          placeholder="Name"
+                          value={mySociety.facultyCoordinator?.name || ''}
+                          onChange={(e) => setMySociety((prev) => ({ ...prev, facultyCoordinator: { ...prev.facultyCoordinator, name: e.target.value } }))}
+                        />
+                        <input
+                          type="email"
+                          className="dash-input"
+                          placeholder="Email"
+                          value={mySociety.facultyCoordinator?.email || ''}
+                          onChange={(e) => setMySociety((prev) => ({ ...prev, facultyCoordinator: { ...prev.facultyCoordinator, email: e.target.value } }))}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {selectedEditFields.includes('studentCoordinators') && (
+                    <>
+                      <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="dash-field-label" style={{ marginBottom: 0 }}>Student Coordinators</label>
+                        <button type="button" className="btn-outline" onClick={addStudentCoordinator}>+ Add</button>
+                      </div>
+                      <div style={{ display: 'grid', gap: '0.75rem' }}>
+                        {(mySociety.studentCoordinators || []).map((coordinator, index) => (
+                          <div key={`coordinator-${index}`} style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem', background: 'var(--bg-light)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                              <strong>Coordinator #{index + 1}</strong>
+                              {(mySociety.studentCoordinators || []).length > 1 && (
+                                <button type="button" className="btn-outline" onClick={() => removeStudentCoordinator(index)}>Remove</button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              className="dash-input"
+                              placeholder="Name"
+                              value={coordinator.name || ''}
+                              onChange={(e) => updateStudentCoordinator(index, 'name', e.target.value)}
+                              style={{ marginBottom: '0.6rem' }}
+                            />
+                            <input
+                              type="text"
+                              className="dash-input"
+                              placeholder="Enrollment Number"
+                              value={coordinator.enrollmentNumber || ''}
+                              onChange={(e) => updateStudentCoordinator(index, 'enrollmentNumber', e.target.value)}
+                              style={{ marginBottom: '0.6rem' }}
+                            />
+                            <input
+                              type="email"
+                              className="dash-input"
+                              placeholder="Email"
+                              value={coordinator.email || ''}
+                              onChange={(e) => updateStudentCoordinator(index, 'email', e.target.value)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <button className="btn-action-primary" onClick={handleSaveSocietyUpdates} disabled={societyUpdateSaving}>
+              {societyUpdateSaving ? 'Saving...' : '💾 Save Society Page Updates'}
             </button>
           </div>
         )}
