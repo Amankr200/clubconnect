@@ -596,7 +596,7 @@ export default function LandingPage({ onLoginSuccess }) {
                 Connecting students, faculty, and administration seamlessly.
               </p>
               <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
-                Bharati Vidyapeeth's College of Engineering, Delhi
+                Bhagwan Parshuram Institute of Technology, Delhi
               </div>
             </div>
             <div>
