@@ -325,12 +325,12 @@ export const clubs = [
     head: "Harshit",
     coordinator: "Dr. Shikha Gupta",
   },
-  // Entrepreneurship
+  // Innovation & Research
   {
     id: 18,
     name: "IIC",
     fullName: "Institution's Innovation Council",
-    category: "Entrepreneurship",
+    category: "Innovation & Research",
     tagline: "Build the Future, Own It",
     description: "IIC fosters startup ideas and innovation at BPIT (Shiksha-tech). Organizes startup pitches, guest lectures, mentorship sessions, and incubation support.",
     color: "#F59E0B",
@@ -340,7 +340,7 @@ export const clubs = [
     members: 160,
     events: 24,
     founded: 2016,
-    tags: ["Startup", "Entrepreneurship", "Innovation", "Pitch"],
+    tags: ["Startup", "Innovation & Research", "Innovation", "Pitch"],
     social: { instagram: "#", linkedin: "#", email: "ecell@bpit.ac.in" },
     head: "Aasutosh",
     coordinator: "Prof. Seema Kharb",
@@ -349,7 +349,7 @@ export const clubs = [
     id: 19,
     name: "BRDC",
     fullName: "BPIT Research & Development Cell",
-    category: "Entrepreneurship",
+    category: "Innovation & Research",
     tagline: "Research. Develop. Lead.",
     description: "BPIT Research & Development Cell organizing Engineers' Day celebrations, research events, innovation contests, and bridging academia with industry.",
     color: "#6366F1",
@@ -368,7 +368,7 @@ export const clubs = [
     id: 20,
     name: "Marketing Club",
     fullName: "Marketing Club – SBA",
-    category: "Entrepreneurship",
+    category: "SBA",
     tagline: "Brand. Market. Dominate.",
     description: "Under the School of Business Administration at BPIT. Conducts debate competitions, creative advertising contests, brand challenges, and business case studies.",
     color: "#EF4444",
@@ -385,7 +385,7 @@ export const clubs = [
   },
 ];
 
-export const categories = ["All", "Technical", "Cultural", "Social Service", "Entrepreneurship"];
+export const categories = ["All", "Technical", "Cultural", "Social Service", "Innovation & Research"];
 
 export const storyData = [
   {
@@ -510,7 +510,7 @@ export const upcomingEvents = [
     date: "July 18, 2025",
     time: "2:00 PM",
     venue: "Conference Room 1",
-    type: "Entrepreneurship",
+    type: "Innovation & Research",
     badgeClass: "badge-gold",
     color: "#F59E0B",
     rsvp: 95,

@@ -152,6 +152,7 @@ export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreat
                 <option value="Sports">Sports</option>
                 <option value="Literary">Literary</option>
                 <option value="Social & Environment">Social &amp; Environment</option>
+                <option value="Innovation & Research">Innovation &amp; Research</option>
                 <option value="Other">Other</option>
               </select>
             </div>
