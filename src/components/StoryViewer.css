@@ -21,6 +21,7 @@
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   user-select: none;
+  cursor: pointer;
 }
 
 /* ── Progress ── */
@@ -41,7 +42,7 @@
   height: 100%;
   background: #fff;
   border-radius: 2px;
-  transition: width 0.05s linear;
+  will-change: width;
 }
 
 /* ── Header ── */
@@ -77,94 +78,186 @@
 }
 .sv-close:hover { background: rgba(0,0,0,0.5); }
 
-/* ── Tap Zones ── */
+/* ── Tap Zones (visual only — interaction handled by container pointerDown/Up) ── */
 .sv-tap-zone {
   position: absolute;
-  top: 70px;
-  bottom: 130px;
-  width: 38%;
-  z-index: 4;
-  cursor: pointer;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  z-index: 3;
+  pointer-events: none; /* container handles all taps */
 }
 .sv-tap-zone.left  { left: 0; }
 .sv-tap-zone.right { right: 0; }
 
+/* ── Full Bleed Media Element & Blurred Backdrop ── */
+.sv-media-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: hidden;
+  background: #0B0F19;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sv-media-blur-bg {
+  position: absolute;
+  inset: -25px;
+  width: calc(100% + 50px);
+  height: calc(100% + 50px);
+  object-fit: cover;
+  filter: blur(32px) brightness(0.5);
+  transform: scale(1.15);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sv-media-element {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  z-index: 2;
+  display: block;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+}
+
+.sv-overlay-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.65) 0%,
+    rgba(0, 0, 0, 0.1) 40%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
 /* ── Content ── */
 .sv-content {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   text-align: center;
-  padding: 16px 28px;
-  z-index: 3;
+  padding: 24px 28px 40px;
+  z-index: 5;
 }
 .sv-slide-emoji {
-  font-size: 4rem;
+  font-size: 3.5rem;
   line-height: 1;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   animation: float 3s ease-in-out infinite;
 }
 .sv-headline {
-  font-size: 1.6rem;
+  font-size: 1.45rem;
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  margin-bottom: 12px;
-  line-height: 1.2;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+  margin-bottom: 8px;
+  line-height: 1.3;
 }
 .sv-sub {
-  font-size: 0.9rem;
-  color: rgba(255,255,255,0.88);
-  line-height: 1.6;
-  margin-bottom: 22px;
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.92);
+  line-height: 1.5;
+  margin-bottom: 20px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
 }
 .sv-cta {
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.45);
   color: #fff;
   border-radius: var(--r-md);
-  padding: 9px 22px;
-  font-size: 0.87rem;
-  font-weight: 600;
+  padding: 10px 24px;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.2s ease;
   font-family: inherit;
   z-index: 6;
 }
-.sv-cta:hover { background: rgba(255,255,255,0.35); }
+.sv-cta:hover {
+  background: rgba(255,255,255,0.38);
+  transform: translateY(-2px);
+}
 
-/* ── Club Strip ── */
-.sv-club-strip {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  z-index: 6;
-}
-.sv-strip-item {
-  width: 32px; height: 32px;
+/* ── Story Action Buttons (Edit / Delete) ── */
+.sv-action-btn {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.3);
-  border: 2px solid rgba(255,255,255,0.2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
-.sv-strip-item:hover { transform: scale(1.12); border-color: rgba(255,255,255,0.6); }
-.sv-strip-item.active { border-color: #fff; background: rgba(255,255,255,0.25); }
+.sv-action-btn:hover {
+  background: rgba(0,0,0,0.7);
+  transform: scale(1.1);
+}
+.sv-action-btn.delete:hover {
+  background: #EF4444;
+  border-color: #EF4444;
+}
+
+/* ── Inline Edit Box ── */
+.sv-edit-box {
+  width: 100%;
+  margin-bottom: 16px;
+  z-index: 10;
+}
+.sv-edit-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+.sv-edit-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+.sv-edit-btn.save {
+  background: #10B981;
+  color: #fff;
+}
+.sv-edit-btn.cancel {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
 
 .sv-paused-hint {
   position: absolute;
   bottom: 110px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.5);
   color: #fff;
   font-size: 0.75rem;
   padding: 5px 14px;
@@ -175,5 +268,4 @@
 
 @media (max-width: 480px) {
   .sv-container { width: 100vw; height: 100vh; border-radius: 0; max-height: 100vh; }
-  .sv-club-strip { display: none; }
 }

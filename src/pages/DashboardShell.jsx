@@ -322,6 +322,22 @@ export default function DashboardShell({ onNavigateHome }) {
   const [storyTitle, setStoryTitle] = useState('');
   const [storyMediaUrl, setStoryMediaUrl] = useState('');
   const [storyMsg, setStoryMsg] = useState('');
+  const [storyInputMode, setStoryInputMode] = useState('file');
+  const [storyMediaType, setStoryMediaType] = useState('image');
+  const [storyFilePreview, setStoryFilePreview] = useState('');
+
+  const handleStoryFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isVid = file.type.startsWith('video/');
+    setStoryMediaType(isVid ? 'video' : 'image');
+    const reader = new FileReader();
+    reader.onload = () => {
+      setStoryFilePreview(String(reader.result || ''));
+      setStoryMediaUrl(String(reader.result || ''));
+    };
+    reader.readAsDataURL(file);
+  };
 
   // History Filter
   const [historyFilter, setHistoryFilter] = useState('all'); // 'all', '3m', '6m'
@@ -403,6 +419,12 @@ export default function DashboardShell({ onNavigateHome }) {
   const handlePublishStory = async (e) => {
     e.preventDefault();
     setStoryMsg('');
+    const finalMedia = storyInputMode === 'file' ? storyFilePreview : storyMediaUrl;
+    if (!finalMedia) {
+      setStoryMsg('⚠️ Please select a photo or video file, or enter a media URL.');
+      return;
+    }
+
     try {
       const res = await fetch('/api/stories', {
         method: 'POST',
@@ -410,7 +432,11 @@ export default function DashboardShell({ onNavigateHome }) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ title: storyTitle, mediaUrl: storyMediaUrl }),
+        body: JSON.stringify({
+          title: storyTitle,
+          mediaUrl: finalMedia,
+          mediaType: storyMediaType,
+        }),
       });
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -421,6 +447,7 @@ export default function DashboardShell({ onNavigateHome }) {
       setStoryMsg('✅ Story published live on landing page for 24 hours!');
       setStoryTitle('');
       setStoryMediaUrl('');
+      setStoryFilePreview('');
     } catch (err) {
       setStoryMsg(`⚠️ ${err.message}`);
     }
@@ -960,11 +987,11 @@ export default function DashboardShell({ onNavigateHome }) {
         {['student_coordinator', 'faculty_coordinator'].includes(user?.role) && activeTab === 'story' && (
           <div className="dash-card">
             <h2 className="dash-card-title">📸 Publish 24-Hour Story on Landing Page</h2>
-            <p className="dash-card-subtitle">Promote your society's upcoming event or announcement. Stories automatically expire after 24 hours.</p>
+            <p className="dash-card-subtitle">Promote your society's upcoming event or announcement with high quality photos or videos. Stories automatically expire after 24 hours.</p>
 
             {storyMsg && <div style={{ marginBottom: '1rem', padding: '0.75rem', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#4ade80' }}>{storyMsg}</div>}
 
-            <form onSubmit={handlePublishStory} style={{ maxWidth: '600px' }}>
+            <form onSubmit={handlePublishStory} style={{ maxWidth: '640px' }}>
               <div style={{ marginBottom: '1.25rem' }}>
                 <label className="dash-field-label">Story Headline / Title</label>
                 <input
@@ -977,20 +1004,86 @@ export default function DashboardShell({ onNavigateHome }) {
                 />
               </div>
 
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label className="dash-field-label">Media Image URL</label>
-                <input
-                  type="url"
-                  className="dash-input"
-                  placeholder="https://images.unsplash.com/photo-..."
-                  required
-                  value={storyMediaUrl}
-                  onChange={(e) => setStoryMediaUrl(e.target.value)}
-                />
+              {/* Mode Switcher */}
+              <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  className={`dash-filter-chip ${storyInputMode === 'file' ? 'active' : ''}`}
+                  onClick={() => setStoryInputMode('file')}
+                  style={{ padding: '0.4rem 1rem' }}
+                >
+                  📁 Upload Photo / Video File
+                </button>
+                <button
+                  type="button"
+                  className={`dash-filter-chip ${storyInputMode === 'url' ? 'active' : ''}`}
+                  onClick={() => setStoryInputMode('url')}
+                  style={{ padding: '0.4rem 1rem' }}
+                >
+                  🔗 Paste Media URL
+                </button>
               </div>
 
+              {storyInputMode === 'file' ? (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label className="dash-field-label">Select Photo or Video File</label>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    className="dash-input"
+                    onChange={handleStoryFileChange}
+                    style={{ padding: '0.5rem' }}
+                  />
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                    Supports PNG, JPG, WEBP photos and MP4, WEBM videos.
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label className="dash-field-label">Media Image / Video URL</label>
+                  <input
+                    type="url"
+                    className="dash-input"
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={storyMediaUrl}
+                    onChange={(e) => {
+                      setStoryMediaUrl(e.target.value);
+                      if (e.target.value.includes('.mp4') || e.target.value.includes('.webm')) {
+                        setStoryMediaType('video');
+                      } else {
+                        setStoryMediaType('image');
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Instant Media Preview */}
+              {(storyFilePreview || (storyInputMode === 'url' && storyMediaUrl)) && (
+                <div style={{ marginBottom: '1.25rem', padding: '0.75rem', borderRadius: '12px', background: 'var(--bg-light)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-dark)' }}>
+                    👁️ Instant Media Preview:
+                  </div>
+                  {storyMediaType === 'video' ? (
+                    <video
+                      src={storyInputMode === 'file' ? storyFilePreview : storyMediaUrl}
+                      controls
+                      autoPlay
+                      muted
+                      style={{ width: '100%', maxHeight: '240px', borderRadius: '8px', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <img
+                      src={storyInputMode === 'file' ? storyFilePreview : storyMediaUrl}
+                      alt="Story preview"
+                      style={{ width: '100%', maxHeight: '240px', borderRadius: '8px', objectFit: 'cover' }}
+                    />
+                  )}
+                </div>
+              )}
+
               <button type="submit" className="btn-action-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '0.95rem' }}>
-                🚀 Publish Story (24h Active)
+                🚀 Publish 24h Story (Photo / Video)
               </button>
             </form>
           </div>

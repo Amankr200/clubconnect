@@ -1,115 +1,230 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './StoryViewer.css';
 import { clubs } from '../data/clubs';
+import { useAuth } from '../context/AuthContext';
 
 const STORY_DURATION = 5000;
+const LONG_PRESS_MS  = 180;
 
 function getClubIdForStory(story) {
   const normalizedName = (story.clubName || '').toLowerCase();
   const match = clubs.find((club) => {
-    const clubName = String(club.name || '').toLowerCase();
-    const clubFullName = String(club.fullName || '').toLowerCase();
+    const clubName     = String(club.name     || '').toLowerCase();
+    const clubFullName = String(club.fullName  || '').toLowerCase();
     return clubName === normalizedName || clubFullName.includes(normalizedName);
   });
   return match?.id || null;
 }
 
-export default function StoryViewer({ story, slides, onClose, allStories, onNavigate, onViewClub }) {
-  const [slideIdx, setSlideIdx] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const rafRef = useRef(null);
-  const startRef = useRef(null);
-  const elapsed = useRef(0);
-  const touchStartX = useRef(null);
+export default function StoryViewer({
+  story, slides, onClose, allStories, onNavigate, onViewClub, onDeleteStory, onUpdateStory,
+}) {
+  const { user, token } = useAuth();
+  const allowedRoles    = ['student_coordinator', 'faculty_coordinator', 'hod', 'admin'];
+  const canManageStories = Boolean(user && allowedRoles.includes(user.role));
 
+  const [slideIdx,   setSlideIdx]   = useState(0);
+  const [progress,   setProgress]   = useState(0);
+  const [paused,     setPaused]     = useState(false);
+  const [isEditing,  setIsEditing]  = useState(false);
+  const [editTitle,  setEditTitle]  = useState(story.title || '');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // RAF refs — never reset these from multiple places
+  const rafRef      = useRef(null);
+  const elapsedRef  = useRef(0);   // ms elapsed for current slide
+  const pausedRef   = useRef(false); // mirror of paused state for use inside RAF closure
+
+  // Tap / long-press tracking
+  const pressTimer   = useRef(null);
+  const pressStartX  = useRef(null);
+  const isLongPress  = useRef(false);
+  const containerRef = useRef(null);
+
+  // Keep pausedRef in sync with state
+  useEffect(() => { pausedRef.current = paused; }, [paused]);
+
+  // ── Navigation ──────────────────────────────────────────────
   const goNext = useCallback(() => {
     if (slideIdx < slides.length - 1) {
       setSlideIdx(s => s + 1);
-      setProgress(0);
-      elapsed.current = 0;
     } else {
-      // go to next club story
       const idx = allStories.findIndex(s => s.id === story.id);
-      if (idx < allStories.length - 1) {
-        onNavigate(allStories[idx + 1]);
-      } else {
-        onClose();
-      }
+      idx < allStories.length - 1 ? onNavigate(allStories[idx + 1]) : onClose();
     }
   }, [slideIdx, slides, story, allStories, onNavigate, onClose]);
 
   const goPrev = useCallback(() => {
     if (slideIdx > 0) {
       setSlideIdx(s => s - 1);
-      setProgress(0);
-      elapsed.current = 0;
     } else {
       const idx = allStories.findIndex(s => s.id === story.id);
       if (idx > 0) onNavigate(allStories[idx - 1]);
     }
   }, [slideIdx, story, allStories, onNavigate]);
 
-  // Auto-progress
+  // Reset elapsed when slide changes (story or slideIdx)
   useEffect(() => {
-    setSlideIdx(0);
+    elapsedRef.current = 0;
     setProgress(0);
-    elapsed.current = 0;
-  }, [story.id]);
+  }, [story.id, slideIdx]);
 
+  // ── RAF progress loop ─────────────────────────────────────
+  // Deps: only slideIdx and isEditing — NOT paused.
+  // Pausing is handled inside the tick via pausedRef (a ref, not state).
   useEffect(() => {
-    elapsed.current = 0;
-    setProgress(0);
+    if (isEditing) return;
+
+    cancelAnimationFrame(rafRef.current);
+    let lastTs = null;
 
     const tick = (ts) => {
-      if (!startRef.current) startRef.current = ts;
-      if (!paused) {
-        elapsed.current = ts - startRef.current;
-        const p = Math.min((elapsed.current / STORY_DURATION) * 100, 100);
+      if (lastTs === null) lastTs = ts;
+      const delta = ts - lastTs;
+      lastTs = ts;
+
+      if (!pausedRef.current) {
+        elapsedRef.current = Math.min(elapsedRef.current + delta, STORY_DURATION);
+        const p = (elapsedRef.current / STORY_DURATION) * 100;
         setProgress(p);
-        if (p >= 100) { goNext(); return; }
-      } else {
-        startRef.current = ts - elapsed.current;
+        if (elapsedRef.current >= STORY_DURATION) {
+          goNext();
+          return; // stop this RAF cycle — new slideIdx will spawn a fresh one
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
-    startRef.current = null;
+
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [slideIdx, paused, goNext]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.id, slideIdx, isEditing]); // intentionally exclude paused & goNext
 
-  // Keyboard
+  // Keyboard navigation
   useEffect(() => {
     const handler = (e) => {
+      if (isEditing) return;
       if (e.key === 'ArrowRight') goNext();
       if (e.key === 'ArrowLeft')  goPrev();
       if (e.key === 'Escape')     onClose();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [goNext, goPrev, onClose]);
+  }, [isEditing, goNext, goPrev, onClose]);
 
   const slide = slides[slideIdx] || slides[0];
   if (!slide) return null;
 
-  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
-  const handleTouchEnd = (e) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (dx < -40) goNext();
-    if (dx > 40)  goPrev();
+  const mediaUrl  = slide.mediaUrl  || story.mediaUrl  || '';
+  const mediaType = slide.mediaType || story.mediaType || 'image';
+  const isVideo   = mediaType === 'video' ||
+    (typeof mediaUrl === 'string' &&
+      (mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || mediaUrl.startsWith('data:video/')));
+
+  // ── Pointer handling ─────────────────────────────────────
+  const handlePointerDown = (e) => {
+    if (e.target.closest('button, input, a')) return;
+    pressStartX.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+    isLongPress.current = false;
+
+    pressTimer.current = setTimeout(() => {
+      isLongPress.current = true;
+      setPaused(true);
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerUp = (e) => {
+    clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+
+    if (isEditing) { setPaused(false); isLongPress.current = false; return; }
+
+    if (isLongPress.current) {
+      // Long-press release → resume, no navigation
+      setPaused(false);
+      isLongPress.current = false;
+      return;
+    }
+
+    // Quick tap → navigate
+    const endX = e.clientX ?? e.changedTouches?.[0]?.clientX ?? pressStartX.current;
+    const rect  = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    (endX - rect.left) < rect.width / 2 ? goPrev() : goNext();
+  };
+
+  const handlePointerLeave = () => {
+    clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+    if (isLongPress.current) { setPaused(false); isLongPress.current = false; }
+  };
+
+  // ── Delete / Edit ─────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this story permanently?')) return;
+    setIsDeleting(true);
+    try {
+      const authToken = token || localStorage.getItem('cc_token');
+      const res  = await fetch(`/api/stories/${story.id}`, {
+        method: 'DELETE',
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) { if (onDeleteStory) onDeleteStory(story.id); onClose(); }
+      else alert(data.message || 'Could not delete story.');
+    } catch { alert('Network error while deleting story.'); }
+    finally   { setIsDeleting(false); }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim()) return;
+    try {
+      const authToken = token || localStorage.getItem('cc_token');
+      const res  = await fetch(`/api/stories/${story.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+        body: JSON.stringify({ title: editTitle.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) { if (onUpdateStory) onUpdateStory(data.story || { ...story, title: editTitle.trim() }); setIsEditing(false); }
+      else alert(data.message || 'Failed to update story.');
+    } catch { alert('Network error while updating story.'); }
   };
 
   return (
     <div className="sv-backdrop" onClick={onClose} aria-modal="true" role="dialog">
       <div
-        className="sv-container"
-        onClick={e => e.stopPropagation()}
-        onMouseDown={() => setPaused(true)}
-        onMouseUp={() => setPaused(false)}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        style={{ background: slide.bg }}
+        ref={containerRef}
+        className={`sv-container${paused ? ' sv-paused' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={handlePointerDown}
+        onMouseUp={handlePointerUp}
+        onMouseLeave={handlePointerLeave}
+        onTouchStart={handlePointerDown}
+        onTouchEnd={handlePointerUp}
+        onContextMenu={(e) => e.preventDefault()}
+        style={{ background: slide.bg || '#0F172A' }}
       >
+        {/* Blurred backdrop + foreground media */}
+        {mediaUrl && (
+          <div className="sv-media-wrapper">
+            {isVideo ? (
+              <>
+                <video src={mediaUrl} className="sv-media-blur-bg" autoPlay loop muted playsInline aria-hidden="true" />
+                <video src={mediaUrl} className="sv-media-element"  autoPlay loop muted playsInline />
+              </>
+            ) : (
+              <>
+                <img src={mediaUrl} alt=""                           className="sv-media-blur-bg" aria-hidden="true" />
+                <img src={mediaUrl} alt={slide.headline || 'Story'} className="sv-media-element"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="sv-overlay-gradient" />
+
         {/* Progress bars */}
         <div className="sv-progress-row">
           {slides.map((_, i) => (
@@ -125,57 +240,80 @@ export default function StoryViewer({ story, slides, onClose, allStories, onNavi
         {/* Header */}
         <div className="sv-header">
           <div className="sv-club-info">
-            <div className="sv-avatar" style={{ background: `${story.color}44` }}>
-              <span>{story.clubEmoji}</span>
+            <div className="sv-avatar" style={{ background: `${story.color || '#3B82F6'}44` }}>
+              <span>{story.clubEmoji || '🔥'}</span>
             </div>
             <div>
               <div className="sv-club-name">{story.clubName}</div>
               <div className="sv-time">{story.timeAgo}</div>
             </div>
           </div>
-          <button className="sv-close" onClick={onClose} aria-label="Close story">✕</button>
-        </div>
 
-        {/* Tap zones */}
-        <div className="sv-tap-zone left" onClick={goPrev} aria-label="Previous" />
-        <div className="sv-tap-zone right" onClick={goNext} aria-label="Next" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
+            {story.isDbStory && canManageStories && (
+              <>
+                <button className="sv-action-btn edit"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                  title="Edit story"
+                >✏️</button>
+                <button className="sv-action-btn delete"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+                  disabled={isDeleting}
+                  title="Delete story"
+                >🗑️</button>
+              </>
+            )}
+            <button className="sv-close"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              aria-label="Close"
+            >✕</button>
+          </div>
+        </div>
 
         {/* Content */}
         <div className="sv-content">
-          <div className="sv-slide-emoji">{slide.emoji}</div>
-          <h2 className="sv-headline">{slide.headline}</h2>
-          <p className="sv-sub">{slide.sub}</p>
+          {!mediaUrl && slide.emoji && <div className="sv-slide-emoji">{slide.emoji}</div>}
+
+          {isEditing ? (
+            <div className="sv-edit-box"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="text"
+                className="sv-edit-input"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Story title..."
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginTop: '8px' }}>
+                <button className="sv-edit-btn save"   onMouseDown={(e) => e.stopPropagation()} onClick={handleSaveEdit}>Save</button>
+                <button className="sv-edit-btn cancel" onMouseDown={(e) => e.stopPropagation()} onClick={() => setIsEditing(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 className="sv-headline">{slide.headline || story.title}</h2>
+              {slide.sub && <p className="sv-sub">{slide.sub}</p>}
+            </>
+          )}
+
           <button
             className="sv-cta"
-            onClick={() => {
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
               const clubId = getClubIdForStory(story);
-              if (clubId && onViewClub) {
-                onViewClub(clubId);
-              } else {
-                onClose();
-              }
+              clubId && onViewClub ? onViewClub(clubId) : onClose();
             }}
-          >
-            View Club Profile →
-          </button>
+          >View Club Profile →</button>
         </div>
 
-        {/* Side Navigation */}
-        <div className="sv-club-strip">
-          {allStories.map((s) => (
-            <button
-              key={s.id}
-              className={`sv-strip-item ${s.id === story.id ? 'active' : ''}`}
-              onClick={(e) => { e.stopPropagation(); onNavigate(s); }}
-              style={{ '--c': s.color }}
-              title={s.clubName}
-            >
-              <span>{s.clubEmoji}</span>
-            </button>
-          ))}
-        </div>
-
-        {paused && <div className="sv-paused-hint">Hold to pause</div>}
+        {paused && !isEditing && <div className="sv-paused-hint">▐▐  Paused</div>}
       </div>
     </div>
   );

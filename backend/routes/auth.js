@@ -5,11 +5,13 @@ const userModel = require('../models/userModel');
 
 const router = express.Router();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'clubconnect_super_secret_jwt_key_2026';
+
 /* ─── Helper ─────────────────────────────────────────────── */
 const signToken = (user) =>
   jwt.sign(
     { id: user.id, role: user.role, email: user.email, name: user.name },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: '7d' }
   );
 
@@ -62,7 +64,7 @@ router.get('/me', async (req, res) => {
     const token = authHeader.split(' ')[1];
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET);
     } catch {
       return res.status(401).json({ message: 'Invalid or expired token.' });
     }

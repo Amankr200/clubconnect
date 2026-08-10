@@ -1,7 +1,27 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { ExternalLink, Sparkles, Code2 } from 'lucide-react';
 import './LandingPage.css';
+
+function GithubIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+      <path d="M9 18c-4.51 2-5-2-7-2" />
+    </svg>
+  );
+}
+
+function LinkedinIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+      <rect width="4" height="12" x="2" y="9" />
+      <circle cx="4" cy="4" r="2" />
+    </svg>
+  );
+}
 
 /* ── Role Definitions ─────────────────────────────── */
 const ROLE_GROUPS = [
@@ -108,20 +128,79 @@ const ROLE_GROUPS = [
   },
 ];
 
-const FEATURES = [
-  { icon: '📸', title: 'Club Stories', desc: 'Instagram-style 24-hour stories from every society. Stay updated on what\'s happening across campus in real time.', color: '#E11D48', rgb: '225,29,72' },
-  { icon: '📅', title: 'Event Management', desc: 'Create, publish, and RSVP for events. Track attendance, collect feedback, and manage your campus calendar effortlessly.', color: '#2563EB', rgb: '37,99,235' },
-  { icon: '✅', title: 'Approval Workflow', desc: 'Transparent multi-tier event approval — Student → Faculty → HOD → Principal. Every stage visible and tracked.', color: '#059669', rgb: '5,150,105' },
-  { icon: '🏆', title: 'Digital Certificates', desc: 'Auto-generate and verify certificates for participants. Build your verified activity record for placements.', color: '#D97706', rgb: '217,119,6' },
-  { icon: '🔔', title: 'Smart Notifications', desc: 'Personalized alerts for events matching your interests. Never miss a workshop, orientation, or club drive.', color: '#7C3AED', rgb: '124,58,237' },
-  { icon: '📊', title: 'Analytics Dashboard', desc: 'Societies get RSVP counts, attendance stats, feedback analysis, and engagement reports — all in one clean dashboard.', color: '#0D9488', rgb: '13,148,136' },
+const MERGED_ABOUT_FEATURES = [
+  {
+    icon: '📸',
+    title: 'Club Stories & Highlights',
+    desc: 'Instagram-style 24-hour stories from 20+ active BPIT societies. Stay updated on what\'s happening across campus in real time.',
+    color: '#E11D48',
+    rgb: '225,29,72',
+  },
+  {
+    icon: '📅',
+    title: 'Event Management & RSVPs',
+    desc: 'Create, publish, and RSVP for 100+ events per year. Track attendance, manage venue booking, and sync your campus calendar effortlessly.',
+    color: '#2563EB',
+    rgb: '37,99,235',
+  },
+  {
+    icon: '✅',
+    title: 'Multi-Tier Approval Workflow',
+    desc: 'Transparent event approval routing — Student → Faculty → HOD → Principal. Every approval stage visible and tracked in real time.',
+    color: '#059669',
+    rgb: '5,150,105',
+  },
+  {
+    icon: '🔔',
+    title: 'Smart Alerts & Notifications',
+    desc: 'Personalized alerts for events matching your interests. Never miss a workshop, hackathon, orientation, or club drive.',
+    color: '#7C3AED',
+    rgb: '124,58,237',
+  },
+  {
+    icon: '📊',
+    title: 'Analytics & Insights',
+    desc: 'Societies and administration get RSVP counts, attendance stats, feedback analysis, and engagement reports in one clean dashboard.',
+    color: '#0D9488',
+    rgb: '13,148,136',
+  },
+  {
+    icon: '🔐',
+    title: 'Role-Based Access Control',
+    desc: 'Custom, secure portals built specifically for Students, Faculty Coordinators, Department HODs, Deans, Principal & Platform Admin.',
+    color: '#D97706',
+    rgb: '217,119,6',
+  },
 ];
 
-const ABOUT_CARDS = [
-  { icon: '🏛️', color: '#EFF6FF', title: '20+ Active Societies', desc: 'Technical, Cultural, Sports, Social & Research & Innovation clubs' },
-  { icon: '📅', color: '#F0FDF4', title: '100+ Events Per Year', desc: 'Workshops, hackathons, fests, cultural nights & more' },
-  { icon: '🏆', color: '#FFFBEB', title: 'Digital Certificates', desc: 'Auto-generated, verifiable participation records' },
-  { icon: '🔐', color: '#FFF1F2', title: 'Role-Based Access', desc: 'Secure login for students, faculty, HODs & administration' },
+const DEVELOPERS = [
+  {
+    name: 'Aman Kumar',
+    photo: '/developers/aman.png',
+    github: 'https://github.com/Amankr200',
+    linkedin: 'https://linkedin.com/in/aman-kumar-india',
+    color: '#2563EB',
+    rgb: '37,99,235',
+    gradient: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+  },
+  {
+    name: 'Kautilya Jaiswal',
+    photo: '/developers/kautilya.png',
+    github: 'https://github.com/kautilya09',
+    linkedin: 'https://www.linkedin.com/in/kautilya-j-265842326/',
+    color: '#059669',
+    rgb: '5,150,105',
+    gradient: 'linear-gradient(135deg, #10B981 0%, #047857 100%)',
+  },
+  {
+    name: 'Divyansh Gupta',
+    photo: '/developers/divyansh.png',
+    github: 'https://www.github.com/guptadivyansh26',
+    linkedin: 'https://linkedin.com/in/guptadivyansh26',
+    color: '#7C3AED',
+    rgb: '124,58,237',
+    gradient: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+  },
 ];
 
 const SAMPLE_EVENTS = [
@@ -223,7 +302,6 @@ function RoleCard({ role, onLoginSuccess }) {
         </div>
         <div className="lp-role-card-info">
           <div className="lp-role-card-name">{role.label}</div>
-          <div className="lp-role-card-desc">{role.description}</div>
         </div>
         <span className="lp-role-card-arrow">›</span>
       </div>
@@ -288,6 +366,119 @@ export default function LandingPage({ onLoginSuccess }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const heroRef = useRef(null);
 
+  // Dynamic Live Approved Events
+  const [approvedEvents, setApprovedEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [lpPinned, setLpPinned] = useState(() => {
+    try {
+      const saved = localStorage.getItem('clubconnect_lp_pinned');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const isEventEnded = (dateStr) => {
+    if (!dateStr) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let eventDate = new Date(dateStr);
+    if (isNaN(eventDate.getTime())) {
+      const year = today.getFullYear();
+      eventDate = new Date(`${dateStr}, ${year}`);
+    }
+
+    if (isNaN(eventDate.getTime())) return false;
+    eventDate.setHours(23, 59, 59, 999);
+    return eventDate < today;
+  };
+
+  const fetchLiveApprovedEvents = useCallback(async () => {
+    try {
+      const res = await fetch('/api/venue-bookings/public?status=approved');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.bookings && Array.isArray(data.bookings)) {
+        const live = data.bookings
+          .filter((b) => b.status === 'approved')
+          .map((b) => {
+            const ended = isEventEnded(b.date);
+            return {
+              id: `live-${b.id}`,
+              title: b.eventName,
+              cat: b.hostClub || 'Society Event',
+              date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Upcoming',
+              rawDate: b.date,
+              time: b.timeSlots?.[0] ? `${b.timeSlots[0].startTime} - ${b.timeSlots[0].endTime}` : '',
+              attendees: b.attendance || '150+ Expected',
+              icon: b.photo ? null : '🎉',
+              photo: b.photo || null,
+              color: '#EFF6FF',
+              status: ended ? 'Ended' : 'Live',
+              isEnded: ended,
+            };
+          });
+        setApprovedEvents(live);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch live approved events:', err);
+    } finally {
+      setLoadingEvents(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLiveApprovedEvents();
+    // Poll every 5 seconds to automatically pick up newly created & approved events live!
+    const timer = setInterval(fetchLiveApprovedEvents, 5000);
+    return () => clearInterval(timer);
+  }, [fetchLiveApprovedEvents]);
+
+  const handleLpPin = (id) => {
+    setLpPinned((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      try {
+        localStorage.setItem('clubconnect_lp_pinned', JSON.stringify([...n]));
+      } catch {}
+      return n;
+    });
+  };
+
+  const rawEventsList = approvedEvents.length > 0
+    ? approvedEvents
+    : SAMPLE_EVENTS.map((e, idx) => {
+        const ended = isEventEnded(e.date);
+        return {
+          ...e,
+          id: `sample-${idx}`,
+          status: ended ? 'Ended' : 'Live',
+          isEnded: ended,
+        };
+      });
+
+  const displayEvents = [...rawEventsList].sort((a, b) => {
+    const aPinned = lpPinned.has(a.id);
+    const bPinned = lpPinned.has(b.id);
+
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
+
+    if (!a.isEnded && b.isEnded) return -1;
+    if (a.isEnded && !b.isEnded) return 1;
+
+    return 0;
+  });
+
+  // Scroll reveal for multiple elements
+  const aboutTextRef = useReveal();
+  const aboutVisualRef = useReveal();
+  const statsRef = useReveal();
+  const loginTitleRef = useReveal();
+  const eventsTitleRef = useReveal();
+  const devsTitleRef = useReveal();
+
   // Navbar scroll detection + parallax
   useEffect(() => {
     const handleScroll = () => {
@@ -299,25 +490,20 @@ export default function LandingPage({ onLoginSuccess }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Scroll reveal for multiple elements
-  const aboutTextRef = useReveal();
-  const aboutVisualRef = useReveal();
-  const statsRef = useReveal();
-  const loginTitleRef = useReveal();
-  const featureTitleRef = useReveal();
-  const eventsTitleRef = useReveal();
-  const ctaBannerRef = useReveal();
-
   const scrollToLogin = () => {
     document.getElementById('login-portal')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setMobileMenuOpen(false);
   };
-  const scrollToFeatures = () => {
-    document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scrollToEvents = () => {
+    document.getElementById('events-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setMobileMenuOpen(false);
   };
   const scrollToAbout = () => {
     document.getElementById('about-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setMobileMenuOpen(false);
+  };
+  const scrollToDevelopers = () => {
+    document.getElementById('developers-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setMobileMenuOpen(false);
   };
 
@@ -336,8 +522,8 @@ export default function LandingPage({ onLoginSuccess }) {
 
         <ul className="lp-nav-links" role="list">
           <li><button onClick={scrollToAbout} id="nav-about">About</button></li>
-          <li><button onClick={scrollToFeatures} id="nav-features">Features</button></li>
-          <li><button onClick={scrollToLogin} id="nav-events">Events</button></li>
+          <li><button onClick={scrollToEvents} id="nav-events">Events</button></li>
+          <li><button onClick={scrollToDevelopers} id="nav-developers">Developers</button></li>
         </ul>
 
         <div className="lp-nav-cta">
@@ -370,8 +556,8 @@ export default function LandingPage({ onLoginSuccess }) {
       {mobileMenuOpen && (
         <div className="lp-mobile-drawer">
           <button onClick={scrollToAbout} className="lp-mobile-link">About</button>
-          <button onClick={scrollToFeatures} className="lp-mobile-link">Features</button>
-          <button onClick={scrollToLogin} className="lp-mobile-link">Events</button>
+          <button onClick={scrollToEvents} className="lp-mobile-link">Events</button>
+          <button onClick={scrollToDevelopers} className="lp-mobile-link">Developers</button>
           <button
             className="theme-toggle-btn"
             onClick={toggleTheme}
@@ -383,7 +569,7 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       )}
 
-      {/* ── HERO SECTION ───────────────────────────── */}
+      {/* ── 1. BANNER / HERO SECTION ───────────────── */}
       <section className="lp-hero" id="home" ref={heroRef} aria-label="Hero section">
 
         {/* Animated blobs */}
@@ -399,7 +585,7 @@ export default function LandingPage({ onLoginSuccess }) {
           <div className="lp-float-item lp-float-1"><span>💻</span><span>Technical Club</span></div>
           <div className="lp-float-item lp-float-2"><span>📅</span><span>Event Created</span></div>
           <div className="lp-float-item lp-float-3"><span>🎭</span><span>Drama Society</span></div>
-          <div className="lp-float-item lp-float-4"><span>🏆</span><span>Certificate Issued</span></div>
+          <div className="lp-float-item lp-float-4"><span>📊</span><span>Analytics Ready</span></div>
           <div className="lp-float-item lp-float-5"><span>✅</span><span>Event Approved</span></div>
           <div className="lp-float-item lp-float-6"><span>🔔</span><span>12 RSVPs Today</span></div>
         </div>
@@ -433,7 +619,7 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       </section>
 
-      {/* ── STATS BAR ──────────────────────────────── */}
+      {/* ── 2. STATS BAR ────────────────────────────── */}
       <div className="lp-stats">
         <div
           className="lp-stats-inner lp-reveal lp-stagger"
@@ -456,54 +642,66 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       </div>
 
-      {/* ── ABOUT SECTION ──────────────────────────── */}
-      <section className="lp-about" id="about-section" aria-label="About ClubConnect">
-        <div className="lp-about-inner">
-          <div className="lp-reveal-left" ref={aboutTextRef}>
-            <div className="lp-about-label">✦ About ClubConnect</div>
-            <h2 className="lp-about-title">
-              One Platform for Every<br />Campus Activity
-            </h2>
-            <p className="lp-about-body">
-              ClubConnect is built specifically for BPIT — bringing together students, faculty, department heads,
-              and administration on a single, transparent platform. Whether you're organizing a hackathon or
-              approving an event, everything flows through one system.
+      {/* ── 3. UPCOMING CAMPUS EVENTS (DYNAMIC LIVE APPROVED) ── */}
+      <section className="lp-events" id="events-section" aria-label="Upcoming Events">
+        <div className="lp-events-inner">
+          <div className="lp-reveal" ref={eventsTitleRef} style={{ marginBottom: 32 }}>
+            <div className="lp-section-label">📅 Live Approved Events</div>
+            <h2 className="lp-section-title">Upcoming Campus Events</h2>
+            <p className="lp-section-subtitle">
+              Official live approved events from BPIT clubs and societies. Updated in real time!
             </p>
-            <ul className="lp-about-checks">
-              {[
-                'Multi-tier approval workflow for events',
-                'Real-time stories from all societies',
-                'Automated certificate generation & tracking',
-                'Role-based dashboards for every user type',
-                'Venue booking & calendar management',
-              ].map((item, i) => (
-                <li key={i}>
-                  <span className="lp-check-icon">✓</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
 
-          <div className="lp-about-visual lp-reveal-right" ref={aboutVisualRef}>
-            <div className="lp-about-card-stack">
-              {ABOUT_CARDS.map((card, i) => (
-                <div key={i} className="lp-about-card" style={{ animationDelay: `${i * 80}ms` }}>
-                  <div className="lp-about-card-icon" style={{ background: card.color }}>
-                    {card.icon}
+          <div className="lp-events-scroll">
+            {displayEvents.map((ev, i) => {
+              const isPinned = lpPinned.has(ev.id);
+              return (
+                <div
+                  key={ev.id || i}
+                  className={`lp-event-card ${isPinned ? 'pinned' : ''} ${ev.isEnded ? 'ended-card' : ''}`}
+                  style={{ animationDelay: `${i * 80}ms`, position: 'relative' }}
+                >
+                  {isPinned && <div className="pin-ribbon">📌 Pinned</div>}
+                  <div className="lp-event-card-header" style={{ background: ev.color || '#EFF6FF', position: 'relative', overflow: 'hidden' }}>
+                    {ev.photo ? (
+                      <img src={ev.photo} alt={ev.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: ev.isEnded ? 0.75 : 1 }} />
+                    ) : (
+                      <span>{ev.icon || '🎉'}</span>
+                    )}
+                    {ev.isEnded ? (
+                      <span className="lp-event-status-badge ended" style={{ background: '#64748B' }}>🔴 Ended</span>
+                    ) : (
+                      <span className="lp-event-status-badge">✅ Live</span>
+                    )}
                   </div>
-                  <div>
-                    <div className="lp-about-card-title">{card.title}</div>
-                    <div className="lp-about-card-desc">{card.desc}</div>
+                  <div className="lp-event-card-body">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div className="lp-event-card-cat">{ev.cat}</div>
+                      <button
+                        className={`pin-btn ${isPinned ? 'active' : ''}`}
+                        onClick={() => handleLpPin(ev.id)}
+                        title={isPinned ? 'Unpin event' : 'Pin to top left'}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: isPinned ? 1 : 0.4 }}
+                      >
+                        📌
+                      </button>
+                    </div>
+                    <div className="lp-event-card-title">{ev.title}</div>
+                    <div className="lp-event-card-meta">
+                      <span className="lp-event-meta-item">📅 {ev.date}</span>
+                      {ev.time && <span className="lp-event-meta-item">⏰ {ev.time}</span>}
+                      <span className="lp-event-meta-item">👥 {ev.attendees}</span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── LOGIN PORTAL ───────────────────────────── */}
+      {/* ── 4. ACCESS PORTAL ────────────────────────── */}
       <section className="lp-login-section" id="login-portal" aria-label="Login Portal">
         <div className="lp-login-bg-grid" aria-hidden="true" />
         <div className="lp-login-inner">
@@ -521,45 +719,100 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       </section>
 
-      {/* ── FEATURES SECTION ───────────────────────── */}
-      <section className="lp-features" id="features-section" aria-label="Platform Features">
+      {/* ── 5. ABOUT CLUBCONNECT (SINGLE UNIFIED COMPONENT) ── */}
+      <section className="lp-features" id="about-section" aria-label="About ClubConnect">
         <div className="lp-features-inner">
-          <div className="lp-reveal" ref={featureTitleRef} style={{ marginBottom: 48, textAlign: 'center' }}>
-            <div className="lp-section-label" style={{ justifyContent: 'center' }}>✨ What You Get</div>
-            <h2 className="lp-section-title" style={{ textAlign: 'center' }}>Everything a Campus Needs</h2>
-            <p className="lp-section-subtitle" style={{ margin: '0 auto', textAlign: 'center' }}>
-              Built for students, societies, faculty coordinators, HODs, and college administration.
+          <div className="lp-reveal" ref={aboutTextRef} style={{ marginBottom: 48, textAlign: 'center' }}>
+            <div className="lp-section-label" style={{ justifyContent: 'center' }}>✦ About ClubConnect</div>
+            <h2 className="lp-section-title" style={{ textAlign: 'center' }}>One Platform for Every Campus Need</h2>
+            <p className="lp-section-subtitle" style={{ margin: '0 auto', textAlign: 'center', maxWidth: 760 }}>
+              ClubConnect is built specifically for BPIT — bringing together 20+ active societies, students, faculty, department heads,
+              and administration on a single, transparent platform.
             </p>
           </div>
 
-          <FeatureGrid />
+          <div className="lp-features-grid lp-stagger lp-reveal" ref={aboutVisualRef}>
+            {MERGED_ABOUT_FEATURES.map((f, i) => (
+              <div
+                key={i}
+                className="lp-feat-card"
+                style={{ '--feat-color': f.color, '--feat-rgb': f.rgb }}
+              >
+                <div className="lp-feat-icon-wrap">{f.icon}</div>
+                <h3 className="lp-feat-title">{f.title}</h3>
+                <p className="lp-feat-desc">{f.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── EVENTS PREVIEW ─────────────────────────── */}
-      <section className="lp-events" id="events-section" aria-label="Upcoming Events">
-        <div className="lp-events-inner">
-          <div className="lp-reveal" ref={eventsTitleRef} style={{ marginBottom: 32 }}>
-            <div className="lp-section-label">📅 What's On</div>
-            <h2 className="lp-section-title">Upcoming Campus Events</h2>
-            <p className="lp-section-subtitle">
-              Log in to RSVP, track attendance, and get personalized event recommendations.
+      {/* ── 6. ABOUT THE DEVELOPER (SHADCN/MODERN UI) ── */}
+      <section className="lp-developers-section" id="developers-section" aria-label="About the Developers">
+        <div className="lp-developers-inner">
+          <div className="lp-reveal" ref={devsTitleRef} style={{ textAlign: 'center', marginBottom: 56 }}>
+            <div className="lp-section-label" style={{ justifyContent: 'center' }}>
+              <Sparkles size={14} style={{ marginRight: 6 }} /> The Engineering Team
+            </div>
+            <h2 className="lp-section-title" style={{ textAlign: 'center' }}>About the Developers</h2>
+            <p className="lp-section-subtitle" style={{ margin: '0 auto', textAlign: 'center', maxWidth: 620 }}>
+              Crafted with passion, modern engineering, and design precision for BPIT.
             </p>
           </div>
 
-          <div className="lp-events-scroll">
-            {SAMPLE_EVENTS.map((ev, i) => (
-              <div key={i} className="lp-event-card" style={{ animationDelay: `${i * 80}ms` }}>
-                <div className="lp-event-card-header" style={{ background: ev.color }}>
-                  {ev.icon}
+          <div className="lp-developers-grid">
+            {DEVELOPERS.map((dev, i) => (
+              <div
+                key={i}
+                className="lp-dev-card-pro"
+                style={{ '--dev-color': dev.color, '--dev-rgb': dev.rgb, animationDelay: `${i * 120}ms` }}
+              >
+                {/* Top Ambient Gradient Banner */}
+                <div className="lp-dev-banner" style={{ background: dev.gradient }}>
+                  <div className="lp-dev-banner-pattern" />
                 </div>
-                <div className="lp-event-card-body">
-                  <div className="lp-event-card-cat">{ev.cat}</div>
-                  <div className="lp-event-card-title">{ev.title}</div>
-                  <div className="lp-event-card-meta">
-                    <span className="lp-event-meta-item">📅 {ev.date}</span>
-                    <span className="lp-event-meta-item">👥 {ev.attendees}</span>
+
+                {/* Avatar Photo Frame & Status Ring */}
+                <div className="lp-dev-photo-container">
+                  <div className="lp-dev-photo-ring" style={{ background: dev.gradient }}>
+                    <div className="lp-dev-photo-box">
+                      <img src={dev.photo} alt={dev.name} className="lp-dev-photo-img" />
+                    </div>
                   </div>
+                  <span className="lp-dev-online-status" title="Active Developer">
+                    <span className="lp-dev-pulse" />
+                  </span>
+                </div>
+
+                {/* Developer Title Block */}
+                <div className="lp-dev-info-block">
+                  <h3 className="lp-dev-pro-name">{dev.name}</h3>
+                </div>
+
+                {/* Social Action Buttons (Shadcn Outline / Solid Hybrid) */}
+                <div className="lp-dev-pro-actions">
+                  <a
+                    href={dev.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="lp-dev-btn-pro github"
+                    aria-label={`${dev.name}'s GitHub`}
+                  >
+                    <GithubIcon size={16} />
+                    <span>GitHub</span>
+                    <ExternalLink size={12} className="lp-btn-arrow" />
+                  </a>
+                  <a
+                    href={dev.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="lp-dev-btn-pro linkedin"
+                    aria-label={`${dev.name}'s LinkedIn`}
+                  >
+                    <LinkedinIcon size={16} />
+                    <span>LinkedIn</span>
+                    <ExternalLink size={12} className="lp-btn-arrow" />
+                  </a>
                 </div>
               </div>
             ))}
@@ -567,22 +820,7 @@ export default function LandingPage({ onLoginSuccess }) {
         </div>
       </section>
 
-      {/* ── CTA BANNER ─────────────────────────────── */}
-      <div className="lp-cta-banner">
-        <div className="lp-cta-banner-inner lp-reveal" ref={ctaBannerRef}>
-          <h2 className="lp-cta-banner-title">
-            Ready to Get Connected?
-          </h2>
-          <p className="lp-cta-banner-sub">
-            Join thousands of BPIT students and faculty already using ClubConnect to manage campus life.
-          </p>
-          <button className="lp-btn-white" onClick={scrollToLogin} id="cta-banner-btn">
-            🚀 Access Your Portal Now
-          </button>
-        </div>
-      </div>
-
-      {/* ── FOOTER ─────────────────────────────────── */}
+      {/* ── 7. FOOTER ───────────────────────────────── */}
       <footer className="lp-footer" role="contentinfo">
         <div className="lp-footer-inner">
           <div className="lp-footer-top">
@@ -603,9 +841,9 @@ export default function LandingPage({ onLoginSuccess }) {
               <div className="lp-footer-col-title">Platform</div>
               <ul className="lp-footer-links">
                 <li><button onClick={scrollToAbout}>About</button></li>
-                <li><button onClick={scrollToFeatures}>Features</button></li>
-                <li><button onClick={scrollToLogin}>Events</button></li>
-                <li><button onClick={scrollToLogin}>Clubs</button></li>
+                <li><button onClick={scrollToEvents}>Events</button></li>
+                <li><button onClick={scrollToDevelopers}>Developers</button></li>
+                <li><button onClick={scrollToLogin}>Access Portal</button></li>
               </ul>
             </div>
             <div>
@@ -632,7 +870,7 @@ export default function LandingPage({ onLoginSuccess }) {
               © 2026 ClubConnect — BPIT. All rights reserved.
             </div>
             <div className="lp-footer-credit">
-              Built with ❤️ for the BPIT campus community
+              Built with ❤️ by Aman, Divyansh &amp; Kautilya for BPIT
             </div>
           </div>
         </div>
@@ -652,37 +890,6 @@ function RoleGroupSection({ group, onLoginSuccess }) {
           <RoleCard key={role.id} role={role} onLoginSuccess={onLoginSuccess} />
         ))}
       </div>
-    </div>
-  );
-}
-
-/* ── Feature Grid (scroll-reveal per card) ──────── */
-function FeatureGrid() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { el.classList.add('lp-visible'); observer.disconnect(); } },
-      { threshold: 0.05, rootMargin: '0px 0px -40px 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div className="lp-features-grid lp-stagger lp-reveal" ref={ref}>
-      {FEATURES.map((f, i) => (
-        <div
-          key={i}
-          className="lp-feat-card"
-          style={{ '--feat-color': f.color, '--feat-rgb': f.rgb }}
-        >
-          <div className="lp-feat-icon-wrap">{f.icon}</div>
-          <h3 className="lp-feat-title">{f.title}</h3>
-          <p className="lp-feat-desc">{f.desc}</p>
-        </div>
-      ))}
     </div>
   );
 }

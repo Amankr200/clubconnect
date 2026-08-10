@@ -71,4 +71,40 @@ router.post('/:id/click', async (req, res) => {
   }
 });
 
+// DELETE /api/stories/:id - Delete a story (Coordinators, HODs, Admin only)
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const allowedRoles = ['student_coordinator', 'faculty_coordinator', 'hod', 'admin'];
+    if (!allowedRoles.includes(req.user?.role)) {
+      return res.status(403).json({ message: 'Only authorized coordinators can delete stories.' });
+    }
+
+    const story = await storyModel.deleteStory(req.params.id);
+    res.json({ story, message: 'Story deleted successfully!' });
+  } catch (err) {
+    console.error('[/api/stories/:id DELETE]', err);
+    res.status(500).json({ message: 'Failed to delete story.' });
+  }
+});
+
+// PUT /api/stories/:id - Update a story (Coordinators, HODs, Admin only)
+router.put('/:id', requireAuth, async (req, res) => {
+  try {
+    const allowedRoles = ['student_coordinator', 'faculty_coordinator', 'hod', 'admin'];
+    if (!allowedRoles.includes(req.user?.role)) {
+      return res.status(403).json({ message: 'Only authorized coordinators can edit stories.' });
+    }
+
+    const { title, mediaUrl, mediaType } = req.body;
+    const story = await storyModel.updateStory(req.params.id, { title, mediaUrl, mediaType });
+    if (!story) {
+      return res.status(404).json({ message: 'Story not found.' });
+    }
+    res.json({ story, message: 'Story updated successfully!' });
+  } catch (err) {
+    console.error('[/api/stories/:id PUT]', err);
+    res.status(500).json({ message: 'Failed to update story.' });
+  }
+});
+
 module.exports = router;

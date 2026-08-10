@@ -6,6 +6,7 @@ import './EventsSection.css';
 const STATUS_MAP = {
   approved: { label: 'Live', color: '#1A6B1A', bg: '#EEF8EE', border: '#AADDAA', icon: '✅' },
   upcoming: { label: 'Upcoming', color: '#805500', bg: '#FFF8E8', border: '#DDCC88', icon: '⏳' },
+  ended: { label: 'Ended', color: '#475569', bg: '#F1F5F9', border: '#CBD5E1', icon: '🔴' },
   rejected: { label: 'Rejected', color: '#8B1A1A', bg: '#FFF0F0', border: '#FFBBBB', icon: '❌' },
 };
 
@@ -21,9 +22,34 @@ function getVenueName(venueId) {
   return venues.find((v) => v.id === Number(venueId))?.name || `Venue #${venueId}`;
 }
 
+// Helper to determine if an event date has passed
+function isEventEnded(dateStr) {
+  if (!dateStr) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let eventDate = new Date(dateStr);
+  if (isNaN(eventDate.getTime())) {
+    const year = today.getFullYear();
+    eventDate = new Date(`${dateStr}, ${year}`);
+  }
+
+  if (isNaN(eventDate.getTime())) return false;
+
+  eventDate.setHours(23, 59, 59, 999);
+  return eventDate < today;
+}
+
 export default function EventsSection({ onLoginClick }) {
   const [rsvpd, setRsvpd] = useState(new Set());
-  const [pinned, setPinned] = useState(new Set());
+  const [pinned, setPinned] = useState(() => {
+    try {
+      const saved = localStorage.getItem('clubconnect_pinned_events');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
   const [activeFilter, setActiveFilter] = useState('All');
   const [approvedBookings, setApprovedBookings] = useState([]);
 
@@ -59,9 +85,36 @@ export default function EventsSection({ onLoginClick }) {
 
   const allEvents = [...liveApprovedEvents, ...upcomingEvents];
 
+  // Map events to calculate ended status dynamically
+  const processedEvents = allEvents.map((e) => {
+    const ended = isEventEnded(e.date);
+    return {
+      ...e,
+      isEnded: ended,
+      effectiveStatus: ended ? 'ended' : e.status,
+    };
+  });
+
   const filtered = activeFilter === 'All'
-    ? allEvents
-    : allEvents.filter((e) => e.type === activeFilter);
+    ? processedEvents
+    : processedEvents.filter((e) => e.type === activeFilter);
+
+  // Sorting order:
+  // 1. Pinned events FIRST (move to top-left corner)
+  // 2. Live & Upcoming active events
+  // 3. Ended / Past events AT THE BOTTOM
+  const sortedEvents = [...filtered].sort((a, b) => {
+    const aPinned = pinned.has(a.id);
+    const bPinned = pinned.has(b.id);
+
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
+
+    if (!a.isEnded && b.isEnded) return -1;
+    if (a.isEnded && !b.isEnded) return 1;
+
+    return 0;
+  });
 
   const handleRsvp = (id, status) => {
     if (status !== 'approved') return;
@@ -76,6 +129,9 @@ export default function EventsSection({ onLoginClick }) {
     setPinned((prev) => {
       const n = new Set(prev);
       n.has(id) ? n.delete(id) : n.add(id);
+      try {
+        localStorage.setItem('clubconnect_pinned_events', JSON.stringify([...n]));
+      } catch {}
       return n;
     });
   };
@@ -88,7 +144,7 @@ export default function EventsSection({ onLoginClick }) {
           <span>📅</span> Upcoming Events &amp; Programs – BPIT
         </div>
         <p className="section-sub-desc">
-          RSVP for workshops, competitions, orientations, and cultural programs.
+          RSVP for workshops, competitions, orientations, and cultural programs. Pin your favorite events to the top!
         </p>
 
         {/* Stats bar */}
@@ -99,18 +155,18 @@ export default function EventsSection({ onLoginClick }) {
           </div>
           <div className="evt-stat-div" />
           <div className="evt-stat">
-            <span className="evt-stat-num">{allEvents.filter((e) => e.status === 'approved').length}</span>
+            <span className="evt-stat-num">{processedEvents.filter((e) => !e.isEnded && e.effectiveStatus === 'approved').length}</span>
             <span className="evt-stat-label">Approved Live Events</span>
           </div>
           <div className="evt-stat-div" />
           <div className="evt-stat">
-            <span className="evt-stat-num">{allEvents.filter((e) => e.status === 'upcoming').length}</span>
+            <span className="evt-stat-num">{processedEvents.filter((e) => !e.isEnded && e.effectiveStatus === 'upcoming').length}</span>
             <span className="evt-stat-label">Upcoming Programs</span>
           </div>
           <div className="evt-stat-div" />
           <div className="evt-stat">
-            <span className="evt-stat-num">{allEvents.reduce((a, e) => a + e.rsvp, 0)}+</span>
-            <span className="evt-stat-label">Total Registrations</span>
+            <span className="evt-stat-num">{processedEvents.filter((e) => e.isEnded).length}</span>
+            <span className="evt-stat-label">Past / Ended Events</span>
           </div>
         </div>
 
@@ -130,21 +186,21 @@ export default function EventsSection({ onLoginClick }) {
 
         {/* Events Grid */}
         <div className="events-grid">
-          {filtered.map((event) => {
-            const st = STATUS_MAP[event.status] || STATUS_MAP.approved;
+          {sortedEvents.map((event) => {
+            const st = STATUS_MAP[event.effectiveStatus] || STATUS_MAP.approved;
             const isRsvpd = rsvpd.has(event.id);
             const isPinned = pinned.has(event.id);
             return (
               <article
                 key={event.id}
-                className={`event-card card ${isPinned ? 'pinned' : ''}`}
-                style={{ '--event-color': event.color }}
+                className={`event-card card ${isPinned ? 'pinned' : ''} ${event.isEnded ? 'ended-card' : ''}`}
+                style={{ '--event-color': event.isEnded ? '#94A3B8' : event.color }}
                 id={`event-${event.id}`}
               >
                 {/* Image Poster Preview if available */}
                 {event.photo && (
                   <div style={{ margin: '-1.5rem -1.5rem 1rem -1.5rem', maxHeight: '180px', overflow: 'hidden', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
-                    <img src={event.photo} alt={event.title} style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
+                    <img src={event.photo} alt={event.title} style={{ width: '100%', height: '180px', objectFit: 'cover', opacity: event.isEnded ? 0.75 : 1 }} />
                   </div>
                 )}
 
@@ -172,8 +228,8 @@ export default function EventsSection({ onLoginClick }) {
                   <button
                     className={`pin-btn ${isPinned ? 'active' : ''}`}
                     onClick={() => handlePin(event.id)}
-                    title={isPinned ? 'Unpin event' : 'Pin event'}
-                    aria-label={isPinned ? 'Unpin' : 'Pin to top'}
+                    title={isPinned ? 'Unpin event' : 'Pin to top left'}
+                    aria-label={isPinned ? 'Unpin' : 'Pin to top left'}
                   >
                     📌
                   </button>
@@ -205,35 +261,21 @@ export default function EventsSection({ onLoginClick }) {
                   </div>
                 </div>
 
-                {/* RSVP progress bar */}
-                {/*
-                <div className="rsvp-bar-wrap">
-                  <div className="rsvp-bar-label">
-                    <span>RSVP Progress</span>
-                    <span>{Math.min(event.rsvp + (isRsvpd ? 1 : 0), 300)} / 300</span>
-                  </div>
-                  <div className="rsvp-bar-track">
-                    <div
-                      className="rsvp-bar-fill"
-                      style={{
-                        width: `${Math.min(((event.rsvp + (isRsvpd ? 1 : 0)) / 300) * 100, 100)}%`,
-                        background: event.color,
-                      }}
-                    />
-                  </div>
-                </div>
-                */}
-
                 {/* Actions */}
                 <div className="event-actions">
-                  <button
-                    className={`rsvp-btn ${isRsvpd ? 'rsvpd' : ''}`}
-                    onClick={onLoginClick}
-                    // id={`rsvp-${event.id}`}
-                    style={!isRsvpd ? { background: event.color, borderColor: event.color } : {}}
-                  >
-                    Register Here
-                  </button>
+                  {event.isEnded ? (
+                    <button className="rsvp-btn ended" disabled style={{ background: '#94A3B8', borderColor: '#94A3B8', cursor: 'not-allowed', color: '#FFF' }}>
+                      Event Ended
+                    </button>
+                  ) : (
+                    <button
+                      className={`rsvp-btn ${isRsvpd ? 'rsvpd' : ''}`}
+                      onClick={onLoginClick}
+                      style={!isRsvpd ? { background: event.color, borderColor: event.color } : {}}
+                    >
+                      Register Here
+                    </button>
+                  )}
                   <button className="btn-outline event-details-btn">
                     View Details
                   </button>

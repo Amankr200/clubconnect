@@ -133,7 +133,7 @@
   font-family: inherit;
 }
 .cat-tab:hover { border-color: var(--bpit-blue); color: var(--bpit-blue); }
-..active {
+.cat-tab.active {
   background: var(--bpit-blue);
   border-color: var(--bpit-blue);
   color: #fff;
