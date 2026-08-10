@@ -66,8 +66,8 @@ main { padding-top: 144px; }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
   margin-bottom: 32px;
 }
 
@@ -474,6 +474,12 @@ main { padding-top: 144px; }
 @media (max-width: 900px) {
   .calendar-shell {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
