@@ -48,7 +48,6 @@ function FeaturesSection({ onLoginClick, onNavigateClubs }) {
     { icon: '📸', title: 'Club Stories',               desc: 'Instagram-style 24h stories from every society. Stay updated in real time.', color: '#EC4899' },
     { icon: '📅', title: 'Event Management',            desc: 'Create, publish, and RSVP for events. Manage your campus calendar effortlessly.', color: '#3B82F6' },
     { icon: '✅', title: 'Multi-Tier Approval Workflow', desc: 'Student → Faculty → HOD → Principal. Every stage transparent and tracked.', color: '#10B981' },
-    { icon: '🏆', title: 'Certificates & Records',      desc: 'Auto-generate certificates. Verified records that help during placements.', color: '#F59E0B' },
     { icon: '🔔', title: 'Smart Notifications',         desc: 'Personalized alerts for events matching your interests.', color: '#8B5CF6' },
     { icon: '📊', title: 'Analytics Dashboard',         desc: 'RSVP counts, attendance stats, feedback analysis — all in one place.', color: '#EF4444' },
   ];
