@@ -1,17 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { venues } from "../data/venues.js";
 import {
-  generateTimeSlots,
-  convertTo12HourFormat,
-} from "../utils/timeSlots.js";
-import {
   createVenueBooking,
-  getVenueAvailability,
   resubmitVenueBooking,
 } from "../api/venueBookings.js";
 import "./VenueBookingModal.css";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
+
+/*
+const createEmptyScheduleEntry = () => ({
+  date: "",
+  startTime: "",
+  endTime: "",
+});
+*/
 
 export default function VenueBookingModal({
   isOpen,
@@ -27,8 +30,11 @@ export default function VenueBookingModal({
   const activeToken = token || authToken;
   const [selectedVenue, setSelectedVenue] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedSlots, setSelectedSlots] = useState([]);
+  const [selectedStartTime, setSelectedStartTime] = useState("");
+  const [selectedEndTime, setSelectedEndTime] = useState("");
+  // const [scheduleEntries, setScheduleEntries] = useState([createEmptyScheduleEntry()]);
   const [eventName, setEventName] = useState("");
+  const [clubs, setClubs] = useState([]);
   const [hostClub, setHostClub] = useState("");
   const [photo, setPhoto] = useState("");
   const [photoFileName, setPhotoFileName] = useState("");
@@ -39,20 +45,11 @@ export default function VenueBookingModal({
   const [studentCoordinators, setStudentCoordinators] = useState("");
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState("");
-  const [existingBookings, setExistingBookings] = useState([]);
-  const [loadingAvailability, setLoadingAvailability] = useState(false);
-
-  const allTimeSlots = useMemo(() => generateTimeSlots(), []);
   const isEditing = Boolean(booking?.id);
 
   const venueDetails = selectedVenue
     ? venues.find((venue) => venue.id === parseInt(selectedVenue, 10))
     : null;
-
-  const bookedSlots = useMemo(
-    () => existingBookings.flatMap((item) => item.timeSlots || []),
-    [existingBookings],
-  );
 
   const getTodayDate = () => {
     const today = new Date();
@@ -62,29 +59,31 @@ export default function VenueBookingModal({
     return `${year}-${month}-${day}`;
   };
 
-  const availableSlots = useMemo(() => {
-    if (!selectedVenue || !selectedDate) return [];
-
-    return allTimeSlots.filter(
-      (slot) =>
-        !bookedSlots.some(
-          (bookedSlot) =>
-            bookedSlot.startTime < slot.endTime &&
-            bookedSlot.endTime > slot.startTime,
-        ),
-    );
-  }, [selectedVenue, selectedDate, allTimeSlots, bookedSlots]);
-
   const getMinDate = () => getTodayDate();
 
-  const toggleSlotSelection = (startTime) => {
-    setSelectedSlots((prev) =>
-      prev.includes(startTime)
-        ? prev.filter((slot) => slot !== startTime)
-        : [...prev, startTime].sort(),
+  /*
+  const updateScheduleEntry = (index, field, value) => {
+    setScheduleEntries((prev) =>
+      prev.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry,
+      ),
     );
     setBookingError("");
   };
+
+  const addScheduleEntry = () => {
+    setScheduleEntries((prev) => [...prev, createEmptyScheduleEntry()]);
+    setBookingError("");
+  };
+
+  const removeScheduleEntry = (index) => {
+    setScheduleEntries((prev) => {
+      const next = prev.filter((_, entryIndex) => entryIndex !== index);
+      return next.length > 0 ? next : [createEmptyScheduleEntry()];
+    });
+    setBookingError("");
+  };
+  */
 
   const handlePhotoUpload = (event) => {
     const file = event.target.files?.[0];
@@ -118,8 +117,20 @@ export default function VenueBookingModal({
     if (!isOpen) return;
 
     setSelectedVenue(booking?.venueId ? String(booking.venueId) : "");
+    /*
+    setScheduleEntries(
+      booking?.timeSlots?.length
+        ? booking.timeSlots.map((slot) => ({
+            date: slot.date || booking?.date || "",
+            startTime: slot.startTime || "",
+            endTime: slot.endTime || "",
+          }))
+        : [createEmptyScheduleEntry()],
+    );
+    */
     setSelectedDate(booking?.date || "");
-    setSelectedSlots(booking?.timeSlots?.map((slot) => slot.startTime) || []);
+    setSelectedStartTime(booking?.timeSlots?.[0]?.startTime || "");
+    setSelectedEndTime(booking?.timeSlots?.[0]?.endTime || "");
     setEventName(booking?.eventName || "");
     setHostClub(booking?.hostClub || "");
     setPhoto(booking?.photo || "");
@@ -131,64 +142,30 @@ export default function VenueBookingModal({
     setStudentCoordinators(booking?.studentCoordinators || "");
     setBookingError("");
     setBookingSuccess("");
-    setExistingBookings([]);
   }, [booking, isOpen]);
-
+  
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadAvailability() {
-      if (!selectedVenue || !selectedDate) {
-        setExistingBookings([]);
-        return;
-      }
-
-      setLoadingAvailability(true);
+    const fetchClubs = async () => {
       try {
-        const data = await getVenueAvailability(selectedVenue, selectedDate);
-        if (!cancelled) {
-          setExistingBookings(data.bookings || []);
+        const response = await fetch("  /api/societies");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch clubs");
         }
-      } catch {
-        if (!cancelled) {
-          setExistingBookings([]);
+
+        const data = await response.json();
+        if (!Array.isArray(data.societies)) {
+          throw new Error("Expected an array of clubs");
         }
-      } finally {
-        if (!cancelled) {
-          setLoadingAvailability(false);
-        }
+        setClubs(data.societies);
+      } catch (error) {
+        console.error("Error fetching clubs:", error);
+        setClubs([]);
       }
-    }
-
-    loadAvailability();
-
-    return () => {
-      cancelled = true;
     };
-  }, [selectedVenue, selectedDate]);
 
-  const areSlotConsecutive = (slots) => {
-    if (slots.length <= 1) return true;
-
-    const sortedSlots = [...slots].sort();
-    for (let i = 0; i < sortedSlots.length - 1; i += 1) {
-      const currentSlot = allTimeSlots.find(
-        (slot) => slot.startTime === sortedSlots[i],
-      );
-      const nextSlot = allTimeSlots.find(
-        (slot) => slot.startTime === sortedSlots[i + 1],
-      );
-      if (
-        !currentSlot ||
-        !nextSlot ||
-        currentSlot.endTime !== nextSlot.startTime
-      ) {
-        return false;
-      }
-    }
-
-    return true;
-  };
+    fetchClubs();
+  }, []);
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -198,7 +175,8 @@ export default function VenueBookingModal({
     if (
       !selectedVenue ||
       !selectedDate ||
-      selectedSlots.length === 0 ||
+      !selectedStartTime ||
+      !selectedEndTime ||
       !eventName ||
       !hostClub ||
       !description ||
@@ -213,13 +191,43 @@ export default function VenueBookingModal({
       return;
     }
 
+    /*
+    const normalizedSchedule = scheduleEntries
+      .map((entry) => ({
+        date: String(entry.date || "").trim(),
+        startTime: String(entry.startTime || "").trim(),
+        endTime: String(entry.endTime || "").trim(),
+      }))
+      .filter((entry) => entry.date || entry.startTime || entry.endTime);
+
+    if (normalizedSchedule.length === 0) {
+      setBookingError("Please add at least one date with start and end time.");
+      return;
+    }
+
+    if (normalizedSchedule.some((entry) => !entry.date || !entry.startTime || !entry.endTime)) {
+      setBookingError("Please complete the date, start time, and end time for every entry.");
+      return;
+    }
+
+    if (normalizedSchedule.some((entry) => entry.date < getMinDate())) {
+      setBookingError("Please select today or a future date.");
+      return;
+    }
+
+    if (normalizedSchedule.some((entry) => entry.endTime <= entry.startTime)) {
+      setBookingError("End time must be later than start time for every date.");
+      return;
+    }
+    */
+
     if (selectedDate < getMinDate()) {
       setBookingError("Please select today or a future date.");
       return;
     }
 
-    if (!areSlotConsecutive(selectedSlots)) {
-      setBookingError("Selected time slots must be consecutive");
+    if (selectedEndTime < selectedStartTime) {
+      setBookingError("End time must be later than start time.");
       return;
     }
 
@@ -231,20 +239,26 @@ export default function VenueBookingModal({
     }
 
     try {
-      const slotsData = allTimeSlots.filter((slot) =>
-        selectedSlots.includes(slot.startTime),
-      );
-      const firstSlot = slotsData[0];
-      const lastSlot = slotsData[slotsData.length - 1];
+      /*
+      const sortedSchedule = [...normalizedSchedule].sort((a, b) => {
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        return a.startTime.localeCompare(b.startTime);
+      });
+      const firstEntry = sortedSchedule[0];
+      */
+      const timeSlots = [
+        {
+          startTime: selectedStartTime,
+          endTime: selectedEndTime,
+        },
+      ];
       const payload = {
         venueId: parseInt(selectedVenue, 10),
         date: selectedDate,
-        timeSlots: slotsData.map((slot) => ({
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-        })),
+        timeSlots,
         eventName,
-        hostClub,
+        hostClub: parseInt(hostClub, 10),
         photo,
         photoFileName,
         description,
@@ -254,20 +268,29 @@ export default function VenueBookingModal({
         studentCoordinators,
       };
 
+      console.log("BOOKING PAYLOAD:", payload);
+
       const result = isEditing
         ? await resubmitVenueBooking(activeToken, booking.id, payload)
         : await createVenueBooking(activeToken, payload);
 
-      const durationMins = selectedSlots.length * 50;
+      const [startHour, startMinute] = selectedStartTime.split(":").map(Number);
+      const [endHour, endMinute] = selectedEndTime.split(":").map(Number);
+
+      const startTotal = startHour * 60 + startMinute;
+      const endTotal = endHour * 60 + endMinute;
+
+      const durationMins = endTotal - startTotal;
       const durationHours = Math.floor(durationMins / 60);
       const durationRemainingMins = durationMins % 60;
-      const durationStr =
-        durationHours > 0
-          ? `${durationHours}h ${durationRemainingMins}m`
-          : `${durationMins}m`;
+      const durationStr = durationHours > 0
+        ? `${durationHours}h ${durationRemainingMins}m`
+        : `${durationMins}m`;
 
       setBookingSuccess(
-        `✓ Event "${eventName}" has been ${isEditing ? "resubmitted" : "sent for approval"} at ${venueDetails?.name || "selected venue"} on ${selectedDate} from ${convertTo12HourFormat(firstSlot.startTime)} to ${convertTo12HourFormat(lastSlot.endTime)} (${durationStr})`,
+        `✓ Event "${eventName}" has been ${
+          isEditing ? "resubmitted" : "sent for approval"
+        } at ${venueDetails?.name || "selected venue"} on ${selectedDate} (${durationStr})`,
       );
 
       if (onBookingSuccess) {
@@ -279,6 +302,11 @@ export default function VenueBookingModal({
         setBookingSuccess("");
       }, 2000);
     } catch (error) {
+      if (String(error.message || "").includes("overlaps with another event")) {
+        setBookingError("event overlaps with another event");
+        return;
+      }
+
       setBookingError(
         error.message || "Failed to create booking. Please try again.",
       );
@@ -342,14 +370,20 @@ export default function VenueBookingModal({
 
         <div className="booking-form-group">
           <label htmlFor="hostClub">Host Club/Organization *</label>
-          <input
+
+          <select
             id="hostClub"
-            type="text"
-            placeholder="e.g., #DEFINE, IEEE, WIE"
             value={hostClub}
             onChange={(event) => setHostClub(event.target.value)}
-            maxLength={50}
-          />
+          >
+            <option value="">Select a club</option>
+
+            {clubs.map((club) => (
+              <option key={club.id} value={club.id}>
+                {club.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="booking-form-group">
@@ -376,30 +410,6 @@ export default function VenueBookingModal({
           />
         </div>
 
-        <div className="booking-form-group">
-          <label htmlFor="date">Select Date *</label>
-          <input
-            id="date"
-            type="date"
-            value={selectedDate}
-            autoComplete="off"
-            onChange={(event) => {
-              const nextDate = event.target.value;
-              if (nextDate && nextDate < getMinDate()) {
-                setSelectedDate("");
-                setSelectedSlots([]);
-                setBookingError("Please select today or a future date.");
-                return;
-              }
-
-              setSelectedDate(nextDate);
-              setSelectedSlots([]);
-              setBookingError("");
-            }}
-            min={getMinDate()}
-          />
-        </div>
-
         <form onSubmit={handleBooking}>
           <div className="booking-form-group">
             <label htmlFor="venue">Select Venue *</label>
@@ -408,7 +418,6 @@ export default function VenueBookingModal({
               value={selectedVenue}
               onChange={(event) => {
                 setSelectedVenue(event.target.value);
-                setSelectedSlots([]);
                 setBookingError("");
               }}
             >
@@ -419,6 +428,70 @@ export default function VenueBookingModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="booking-form-group booking-schedule-group">
+            <div className="booking-schedule-header">
+              <div>
+                <label>Booking Schedule *</label>
+              </div>
+              {/* <button type="button" className="add-date-btn" onClick={addScheduleEntry}>
+                + Add date
+              </button> */}
+            </div>
+
+            <div className="booking-schedule-list">
+                <div className="booking-schedule-card">
+                  <div className="booking-schedule-grid">
+                    <div className="schedule-field">
+                      <label htmlFor="booking-date">Date *</label>
+                      <input
+                        id="booking-date"
+                        type="date"
+                        value={selectedDate}
+                        min={getMinDate()}
+                        onChange={(event) => setSelectedDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="schedule-field">
+                      <label htmlFor="booking-start-time">Start time *</label>
+                      <input
+                        id="booking-start-time"
+                        type="time"
+                        step="300"
+                        value={selectedStartTime}
+                        onChange={(event) => setSelectedStartTime(event.target.value)}
+                      />
+                    </div>
+                    <div className="schedule-field">
+                      <label htmlFor="booking-end-time">End time *</label>
+                      <input
+                        id="booking-end-time"
+                        type="time"
+                        step="300"
+                        value={selectedEndTime}
+                        onChange={(event) => setSelectedEndTime(event.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/*
+                  {scheduleEntries.length > 1 && (
+                    <button
+                      type="button"
+                      className="remove-date-btn"
+                      onClick={() => removeScheduleEntry(index)}
+                    >
+                      Remove date
+                    </button>
+                  )}
+                  */}
+                </div>
+            </div>
+
+            <div className="booking-schedule-footnote">
+              Overlapping times will be blocked when you submit the request.
+            </div>
           </div>
 
           <div className="booking-form-group">
@@ -486,95 +559,6 @@ export default function VenueBookingModal({
                 </div>
               </div>
             </div>
-          )}
-
-          {selectedDate && selectedVenue && (
-            <>
-              <div className="time-slots-info">
-                <p>
-                  <strong>
-                    📌 Select one or more consecutive time slots (50 min each)
-                  </strong>
-                </p>
-                {loadingAvailability && (
-                  <p>Checking current booking requests...</p>
-                )}
-              </div>
-
-              <div className="available-slots">
-                <h4>✓ Available Time Slots</h4>
-                <div className="slots-grid">
-                  {availableSlots.length > 0 ? (
-                    availableSlots.map((slot, index) => (
-                      <div
-                        key={index}
-                        className={`slot-badge ${selectedSlots.includes(slot.startTime) ? "selected" : ""}`}
-                        onClick={() => toggleSlotSelection(slot.startTime)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        {convertTo12HourFormat(slot.startTime)}
-                      </div>
-                    ))
-                  ) : (
-                    <div style={{ color: "#6b7280", fontSize: "13px" }}>
-                      No available slots for this date
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {selectedSlots.length > 0 && (
-                <div className="selected-slots-summary">
-                  <h4>📋 Selected Slots</h4>
-                  <div className="selected-slots-list">
-                    {selectedSlots.map((startTime, index) => {
-                      const slot = allTimeSlots.find(
-                        (item) => item.startTime === startTime,
-                      );
-                      if (!slot) return null;
-
-                      return (
-                        <div key={index} className="selected-slot-item">
-                          <span>
-                            {convertTo12HourFormat(slot.startTime)} -{" "}
-                            {convertTo12HourFormat(slot.endTime)}
-                          </span>
-                          <button
-                            type="button"
-                            className="remove-slot-btn"
-                            onClick={() => toggleSlotSelection(startTime)}
-                            title="Remove this slot"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="slots-duration">
-                    Total Duration:{" "}
-                    <strong>{selectedSlots.length * 50} minutes</strong>
-                  </div>
-                </div>
-              )}
-
-              {bookedSlots.length > 0 && (
-                <div className="booked-slots">
-                  <h4>✗ Booked Time Slots</h4>
-                  {bookedSlots.map((slot, index) => (
-                    <div key={index} className="booking-item">
-                      <div className="time">
-                        {convertTo12HourFormat(slot.startTime)} -{" "}
-                        {convertTo12HourFormat(slot.endTime)}
-                      </div>
-                      <div className="event">
-                        {slot.eventName} by {slot.hostClub}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
           )}
 
           <div className="booking-form-group">

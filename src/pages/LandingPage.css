@@ -615,7 +615,7 @@
   color: var(--lp-text-400);
   font-weight: 400;
   margin-bottom: 56px;
-  max-width: 560px;
+  max-width: auto;
 }
 
 /* Role Group */

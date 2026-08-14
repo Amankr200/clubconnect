@@ -1,5 +1,5 @@
 // Club & Society data for BPIT
-export const clubs = [
+const clubs = [
   // Technical
   {
     id: 5,
@@ -271,9 +271,9 @@ export const clubs = [
   },
 ];
 
-export const categories = ["All", "Technical", "Cultural", "Social & Environment", "Innovation & Research"];
+const categories = ["All", "Technical", "Cultural", "Social & Environment", "Innovation & Research"];
 
-export const storyData = [
+const storyData = [
   {
     id: 1,
     clubName: "#DEFINE",
@@ -357,7 +357,7 @@ export const storyData = [
   },
 ];
 
-export const upcomingEvents = [
+const upcomingEvents = [
   {
     id: 1,
     title: "Codenheimer 5.0",
@@ -450,7 +450,7 @@ export const upcomingEvents = [
   },
 ];
 
-export const announcements = [
+const announcements = [
   "🎉 ClubConnect is officially launched for BPIT! All societies now on one platform.",
   "📢 #DEFINE Codenheimer 5.0 registrations now open – Register before July 1!",
   "🎵 Octave Harmony Fest auditions on June 28 – Seminar Hall A at 4 PM",
@@ -460,3 +460,11 @@ export const announcements = [
   "🏆 Mavericks won 1st place at North Zone Dance Championship 2025!",
   "📸 Kalam Literary Fest photos now uploaded on the platform",
 ];
+
+export {
+  clubs,
+  categories,
+  storyData,
+  upcomingEvents,
+  announcements
+};

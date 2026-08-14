@@ -52,10 +52,11 @@ export default function DashboardShell({ onNavigateHome }) {
     facultyCoordinator: { name: 'Dr. Ananya Sharma', email: 'ananya@bpit.ac.in' },
     studentCoordinators: [{ name: 'Aman Kumar', enrollmentNumber: '00123456', email: 'aman@bpit.ac.in' }],
   });
+  const [clubs, setClubs] = useState([]);
   const [societyUpdateError, setSocietyUpdateError] = useState('');
   const [societyUpdateSuccess, setSocietyUpdateSuccess] = useState('');
   const [societyUpdateSaving, setSocietyUpdateSaving] = useState(false);
-  const [societyLookupName, setSocietyLookupName] = useState('ACM');
+  const [societyLookupName, setSocietyLookupName] = useState('#Define');
   const [societyLookupStatus, setSocietyLookupStatus] = useState('idle');
   const [selectedEditFields, setSelectedEditFields] = useState([]);
 
@@ -204,6 +205,34 @@ export default function DashboardShell({ onNavigateHome }) {
 
     return () => clearTimeout(timer);
   }, [societyLookupName]);
+
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const response = await fetch("/api/societies");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch societies");
+        }
+
+        const data = await response.json();
+        setClubs(data.societies || []);
+      } catch (error) {
+        console.error("Error fetching societies:", error);
+        setClubs([]);
+      }
+    };
+
+    fetchClubs();
+  }, []);
+
+  const getClubName = (clubId) => {
+    return (
+      clubs.find(
+        (club) => String(club.id) === String(clubId)
+      )?.name || "Unknown club"
+    );
+  };
 
   const toggleEditField = (field) => {
     setSelectedEditFields((prev) => (
@@ -961,7 +990,7 @@ export default function DashboardShell({ onNavigateHome }) {
                     weeklyEvents.map((evt) => (
                       <tr key={evt.id}>
                         <td><strong>{evt.eventName}</strong></td>
-                        <td>{evt.hostClub}</td>
+                        <td>{getClubName(evt.hostClub)}</td>
                         <td>{evt.date}</td>
                         <td>Venue #{evt.venueId}</td>
                         <td>
@@ -1464,7 +1493,7 @@ export default function DashboardShell({ onNavigateHome }) {
                             </span>
                           </div>
                           <div className="dash-booking-meta">
-                            <span>🏛️ <strong>Host Club:</strong> {booking.hostClub}</span>
+                            <span>🏛️ <strong>Host Club:</strong> {getClubName(booking.hostClub)}</span>
                             <span>📍 <strong>Venue ID:</strong> #{booking.venueId}</span>
                             <span>📅 <strong>Date &amp; Time:</strong> {booking.date} ({booking.timeSlots?.[0]?.startTime} - {booking.timeSlots?.[0]?.endTime})</span>
                             <span>👤 <strong>Requested By:</strong> {booking.requestedBy?.name} ({booking.requestedBy?.email})</span>

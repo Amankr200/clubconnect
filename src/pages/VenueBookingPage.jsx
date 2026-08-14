@@ -31,6 +31,14 @@ export default function VenueBookingPage() {
     return venues.find(v => v.id === venueId)?.name || 'Unknown Venue';
   };
 
+  const getScheduleDates = (booking) => {
+    const dates = booking.dates?.length
+      ? booking.dates
+      : (booking.timeSlots || []).map((slot) => slot.date || booking.date).filter(Boolean);
+
+    return [...new Set(dates)];
+  };
+
   const formatDate = (dateStr) => {
     const date = new Date(`${dateStr}T12:00:00`);
     return new Intl.DateTimeFormat('en-US', {
@@ -48,8 +56,20 @@ export default function VenueBookingPage() {
     return `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${period}`;
   };
 
-  const getBookingDuration = (timeSlots) => {
-    return `${timeSlots.length * 50} min`;
+  const getBookingDuration = (timeSlots = []) => {
+
+    const slot = timeSlots[0];
+    if (!slot?.startTime || !slot?.endTime) return '—';
+
+    const [startHour, startMinute] = slot.startTime.split(':').map(Number);
+    const [endHour, endMinute] = slot.endTime.split(':').map(Number);
+
+    const startTotal = startHour * 60 + startMinute;
+    const endTotal = endHour * 60 + endMinute;
+    
+    const totalMinutes = endTotal - startTotal;
+
+    return totalMinutes > 0 ? `${totalMinutes} min` : '—';
   };
 
   const approvedBookings = allBookings.filter((booking) => booking.status === 'approved');
@@ -82,9 +102,8 @@ export default function VenueBookingPage() {
             <div className="info-section">
               <h3>⏱️ Booking Details</h3>
               <ul>
-                <li><strong>Duration:</strong> 50 minutes per slot</li>
-                <li><strong>Start Time:</strong> 9:30 AM</li>
-                <li><strong>End Time:</strong> 5:00 PM</li>
+                <li><strong>Duration:</strong> Choose a start and end time for each date</li>
+                <li><strong>Validation:</strong> Overlapping times are rejected on submit</li>
                 <li><strong>Status:</strong> Pending faculty, pending principal, or approved</li>
               </ul>
             </div>
@@ -110,56 +129,64 @@ export default function VenueBookingPage() {
 
             {approvedBookings.length > 0 ? (
               <div className="bookings-list">
-                {approvedBookings.map((booking) => (
-                  <div key={booking.id} className="booking-card">
-                    <div className="booking-card-left">
-                      <div className="booking-date">
-                        <Calendar size={18} />
-                        <span>{formatDate(booking.date)}</span>
-                      </div>
-                      <div className="booking-time">
-                        <span className="time-badge">
-                          {convertTo12Hour(booking.timeSlots[0].startTime)} - {convertTo12Hour(booking.timeSlots[booking.timeSlots.length - 1].endTime)}
-                        </span>
-                        <span className="duration-badge" style={{ marginLeft: '8px', fontSize: '11px', background: '#dbeafe', color: '#0c4a6e', padding: '4px 8px', borderRadius: '4px' }}>
-                          {getBookingDuration(booking.timeSlots)}
-                        </span>
-                      </div>
-                    </div>
+                {approvedBookings.map((booking) => {
+                  const scheduleDates = booking.date;
 
-                    <div className="booking-card-content">
-                      <h4 className="event-title">{booking.eventName}</h4>
-                      <div className="booking-meta">
-                        <div className="meta-item">
-                          <MapPin size={16} />
-                          <span>{getVenueName(booking.venueId)}</span>
+                  return (
+                    <div key={booking.id} className="booking-card">
+                      <div className="booking-card-left">
+                        <div className="booking-date">
+                          <Calendar size={18} />
+                          <span>
+                            {formatDate(booking.date)}
+                          </span>
                         </div>
-                        <div className="meta-item">
-                          <Users size={16} />
-                          <span>{booking.hostClub}</span>
+                        <div className="booking-time">
+                          <span className="time-badge">
+                            {booking.timeSlots?.[0]
+                              ? `${convertTo12Hour(booking.timeSlots[0].startTime)} - ${convertTo12Hour(booking.timeSlots[0].endTime)}`
+                              : 'Time not set'}
+                          </span>
+                          <span className="duration-badge" style={{ marginLeft: '8px', fontSize: '11px', background: '#dbeafe', color: '#0c4a6e', padding: '4px 8px', borderRadius: '4px' }}>
+                            {getBookingDuration(booking.timeSlots)}
+                          </span>
                         </div>
                       </div>
-                      {booking.photo && (
-                        <img
-                          src={booking.photo}
-                          alt={booking.photoFileName || booking.eventName}
-                          style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '10px' }}
-                        />
-                      )}
-                      <div style={{ marginTop: '10px', display: 'grid', gap: '6px', fontSize: '13px', color: '#475569' }}>
-                        <div><strong>Description:</strong> {booking.description || '—'}</div>
-                        <div><strong>Eligibility:</strong> {booking.eligibility || '—'}</div>
-                        <div><strong>Registration Link:</strong> {booking.attendance || '—'}</div>
-                        <div><strong>Feedback Link:</strong> {booking.feedback || '—'}</div>
-                        <div><strong>Student Coordinators:</strong> {booking.studentCoordinators || '—'}</div>
+
+                      <div className="booking-card-content">
+                        <h4 className="event-title">{booking.eventName}</h4>
+                        <div className="booking-meta">
+                          <div className="meta-item">
+                            <MapPin size={16} />
+                            <span>{getVenueName(booking.venueId)}</span>
+                          </div>
+                          <div className="meta-item">
+                            <Users size={16} />
+                            <span>{booking.clubName}</span>
+                          </div>
+                        </div>
+                        {booking.photo && (
+                          <img
+                            src={booking.photo}
+                            alt={booking.photoFileName || booking.eventName}
+                            style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '10px' }}
+                          />
+                        )}
+                        <div style={{ marginTop: '10px', display: 'grid', gap: '6px', fontSize: '13px', color: '#475569' }}>
+                          <div><strong>Description:</strong> {booking.description || '—'}</div>
+                          <div><strong>Eligibility:</strong> {booking.eligibility || '—'}</div>
+                          <div><strong>Registration Link:</strong> {booking.attendance || '—'}</div>
+                          <div><strong>Feedback Link:</strong> {booking.feedback || '—'}</div>
+                          <div><strong>Student Coordinators:</strong> {booking.studentCoordinators || '—'}</div>
+                        </div>
+                      </div>
+
+                      <div className="booking-status">
+                        <span className="status-badge confirmed">✓ Approved</span>
                       </div>
                     </div>
-
-                    <div className="booking-status">
-                      <span className="status-badge confirmed">✓ Approved</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-state">

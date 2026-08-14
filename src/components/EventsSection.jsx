@@ -52,6 +52,7 @@ export default function EventsSection({ onLoginClick }) {
   });
   const [activeFilter, setActiveFilter] = useState('All');
   const [approvedBookings, setApprovedBookings] = useState([]);
+  const [clubs, setClubs] = useState([]);
 
   useEffect(() => {
     fetch('/api/venue-bookings/public?status=approved')
@@ -64,13 +65,41 @@ export default function EventsSection({ onLoginClick }) {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const response = await fetch("/api/societies");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch societies");
+        }
+
+        const data = await response.json();
+        setClubs(data.societies || []);
+      } catch (error) {
+        console.error("Error fetching societies:", error);
+        setClubs([]);
+      }
+    };
+
+    fetchClubs();
+  }, []);
+
+  const getClubName = (clubId) => {
+    return (
+      clubs.find(
+        (club) => String(club.id) === String(clubId)
+      )?.name || "Unknown club"
+    );
+  };
+
   const filters = ['All', 'Technical', 'Cultural', 'Research & Innovation', 'Social & Environment', 'Competition'];
 
   // Convert live approved venue bookings to event card format
   const liveApprovedEvents = approvedBookings.map((b) => ({
     id: `db-${b.id}`,
     title: b.eventName,
-    club: b.hostClub,
+    club: getClubName(b.hostClub),
     clubEmoji: '🎉',
     date: b.date,
     time: b.timeSlots?.[0] ? `${b.timeSlots[0].startTime} - ${b.timeSlots[0].endTime}` : 'Full Day',
