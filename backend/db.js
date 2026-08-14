@@ -1,5 +1,4 @@
 const { Pool } = require('pg');
-
 const connectionString = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
 
 if (!connectionString) {
@@ -18,6 +17,9 @@ const query = (text, params) => pool.query(text, params);
 async function initDb() {
   const client = await pool.connect();
   try {
+    // Ensure pgcrypto is available for gen_random_uuid()
+    await client.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto;`);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -96,6 +98,22 @@ async function initDb() {
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS students (
+        enrollment_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+        name VARCHAR(100) NOT NULL,
+        college_email_id VARCHAR(150) NOT NULL UNIQUE,
+        branch VARCHAR(6) NOT NULL,
+        year SMALLINT DEFAULT 1 NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS "students_pkey" ON "students" ("enrollment_id");
+
+      CREATE TABLE IF NOT EXISTS stud_club (
+        stud_id bigint,
+        club_id smallint,
+        CONSTRAINT "unique_record" PRIMARY KEY("stud_id","club_id")
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS unique_record ON stud_club (stud_id, club_id);
+
       CREATE TABLE IF NOT EXISTS bug_reports (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         title VARCHAR(255) NOT NULL,
@@ -112,7 +130,7 @@ async function initDb() {
         date VARCHAR(20) NOT NULL,
         time_slots JSONB NOT NULL,
         event_name VARCHAR(255) NOT NULL,
-        host_club VARCHAR(255) NOT NULL,
+        host_club SMALLINT NOT NULL,
         photo TEXT,
         photo_file_name VARCHAR(255),
         description TEXT NOT NULL,

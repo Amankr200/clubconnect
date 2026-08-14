@@ -1,20 +1,21 @@
 const express = require('express');
 const venueBookingModel = require('../models/venueBookingModel');
 const requireAuth = require('../middleware/requireAuth');
-
+const {sendEventCreatedNotifications, markEventCreationNotificationSent} = require("../notifications/notifications.js");
+const db = require('../db.js');
 const router = express.Router();
 
 const ACTIVE_STATUSES = ['pending_faculty', 'pending_principal', 'approved'];
 
 function normalizeSlots(slots) {
-  if (!Array.isArray(slots) || slots.length === 0) {
+  if (!Array.isArray(slots)) {
     return [];
   }
 
   return slots
     .map((slot) => ({
-      startTime: String(slot.startTime || '').trim(),
-      endTime: String(slot.endTime || '').trim(),
+      startTime: String(slot?.startTime || '').trim(),
+      endTime: String(slot?.endTime || '').trim(),
     }))
     .filter((slot) => slot.startTime && slot.endTime);
 }
@@ -31,7 +32,7 @@ function slotOverlaps(a, b) {
   return a.startTime < b.endTime && a.endTime > b.startTime;
 }
 
-function bookingOverlaps(existingBooking, venueId, date, slots, excludeId = null) {
+function bookingOverlaps(existingBooking, venueId, date, startTime, endTime, excludeId = null) {
   if (String(existingBooking.id || existingBooking._id) === String(excludeId)) {
     return false;
   }
@@ -44,7 +45,23 @@ function bookingOverlaps(existingBooking, venueId, date, slots, excludeId = null
     return false;
   }
 
-  return existingBooking.timeSlots.some((existingSlot) => slots.some((slot) => slotOverlaps(slot, existingSlot)));
+  const existingSlot = existingBooking.timeSlots?.[0];
+  const existingDate = String(existingBooking.date || '').trim();
+
+  if (!existingSlot || !existingDate || existingDate !== date) {
+    return false;
+  }
+
+  return slotOverlaps(
+    {
+      startTime,
+      endTime,
+    },
+    {
+      startTime: existingSlot.startTime,
+      endTime: existingSlot.endTime,
+    }
+  );
 }
 
 async function getAssignedFacultyCoordinator(hostClub) {
@@ -96,6 +113,23 @@ async function findBookingOr404(req, res) {
   return booking;
 }
 
+router.get("/", async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT id, name
+      FROM societies
+      ORDER BY name
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching societies:", error);
+    res.status(500).json({
+      error: "Failed to fetch societies",
+    });
+  }
+});
+
 router.get('/public', async (req, res) => {
   const status = String(req.query.status || 'approved');
   const bookings = await venueBookingModel.findPublicBookings(status);
@@ -111,7 +145,13 @@ router.get('/availability', async (req, res) => {
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
-  const filtered = activeBookings.filter((b) => b.venueId === venueId && b.date === date);
+  const filtered = activeBookings.filter((b) => {
+    if (b.venueId !== venueId) {
+      return false;
+    }
+
+    return (b.timeSlots || []).some((slot) => String(slot.date || b.date || '').trim() === date);
+  });
   return res.json({ bookings: filtered.map(toBookingResponse) });
 });
 
@@ -147,7 +187,7 @@ router.post('/', async (req, res) => {
   const venueId = Number(req.body?.venueId);
   const date = String(req.body?.date || '').trim();
   const eventName = String(req.body?.eventName || '').trim();
-  const hostClub = String(req.body?.hostClub || '').trim();
+  const hostClub = Number(req.body?.hostClub);
   const photo = String(req.body?.photo || '').trim();
   const photoFileName = String(req.body?.photoFileName || '').trim();
   const description = String(req.body?.description || '').trim();
@@ -157,14 +197,17 @@ router.post('/', async (req, res) => {
   const studentCoordinators = String(req.body?.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots);
 
+  console.log("REQ BODY:", req.body);
+  console.log("NORMALIZED SLOTS:", slots);
+
   if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
     return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
-  const hasConflict = activeBookings.some((booking) => bookingOverlaps(booking, venueId, date, slots));
+  const hasConflict = activeBookings.some((booking) => bookingOverlaps(booking, venueId, date, slots[0].startTime, slots[0].endTime));
   if (hasConflict) {
-    return res.status(409).json({ message: 'Selected time slots overlap with an existing booking.' });
+    return res.status(409).json({ message: 'event overlaps with another event' });
   }
 
   const assignedFacultyCoordinator = await getAssignedFacultyCoordinator(hostClub);
@@ -264,6 +307,9 @@ router.patch('/:bookingId/decision', async (req, res) => {
       status = 'approved';
       currentReviewerRole = null;
       approvedAt = new Date();
+
+      // await sendEventCreatedNotifications(booking);
+      // await markEventCreationNotificationSent(booking.id);
     }
     changeRequest = {
       fromRole: '',
@@ -313,9 +359,9 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
   }
 
   const venueId = Number(req.body?.venueId || booking.venueId);
-  const date = String(req.body?.date || booking.date).trim();
+  const date = String(req.body?.date || booking.date || '').trim();
   const eventName = String(req.body?.eventName || booking.eventName).trim();
-  const hostClub = String(req.body?.hostClub || booking.hostClub).trim();
+  const hostClub = Number(req.body?.hostClub || booking.hostClub);
   const photo = String(req.body?.photo || booking.photo || '').trim();
   const photoFileName = String(req.body?.photoFileName || booking.photoFileName || '').trim();
   const description = String(req.body?.description || booking.description || '').trim();
@@ -330,10 +376,10 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
-  const hasConflict = activeBookings.some((existingBooking) => bookingOverlaps(existingBooking, venueId, date, slots, booking.id));
+  const hasConflict = activeBookings.some((existingBooking) => bookingOverlaps(existingBooking, venueId, date, slots[0].startTime, slots[0].endTime, booking.id));
 
   if (hasConflict) {
-    return res.status(409).json({ message: 'Updated time slots overlap with an existing booking.' });
+    return res.status(409).json({ message: 'event overlaps with another event' });
   }
 
   const status = req.user.role === 'student_coordinator' ? 'pending_faculty' : 'pending_principal';

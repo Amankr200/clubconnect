@@ -5,57 +5,6 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { getApprovedVenueBookings } from '../api/venueBookings.js';
 import { venues } from '../data/venues.js';
 
-const CALENDAR_EVENTS_STATIC = [
-//   {
-//     title: 'Club Orientation',
-//     start: '2026-06-03T10:00:00',
-//     end: '2026-06-03T12:00:00',
-//     description: 'Meet the society leads and explore campus clubs.',
-//     location: 'Main Auditorium',
-//     color: '#2563eb'
-//   },
-//   {
-//     title: 'Hackathon Sprint',
-//     start: '2026-06-07',
-//     allDay: true,
-//     description: 'A full-day innovation challenge open to all students.',
-//     location: 'Innovation Lab',
-//     color: '#7c3aed'
-//   },
-//   {
-//     title: 'Cultural Fest Rehearsal',
-//     start: '2026-06-14T18:00:00',
-//     end: '2026-06-14T21:00:00',
-//     description: 'Final rehearsal for the evening showcase.',
-//     location: 'Open Air Theatre',
-//     color: '#0f766e'
-//   },
-//   {
-//     title: 'Dean Approval Review',
-//     start: '2026-06-21T15:00:00',
-//     description: 'Review upcoming student society proposals.',
-//     location: 'Conference Room',
-//     color: '#dc2626'
-//   },
-//   {
-//     title: 'Campus Career Fair',
-//     start: '2026-06-28T09:30:00',
-//     end: '2026-06-28T16:00:00',
-//     description: 'Industry partners and placement opportunities.',
-//     location: 'Sports Complex',
-//     color: '#ea580c'
-//   },
-//   {
-//     title: 'Summer Meetup',
-//     start: '2026-07-05',
-//     allDay: true,
-//     eligibility: 'Open to all members of the society.',
-//     description: 'Informal get-together for all club members.',
-//     location: 'Cafeteria Terrace',
-//     color: '#16a34a'
-//   }
-];
-
 function formatDateLabel(value) {
   const date = new Date(`${value}T12:00:00`);
   return new Intl.DateTimeFormat('en', {
@@ -168,7 +117,7 @@ export default function CalendarPage() {
 
   const events = useMemo(() => {
     const bookedEvents = convertBookingsToEvents(approvedBookings);
-    return [...CALENDAR_EVENTS_STATIC, ...bookedEvents];
+    return [...bookedEvents];
   }, [approvedBookings]);
 
   const eventDatesSet = useMemo(() => {

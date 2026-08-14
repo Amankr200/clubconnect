@@ -3,7 +3,7 @@ import cors from 'cors';
 import crypto from 'node:crypto';
 import { defaultSocietyIds, resolveSocietyIds, societies } from './data/societies.js';
 import { readState, updateState } from './data/store.js';
-import { markEventCreationNotificationSent, runReminderSweep, sendEventCreatedNotifications } from './services/notifications.js';
+import { markEventCreationNotificationSent, runReminderSweep, sendEventCreatedNotifications } from '../backend/notifications/notifications.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3001);
