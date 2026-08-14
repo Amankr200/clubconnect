@@ -35,15 +35,23 @@ function getEventRegistrationUrl(event) {
   return event.extendedProps?.registrationLink || event.extendedProps?.registrationUrl || event.url || '';
 }
 
-function convertBookingsToEvents(bookings) {
+// const getClubName = (clubId) => {
+//   return (
+//     clubs.find(
+//       (club) => String(club.id) === String(clubId)
+//     )?.name || "Unknown club"
+//   );
+// };
+
+function convertBookingsToEvents(bookings, clubMap) {
   return bookings.map((booking, idx) => {
 
     const venue = venues.find(v => v.id === booking.venueId);
     const venueName = venue?.name || 'Unknown Venue';
     
     // Get first and last time slot
-    const firstSlot = booking.timeSlots[0];
-    const lastSlot = booking.timeSlots[booking.timeSlots.length - 1];
+    const firstSlot = booking.timeSlots?.[0];
+    const lastSlot = booking.timeSlots?.[booking.timeSlots.length - 1];
     
     // Convert time to datetime
     const [startH, startM] = firstSlot.startTime.split(':');
@@ -52,18 +60,21 @@ function convertBookingsToEvents(bookings) {
     const startDateTime = `${booking.date}T${startH}:${startM}:00`;
     const endDateTime = `${booking.date}T${endH}:${endM}:00`;
 
+    const clubName = clubMap.get(String(booking.hostClub)) || 'Society Event';
+
     return {
       id: `booking-${booking.id}`,
-      title: `${booking.eventName} (${booking.hostClub})`,
+      title: `${booking.eventName} (${clubName})`,
       start: startDateTime,
       end: endDateTime,
-      description: `Venue: ${venueName}\nHost: ${booking.hostClub}`,
+      description: `Venue: ${venueName}\nHost: ${clubName}`,
       location: venueName,
       color: '#f59e0b', // Amber color for bookings
       extendedProps: {
         bookingId: booking.id,
         venue: venueName,
         hostClub: booking.hostClub,
+        clubName,
         photo: booking.photo,
         photoFileName: booking.photoFileName,
         descriptionText: booking.description,
@@ -94,6 +105,7 @@ export default function CalendarPage() {
   const [viewDate, setViewDate] = useState(new Date());
   const [approvedBookings, setApprovedBookings] = useState([]);
   const [activeEvent, setActiveEvent] = useState(null);
+  const [clubs, setClubs] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,10 +127,37 @@ export default function CalendarPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const response = await fetch("/api/societies");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch societies");
+        }
+
+        const data = await response.json();
+        setClubs(data.societies || []);
+      } catch (error) {
+        console.error("Error fetching societies:", error);
+        setClubs([]);
+      }
+    };
+
+    fetchClubs();
+    }, []);
+
+  const clubMap = useMemo(
+    () => new Map(
+      clubs.map((club) => [String(club.id), club.name])
+    ),
+    [clubs]
+  );
+
   const events = useMemo(() => {
-    const bookedEvents = convertBookingsToEvents(approvedBookings);
+    const bookedEvents = convertBookingsToEvents(approvedBookings, clubMap);
     return [...bookedEvents];
-  }, [approvedBookings]);
+  }, [approvedBookings, clubMap]);
 
   const eventDatesSet = useMemo(() => {
     const set = new Set();

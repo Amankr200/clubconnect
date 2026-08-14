@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { ExternalLink, Sparkles, Code2 } from 'lucide-react';
@@ -367,6 +367,7 @@ export default function LandingPage({ onLoginSuccess }) {
   const heroRef = useRef(null);
 
   // Dynamic Live Approved Events
+  const [clubs, setClubs] = useState([]);
   const [approvedEvents, setApprovedEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [lpPinned, setLpPinned] = useState(() => {
@@ -394,7 +395,7 @@ export default function LandingPage({ onLoginSuccess }) {
     return eventDate < today;
   };
 
-  const fetchLiveApprovedEvents = useCallback(async () => {
+  const fetchLiveApprovedEvents = useCallback(async (clubMap) => {
     try {
       const res = await fetch('/api/venue-bookings/public?status=approved');
       if (!res.ok) return;
@@ -404,10 +405,11 @@ export default function LandingPage({ onLoginSuccess }) {
           .filter((b) => b.status === 'approved')
           .map((b) => {
             const ended = isEventEnded(b.date);
+            const clubName = clubMap.get(String(b.hostClub)) || 'Society Event';
             return {
               id: `live-${b.id}`,
               title: b.eventName,
-              cat: b.hostClub || 'Society Event',
+              cat: `${clubName}`,
               date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Upcoming',
               rawDate: b.date,
               time: b.timeSlots?.[0] ? `${b.timeSlots[0].startTime} - ${b.timeSlots[0].endTime}` : '',
@@ -427,13 +429,40 @@ export default function LandingPage({ onLoginSuccess }) {
       setLoadingEvents(false);
     }
   }, []);
+  
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const response = await fetch("/api/societies");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch societies");
+        }
+
+        const data = await response.json();
+        setClubs(data.societies || []);
+      } catch (error) {
+        console.error("Error fetching societies:", error);
+        setClubs([]);
+      }
+    };
+
+    fetchClubs();
+    }, []);
+
+  const clubMap = useMemo(
+    () => new Map(
+      clubs.map((club) => [String(club.id), club.name])
+    ),
+    [clubs]
+  );
 
   useEffect(() => {
-    fetchLiveApprovedEvents();
+    fetchLiveApprovedEvents(clubMap);
     // Poll every 5 seconds to automatically pick up newly created & approved events live!
-    const timer = setInterval(fetchLiveApprovedEvents, 5000);
+    const timer = setInterval(() => fetchLiveApprovedEvents(clubMap), 5000);
     return () => clearInterval(timer);
-  }, [fetchLiveApprovedEvents]);
+  }, [fetchLiveApprovedEvents, clubMap]);
 
   const handleLpPin = (id) => {
     setLpPinned((prev) => {
