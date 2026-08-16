@@ -55,6 +55,7 @@ export default function EventsSection({ onLoginClick }) {
     color: '#6366f1',
     description: b.description,
     photo: b.photo,
+    registrationLink: b.attendance || '',
   }));
 
   const allEvents = [...liveApprovedEvents, ...upcomingEvents];
@@ -228,7 +229,15 @@ export default function EventsSection({ onLoginClick }) {
                 <div className="event-actions">
                   <button
                     className={`rsvp-btn ${isRsvpd ? 'rsvpd' : ''}`}
-                    onClick={onLoginClick}
+                    onClick={() => {
+                      const link = event.registrationLink || event.attendance || '';
+                      if (link) {
+                        const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+                        window.open(normalized, '_blank', 'noopener,noreferrer');
+                      } else {
+                        onLoginClick();
+                      }
+                    }}
                     // id={`rsvp-${event.id}`}
                     style={!isRsvpd ? { background: event.color, borderColor: event.color } : {}}
                   >

@@ -607,7 +607,7 @@ export default function VenueBookingModal({
             <label htmlFor="attendance">Registration Link *</label>
             <input
               id="attendance"
-              type="text"
+              type="url"
               placeholder="Link to registration form"
               value={attendance}
               onChange={(event) => setAttendance(event.target.value)}
@@ -620,7 +620,7 @@ export default function VenueBookingModal({
             <label htmlFor="feedback">Feedback Link*</label>
             <input
               id="feedback"
-              type="text"
+              type="url"
               placeholder="Link to feedback form"
               value={feedback}
               onChange={(event) => setFeedback(event.target.value)}
