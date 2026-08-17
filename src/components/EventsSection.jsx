@@ -18,6 +18,37 @@ const EVENT_TYPE_ICONS = {
   'Social & Environment': '🤝',
 };
 
+
+function formatDateLabel(value) {
+  const date = new Date(`${value}T12:00:00`);
+  return new Intl.DateTimeFormat('en', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(date);
+}
+
+function formatEventTime(event) {
+  if (event.allDay) {
+    return 'All day';
+  }
+
+  if (!event.start) {
+    return 'Time not available';
+  }
+
+  const start = new Date(`${event.start}Z`);
+  const end = event.end ? new Date(`${event.end}Z`) : null;
+  const options = { hour: '2-digit', minute: '2-digit', hour12: true };
+
+  return `${start.toLocaleTimeString('en-US', options)}${end ? ` - ${end.toLocaleTimeString('en-US', options)}` : ''}`;
+}
+
+function getEventRegistrationUrl(event) {
+  return event.extendedProps?.registrationLink || event.extendedProps?.registrationUrl || event.url || '';
+}
+
 function getVenueName(venueId) {
   return venues.find((v) => v.id === Number(venueId))?.name || `Venue #${venueId}`;
 }
@@ -53,6 +84,8 @@ export default function EventsSection({ onLoginClick }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [approvedBookings, setApprovedBookings] = useState([]);
   const [clubs, setClubs] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [activeEvent, setActiveEvent] = useState(null);
 
   useEffect(() => {
     fetch('/api/venue-bookings/public?status=approved')
@@ -98,18 +131,31 @@ export default function EventsSection({ onLoginClick }) {
   // Convert live approved venue bookings to event card format
   const liveApprovedEvents = approvedBookings.map((b) => ({
     id: `db-${b.id}`,
-    title: b.eventName,
+    title: `${b.eventName} (${getClubName(b.hostClub)})`,
     club: getClubName(b.hostClub),
     clubEmoji: '🎉',
     date: b.date,
     time: b.timeSlots?.[0] ? `${b.timeSlots[0].startTime} - ${b.timeSlots[0].endTime}` : 'Full Day',
     venue: getVenueName(b.venueId),
+    location: getVenueName(b.venueId),
     rsvp: 120,
     status: 'approved',
     type: 'Technical',
     color: '#6366f1',
     description: b.description,
     photo: b.photo,
+    extendedProps: {
+      bookingId: b.id,
+      hostClub: b.hostClub,
+      photo: b.photo,
+      photoFileName: b.photoFileName,
+      descriptionText: b.description,
+      eligibility: b.eligibility,
+      attendance: b.attendance,
+      feedback: b.feedback,
+      studentCoordinators: b.studentCoordinators,
+      isBooked: true
+    }
   }));
 
   const allEvents = [...liveApprovedEvents, ...upcomingEvents];
@@ -305,7 +351,8 @@ export default function EventsSection({ onLoginClick }) {
                       Register Here
                     </button>
                   )}
-                  <button className="btn-outline event-details-btn">
+                  <button className="btn-outline event-details-btn"
+                    type="button" onClick={() => setActiveEvent(event)}>
                     View Details
                   </button>
                 </div>
@@ -324,6 +371,82 @@ export default function EventsSection({ onLoginClick }) {
           </button>
         </div>
       </div>
+
+      {activeEvent && (
+        <div className="calendar-detail-modal" onClick={() => setActiveEvent(null)} role="presentation">
+          <div className="calendar-detail-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="calendar-detail-header">
+              <div>
+                <h3>{activeEvent.title}</h3>
+                <p>{activeEvent.location || activeEvent.extendedProps?.venue || 'Location not specified'}</p>
+              </div>
+              <button className="calendar-detail-close" onClick={() => setActiveEvent(null)} aria-label="Close event details">✕</button>
+            </div>
+            <div className="calendar-detail-body">
+              {activeEvent.extendedProps?.photo && (
+                <img
+                  src={activeEvent.extendedProps.photo}
+                  alt={activeEvent.extendedProps.photoFileName || activeEvent.title}
+                  className="calendar-detail-image"
+                />
+              )}
+              <div className="calendar-detail-section">
+                <strong>Date</strong>
+                <span>{formatDateLabel(activeEvent.start?.slice(0, 10) || selectedDate)}</span>
+              </div>
+              <div className="calendar-detail-section">
+                <strong>Time</strong>
+                <span>{formatEventTime(activeEvent)}</span>
+              </div>
+              <div className="calendar-detail-section">
+                <strong>Description</strong>
+                <p>{activeEvent.extendedProps?.descriptionText || activeEvent.description || 'No description available.'}</p>
+              </div>
+              {activeEvent.extendedProps?.eligibility && (
+                <div className="calendar-detail-section">
+                  <strong>Eligibility</strong>
+                  <span>{activeEvent.extendedProps.eligibility}</span>
+                </div>
+              )}
+              {activeEvent.extendedProps?.studentCoordinators && (
+                <div className="calendar-detail-section">
+                  <strong>Student Coordinators</strong>
+                  <span>{activeEvent.extendedProps.studentCoordinators}</span>
+                </div>
+              )}
+              {activeEvent.extendedProps?.attendance && (
+                <div className="calendar-detail-section">
+                  <strong>Expected Attendance</strong>
+                  <span>{activeEvent.extendedProps.attendance}</span>
+                </div>
+              )}
+              {activeEvent.extendedProps?.feedback && (
+                <div className="calendar-detail-section">
+                  <strong>Feedback Notes</strong>
+                  <p>{activeEvent.extendedProps.feedback}</p>
+                </div>
+              )}
+              {getEventRegistrationUrl(activeEvent) ? (
+                <div className="calendar-detail-action">
+                  <a
+                    href={getEventRegistrationUrl(activeEvent)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="calendar-detail-button"
+                  >
+                    Open registration link
+                  </a>
+                </div>
+              ) : (
+                <div className="calendar-detail-section">
+                  <strong>Registration</strong>
+                  <span>No registration link provided.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
