@@ -65,14 +65,18 @@ async function initDb() {
 
     await client.query(`
 
-      CREATE TABLE IF NOT EXISTS venues (
-        id INT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        type VARCHAR(100) NOT NULL,
-        location VARCHAR(255) NOT NULL,
-        is_active BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+      CREATE TABLE IF NOT EXISTS "venues" (
+        id integer PRIMARY KEY,
+        name varchar(255) NOT NULL,
+        location varchar(255) NOT NULL,
+        is_active boolean DEFAULT true,
+        created_at timestamp with time zone DEFAULT now(),
+        description varchar(200) NOT NULL,
+        facilities varchar(200) NOT NULL,
+        contact_person varchar(50) NOT NULL,
+        contact_phone text
       );
+      CREATE UNIQUE INDEX IF NOT EXISTS "venues_pkey" ON "venues" ("id");
 
       CREATE TABLE IF NOT EXISTS society_registrations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

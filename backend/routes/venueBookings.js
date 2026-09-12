@@ -79,6 +79,7 @@ function toBookingResponse(booking) {
   return {
     id: booking.id,
     venueId: booking.venueId,
+    venueName: booking.venueName,
     date: booking.date,
     timeSlots: booking.timeSlots,
     eventName: booking.eventName,
@@ -296,6 +297,8 @@ router.patch('/:bookingId/decision', async (req, res) => {
   let currentReviewerRole = booking.currentReviewerRole;
   let changeRequest = booking.changeRequest;
   let approvedAt = booking.approvedAt;
+  let emailNotification = null;
+  let shouldNotify = false;
 
   if (decision === 'allow') {
     if (booking.currentReviewerRole === 'faculty_coordinator' && isFacultyOrHodRole) {
@@ -310,6 +313,7 @@ router.patch('/:bookingId/decision', async (req, res) => {
 
       // await sendEventCreatedNotifications(booking);
       // await markEventCreationNotificationSent(booking.id);
+      shouldNotify = booking.status !== 'approved';
     }
     changeRequest = {
       fromRole: '',
@@ -334,6 +338,15 @@ router.patch('/:bookingId/decision', async (req, res) => {
     approvedAt,
   });
 
+  if (shouldNotify) {
+    try {
+      emailNotification = await sendEventCreatedNotifications(updatedBooking);
+    } catch (error) {
+      console.error('Failed to send approved event notifications:', error);
+      emailNotification = { sent: 0, skipped: true, reason: 'notification-error' };
+    }
+  }
+
   return res.json({
     booking: toBookingResponse(updatedBooking),
     notification: {
@@ -342,6 +355,7 @@ router.patch('/:bookingId/decision', async (req, res) => {
         ? (status === 'approved' ? 'Event approval request has received FINAL APPROVAL and is live!' : 'Event approval request moved to Principal approval.')
         : 'Event approval request was returned with requested changes.',
     },
+      emailNotification,
   });
 });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { upcomingEvents, clubs } from '../data/clubs';
-import { venues } from '../data/venues';
+import { getVenues } from '../api/venues.js';
 import './EventsSection.css';
 
 const STATUS_MAP = {
@@ -17,10 +17,6 @@ const EVENT_TYPE_ICONS = {
   Technical: '💻',
   'Social & Environment': '🤝',
 };
-
-function getVenueName(venueId) {
-  return venues.find((v) => v.id === Number(venueId))?.name || `Venue #${venueId}`;
-}
 
 // Helper to determine if an event date has passed
 function isEventEnded(dateStr) {
@@ -53,6 +49,13 @@ export default function EventsSection({ onLoginClick }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [approvedBookings, setApprovedBookings] = useState([]);
   const [clubs, setClubs] = useState([]);
+  const [venues, setVenues] = useState([]);
+
+  useEffect(() => {
+    getVenues()
+      .then(setVenues)
+      .catch(() => setVenues([]));
+  }, []);
 
   useEffect(() => {
     fetch('/api/venue-bookings/public?status=approved')
@@ -91,6 +94,10 @@ export default function EventsSection({ onLoginClick }) {
         (club) => String(club.id) === String(clubId)
       )?.name || "Unknown club"
     );
+  };
+
+  const getVenueName = (venueId) => {
+    return venues.find((venue) => venue.id === Number(venueId))?.name || `Venue #${venueId}`;
   };
 
   const filters = ['All', 'Technical', 'Cultural', 'Research & Innovation', 'Social & Environment', 'Competition'];

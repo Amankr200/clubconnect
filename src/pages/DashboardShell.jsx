@@ -485,7 +485,7 @@ export default function DashboardShell({ onNavigateHome }) {
 
   // CSV Export Handler
   const handleExportCSV = () => {
-    const headers = ['Event Name', 'Host Club', 'Date', 'Time Slot', 'Venue ID', 'Status', 'Attendance'];
+    const headers = ['Event Name', 'Host Club', 'Date', 'Time Slot', 'Venue', 'Status', 'Attendance'];
     const rows = (myRequests.length > 0 ? myRequests : [
       { eventName: 'ACM Hackathon 2026', hostClub: 'ACM', date: '2026-06-15', timeSlots: [{ startTime: '10:00 AM', endTime: '04:00 PM' }], venueId: 1, status: 'approved', attendance: '250 Expected' },
       { eventName: 'DSA Bootcamp', hostClub: 'ACM', date: '2026-05-10', timeSlots: [{ startTime: '02:00 PM', endTime: '05:00 PM' }], venueId: 2, status: 'approved', attendance: '120 Expected' },
@@ -495,7 +495,7 @@ export default function DashboardShell({ onNavigateHome }) {
       `"${b.hostClub}"`,
       `"${b.date}"`,
       `"${b.timeSlots?.[0]?.startTime || ''} - ${b.timeSlots?.[0]?.endTime || ''}"`,
-      b.venueId,
+      `"${b.venueName || 'Venue Not Disclosed'}"`,
       b.status,
       `"${b.attendance}"`,
     ]);
@@ -992,7 +992,7 @@ export default function DashboardShell({ onNavigateHome }) {
                         <td><strong>{evt.eventName}</strong></td>
                         <td>{getClubName(evt.hostClub)}</td>
                         <td>{evt.date}</td>
-                        <td>Venue #{evt.venueId}</td>
+                        <td>{evt.venueName || 'Venue Not Disclosed'}</td>
                         <td>
                           <span style={{ color: evt.status === 'approved' ? '#10b981' : '#f59e0b' }}>
                             {evt.status}
@@ -1494,7 +1494,7 @@ export default function DashboardShell({ onNavigateHome }) {
                           </div>
                           <div className="dash-booking-meta">
                             <span>🏛️ <strong>Host Club:</strong> {getClubName(booking.hostClub)}</span>
-                            <span>📍 <strong>Venue ID:</strong> #{booking.venueId}</span>
+                            <span>📍 <strong>Venue:</strong> {booking.venueName || 'Venue Not Disclosed'}</span>
                             <span>📅 <strong>Date &amp; Time:</strong> {booking.date} ({booking.timeSlots?.[0]?.startTime} - {booking.timeSlots?.[0]?.endTime})</span>
                             <span>👤 <strong>Requested By:</strong> {booking.requestedBy?.name} ({booking.requestedBy?.email})</span>
                           </div>
@@ -1623,7 +1623,7 @@ export default function DashboardShell({ onNavigateHome }) {
                 <thead>
                   <tr>
                     <th>Event Name</th>
-                    <th>Venue ID</th>
+                    <th>Venue</th>
                     <th>Date</th>
                     <th>Time Slots</th>
                     <th>Current Status</th>
@@ -1642,7 +1642,7 @@ export default function DashboardShell({ onNavigateHome }) {
                             style={{ cursor: canUpdatePhoto(b) ? 'pointer' : 'default' }}
                           >
                             <td><strong>{b.eventName}</strong></td>
-                            <td>Venue #{b.venueId}</td>
+                            <td>{b.venueName || 'Venue Not Disclosed'}</td>
                             <td>{b.date}</td>
                             <td>{b.timeSlots?.[0]?.startTime} - {b.timeSlots?.[0]?.endTime}</td>
                             <td>

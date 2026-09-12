@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
-import { venues } from "../data/venues.js";
+import { getVenues } from "../api/venues.js";
 import {
   createVenueBooking,
   resubmitVenueBooking,
@@ -35,6 +35,7 @@ export default function VenueBookingModal({
   // const [scheduleEntries, setScheduleEntries] = useState([createEmptyScheduleEntry()]);
   const [eventName, setEventName] = useState("");
   const [clubs, setClubs] = useState([]);
+  const [venues, setVenues] = useState([]);
   const [hostClub, setHostClub] = useState("");
   const [photo, setPhoto] = useState("");
   const [photoFileName, setPhotoFileName] = useState("");
@@ -144,6 +145,15 @@ export default function VenueBookingModal({
     setBookingSuccess("");
   }, [booking, isOpen]);
   
+  useEffect(() => {
+    getVenues()
+      .then(setVenues)
+      .catch((error) => {
+        console.error("Error fetching venues:", error);
+        setVenues([]);
+      });
+  }, []);
+
   useEffect(() => {
     const fetchClubs = async () => {
       try {

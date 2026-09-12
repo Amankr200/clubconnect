@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { getApprovedVenueBookings } from '../api/venueBookings.js';
-import { venues } from '../data/venues.js';
+import { getVenues } from '../api/venues.js';
 import './VenueBookingPage.css';
 import { Calendar, MapPin, Users } from 'lucide-react';
 
 export default function VenueBookingPage() {
   const [allBookings, setAllBookings] = useState([]);
+  const [venues, setVenues] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +26,12 @@ export default function VenueBookingPage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    getVenues()
+      .then(setVenues)
+      .catch(() => setVenues([]));
   }, []);
 
   const getVenueName = (venueId) => {

@@ -6,6 +6,7 @@ function formatBooking(row) {
     _id: row.id,
     id: row.id,
     venueId: row.venue_id,
+    venueName: row.venue_name,
     date: row.date,
     timeSlots: row.time_slots || [],
     eventName: row.event_name,
@@ -36,10 +37,13 @@ async function findPublicBookings(status = 'approved') {
     `
     SELECT
       vb.*,
-      s.name AS club_name
+      s.name AS club_name,
+      v.name AS venue_name
     FROM venue_bookings vb
     LEFT JOIN societies s
       ON vb.host_club = s.id
+    LEFT JOIN venues v
+      ON vb.venue_id = v.id
     WHERE vb.status = $1
     ORDER BY vb.date ASC, vb.created_at DESC
     `,
@@ -53,10 +57,13 @@ async function findAllActiveBookings() {
     `
     SELECT
       vb.*,
-      s.name AS club_name
+      s.name AS club_name,
+      v.name AS venue_name
     FROM venue_bookings vb
     LEFT JOIN societies s
       ON vb.host_club = s.id
+    LEFT JOIN venues v
+      ON vb.venue_id = v.id
     WHERE vb.status IN ('pending_faculty', 'pending_principal', 'approved')
     `
   );
@@ -68,10 +75,13 @@ async function findAllBookings() {
     `
     SELECT
       vb.*,
-      s.name AS club_name
+      s.name AS club_name,
+      v.name AS venue_name
     FROM venue_bookings vb
     LEFT JOIN societies s
       ON vb.host_club = s.id
+    LEFT JOIN venues v
+      ON vb.venue_id = v.id
     ORDER BY vb.created_at DESC
     `
   );
@@ -84,10 +94,13 @@ async function findById(id) {
       `
       SELECT
         vb.*,
-        s.name AS club_name
+        s.name AS club_name,
+        v.name AS venue_name
       FROM venue_bookings vb
       LEFT JOIN societies s
         ON vb.host_club = s.id
+      LEFT JOIN venues v
+        ON vb.venue_id = v.id
       WHERE vb.id = $1
       `,
       [id]

@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { getApprovedVenueBookings } from '../api/venueBookings.js';
-import { venues } from '../data/venues.js';
+import { getVenues } from '../api/venues.js';
 
 function formatDateLabel(value) {
   const date = new Date(`${value}T12:00:00`);
@@ -43,11 +43,10 @@ function getEventRegistrationUrl(event) {
 //   );
 // };
 
-function convertBookingsToEvents(bookings, clubMap) {
+function convertBookingsToEvents(bookings, clubMap, venueMap) {
   return bookings.map((booking, idx) => {
 
-    const venue = venues.find(v => v.id === booking.venueId);
-    const venueName = venue?.name || 'Unknown Venue';
+    const venueName = venueMap.get(String(booking.venueId)) || 'Unknown Venue';
     
     // Get first and last time slot
     const firstSlot = booking.timeSlots?.[0];
@@ -106,6 +105,7 @@ export default function CalendarPage() {
   const [approvedBookings, setApprovedBookings] = useState([]);
   const [activeEvent, setActiveEvent] = useState(null);
   const [clubs, setClubs] = useState([]);
+  const [venues, setVenues] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +125,12 @@ export default function CalendarPage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    getVenues()
+      .then(setVenues)
+      .catch(() => setVenues([]));
   }, []);
 
   useEffect(() => {
@@ -154,10 +160,15 @@ export default function CalendarPage() {
     [clubs]
   );
 
+  const venueMap = useMemo(
+    () => new Map(venues.map((venue) => [String(venue.id), venue.name])),
+    [venues]
+  );
+
   const events = useMemo(() => {
-    const bookedEvents = convertBookingsToEvents(approvedBookings, clubMap);
+    const bookedEvents = convertBookingsToEvents(approvedBookings, clubMap, venueMap);
     return [...bookedEvents];
-  }, [approvedBookings, clubMap]);
+  }, [approvedBookings, clubMap, venueMap]);
 
   const eventDatesSet = useMemo(() => {
     const set = new Set();
