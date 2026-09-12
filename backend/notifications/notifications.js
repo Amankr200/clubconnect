@@ -2,10 +2,10 @@
 const { societies, defaultSocietyIds, resolveSocietyIds } = require('../../server/data/societies.js').default;
 const { readState, updateState } = require('../../server/data/store.js');
 */
-const { sendEmail } = require("./mailer.js");
+const sendEmail = require("./mailer.js");
 const db = require("../db.js");
 // if doesn't work, try with import
-
+/*
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const REMINDER_RULES = [
@@ -18,7 +18,7 @@ const REMINDER_RULES = [
 function normalizeEmail(value) {
   return String(value || "").trim();
 }
-
+*/
 /*
 function getUserSelectedSocietyIds(user) {
   if (!Array.isArray(user.selectedSocietyIds)) {
@@ -35,22 +35,27 @@ function getEventSocietyIds(event) {
 }
   */
 
+/*
 function getSocietyName(event) {
   return event.host_club || "your selected club";
 }
+*/
 
 async function getRecipients(clubId) {
   const result = await db.query(
     `
     SELECT
-        sc.club_id,
-        s.enrollment_id,
-        s.name,
-        s.college_email_id
+      s.name AS student_name,
+      s.college_email_id,
+      society.name AS society_name,
+      society.category AS society_category
     FROM stud_club sc
     JOIN students s
-        ON sc.stud_id = s.enrollment_id
-    WHERE club_id = $1
+      ON sc.stud_id = s.enrollment_id
+    JOIN societies society
+      ON sc.club_id = society.id
+    WHERE sc.club_id = $1
+    ORDER BY s.enrollment_id
     `,
     [clubId],
   );
@@ -58,8 +63,21 @@ async function getRecipients(clubId) {
   return result.rows;
 }
 
-function buildNotificationContent(event, reminderLabel) {
-  const clubName = getSocietyName(event);
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
+
+function buildNotificationContent(event, recipient) {
+  const clubName = recipient.society_name || 'your selected club';
+  const societyDetails = recipient.society_category
+    ? `Category: ${recipient.society_category}`
+    : 'Not provided';
   const eventDate = new Date(event.date);
   const formattedDate = Number.isNaN(eventDate.getTime())
     ? event.date
@@ -72,20 +90,14 @@ function buildNotificationContent(event, reminderLabel) {
         minute: "2-digit",
       });
 
-  const subject = reminderLabel
-    ? `${event.event_name} starts in ${reminderLabel}`
-    : `New event published: ${event.event_name}`;
 
-  const text = reminderLabel
-    ? `Reminder: ${event.event_name} from ${clubName} starts ${reminderLabel === "now" ? "now" : `in ${reminderLabel}`}.\n\nWhen: ${formattedDate}\nWhere: ${event.venue_id || "TBD"}\n\n${event.description || ""}`
-    : `A new event from ${clubName} has been published.\n\nTitle: ${event.event_name}\nWhen: ${formattedDate}\nWhere: ${event.location || "TBD"}\n\n${event.description || ""}`;
+  const subject = `New event from ${clubName}: ${event.eventName}`;
+  const greeting = `Hi ${recipient.student_name || 'there'},`;
+  const text = `${greeting}\n\n${event.eventName} has been approved and published by ${clubName}.\n\nWhen: ${formattedDate}\nWhere: ${event.venueId || 'TBD'}\n\nEvent details:\n${event.description || 'Not provided'}`;
+  // const text = `${greeting}\n\n${event.eventName} has been approved and published by ${clubName}.\n\nWhen: ${formattedDate}\nWhere: ${event.venueId || 'TBD'}\n\nEvent details:\n${event.description || 'Not provided'}\n\nAbout ${clubName}:\n${societyDetails || 'Not provided'}`;
 
-  const html = `
-        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
-            <h2 style="margin:0 0 12px">${subject}</h2>
-
-            <p>
-                ${
+  /*
+  ${
                   reminderLabel
                     ? `Reminder: ${event.event_name} from ${clubName}
                            is scheduled ${
@@ -95,12 +107,20 @@ function buildNotificationContent(event, reminderLabel) {
                            }.`
                     : `A new event from ${clubName} has been published.`
                 }
+  */
+  const html = `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
+            <h2 style="margin:0 0 12px">${escapeHtml(subject)}</h2>
+
+            <p>
+                ${escapeHtml(greeting)}<br>
+                <strong>${escapeHtml(event.eventName)}</strong> has been approved and published by ${escapeHtml(clubName)}.
             </p>
 
-            <p><strong>When:</strong> ${formattedDate}</p>
-            <p><strong>Where:</strong> ${event.venue_id || "TBD"}</p>
-
-            <p>${event.description || ""}</p>
+            <p><strong>When:</strong> ${escapeHtml(formattedDate)}</p>
+            <p><strong>Where:</strong> ${escapeHtml(event.venueId || 'TBD')}</p>
+            <p><strong>Event details:</strong><br>${escapeHtml(event.description || 'Not provided')}</p>
+            <p><strong>About ${escapeHtml(clubName)}:</strong><br>${escapeHtml(societyDetails || 'Not provided').replace(/\n/g, '<br>')}</p>
         </div>
     `;
 
@@ -108,20 +128,22 @@ function buildNotificationContent(event, reminderLabel) {
 }
 
 async function sendEventCreatedNotifications(event) {
-  const recipients = await getRecipients(event.clubId);
+  // const recipients = await getRecipients(event.clubId);
+  const recipients = await getRecipients(event.hostClub);
 
   if (recipients.length === 0) {
     return { sent: 0, skipped: true, reason: "no-recipients" };
   }
 
-  const content = buildNotificationContent(event, null);
+  // const content = buildNotificationContent(event, null);
   let sentCount = 0;
 
   for (const recipient of recipients) {
+    const content = buildNotificationContent(event, recipient);
     const result = await sendEmail({
       to: recipient.college_email_id,
       subject: content.subject,
-      text: `${recipient.name ? `Hi ${recipient.name},\n\n` : ""}${content.text}`,
+      text: content.text,
       html: content.html,
     });
 
@@ -133,83 +155,6 @@ async function sendEventCreatedNotifications(event) {
   return { sent: sentCount, skipped: false };
 }
 
-async function markEventCreationNotificationSent(eventId) {
-  return updateState((state) => {
-    const event = state.events.find((item) => item.id === eventId);
-    if (!event) {
-      return null;
-    }
-
-    event.notificationState = event.notificationState || {};
-    event.notificationState.sentOnCreate = true;
-    event.updatedAt = new Date().toISOString();
-    return event;
-  });
-}
-
-async function runReminderSweep(now = new Date()) {
-  return updateState(async (state) => {
-    const result = await db.query(`
-        SELECT *
-        FROM events
-        WHERE status = 'published'
-          AND date IS NOT NULL
-    `);
-
-    for (const event of result.rows) {
-      if (event.status !== "approved" || !event.date) {
-        continue;
-      }
-
-      const startAt = new Date(event.date);
-      if (Number.isNaN(startAt.getTime())) {
-        continue;
-      }
-
-      const eventState = event.notificationState || {};
-      event.notificationState = eventState;
-
-      const recipients = getRecipients(state, event);
-      if (recipients.length === 0) {
-        continue;
-      }
-
-      for (const reminder of REMINDER_RULES) {
-        const targetTime = startAt.getTime() - reminder.offsetMs;
-        if (now.getTime() < targetTime || eventState[reminder.key]) {
-          continue;
-        }
-
-        const content = buildNotificationContent(event, reminder.label);
-
-        for (const recipient of recipients) {
-          const result = await sendEmail({
-            to: recipient.college_email_id,
-            subject: content.subject,
-            text: `${recipient.name ? `Hi ${recipient.name},\n\n` : ""}${content.text}`,
-            html: content.html,
-          });
-
-          if (result.sent) {
-            results.push({
-              eventId: event.id,
-              reminder: reminder.key,
-              recipient: recipient.college_email_id,
-            });
-          }
-        }
-
-        eventState[reminder.key] = true;
-      }
-    }
-
-    return results;
-  });
-}
-
-// try with export
 module.exports = {
   sendEventCreatedNotifications,
-  markEventCreationNotificationSent,
-  runReminderSweep,
 };

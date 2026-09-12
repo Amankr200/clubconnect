@@ -14,17 +14,6 @@ function formatRegistration(row) {
   };
 }
 
-function formatVenue(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    name: row.name,
-    type: row.type,
-    location: row.location,
-    isActive: row.is_active,
-  };
-}
-
 async function createSocietyRegistration({ societyName, category, description, requestedByEmail, requestedByName }) {
   const result = await db.query(
     `INSERT INTO society_registrations (society_name, category, description, requested_by_email, requested_by_name)

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { upcomingEvents, clubs } from '../data/clubs';
-import { venues } from '../data/venues';
+import { getVenues } from '../api/venues.js';
 import './EventsSection.css';
 
 const STATUS_MAP = {
@@ -17,41 +17,6 @@ const EVENT_TYPE_ICONS = {
   Technical: '💻',
   'Social & Environment': '🤝',
 };
-
-
-function formatDateLabel(value) {
-  const date = new Date(`${value}T12:00:00`);
-  return new Intl.DateTimeFormat('en', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(date);
-}
-
-function formatEventTime(event) {
-  if (event.allDay) {
-    return 'All day';
-  }
-
-  if (!event.start) {
-    return 'Time not available';
-  }
-
-  const start = new Date(`${event.start}Z`);
-  const end = event.end ? new Date(`${event.end}Z`) : null;
-  const options = { hour: '2-digit', minute: '2-digit', hour12: true };
-
-  return `${start.toLocaleTimeString('en-US', options)}${end ? ` - ${end.toLocaleTimeString('en-US', options)}` : ''}`;
-}
-
-function getEventRegistrationUrl(event) {
-  return event.extendedProps?.registrationLink || event.extendedProps?.registrationUrl || event.url || '';
-}
-
-function getVenueName(venueId) {
-  return venues.find((v) => v.id === Number(venueId))?.name || `Venue #${venueId}`;
-}
 
 // Helper to determine if an event date has passed
 function isEventEnded(dateStr) {
@@ -84,8 +49,13 @@ export default function EventsSection({ onLoginClick }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [approvedBookings, setApprovedBookings] = useState([]);
   const [clubs, setClubs] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
-  const [activeEvent, setActiveEvent] = useState(null);
+  const [venues, setVenues] = useState([]);
+
+  useEffect(() => {
+    getVenues()
+      .then(setVenues)
+      .catch(() => setVenues([]));
+  }, []);
 
   useEffect(() => {
     fetch('/api/venue-bookings/public?status=approved')
@@ -124,6 +94,10 @@ export default function EventsSection({ onLoginClick }) {
         (club) => String(club.id) === String(clubId)
       )?.name || "Unknown club"
     );
+  };
+
+  const getVenueName = (venueId) => {
+    return venues.find((venue) => venue.id === Number(venueId))?.name || `Venue #${venueId}`;
   };
 
   const filters = ['All', 'Technical', 'Cultural', 'Research & Innovation', 'Social & Environment', 'Competition'];
