@@ -1589,14 +1589,21 @@ export default function DashboardShell({ onNavigateHome }) {
                             style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
                             onClick={() => handleDecision(booking.id, 'allow')}
                           >
-                            ✅ Allow / Approve Request
+                            ✅ Approve Request
+                          </button>
+                          <button
+                            className="btn-action-warning"
+                            style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
+                            onClick={() => handleDecision(booking.id, 'disallow')}
+                          >
+                            ⚠️ Request Revision
                           </button>
                           <button
                             className="btn-action-danger"
                             style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
                             onClick={() => handleDecision(booking.id, 'disallow')}
                           >
-                            ❌ Disallow / Request Revision
+                            ❌ Reject Request
                           </button>
                         </div>
                       </div>
