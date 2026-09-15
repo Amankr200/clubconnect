@@ -4,6 +4,8 @@ const { readState, updateState } = require('../../server/data/store.js');
 */
 const sendEmail = require("./mailer.js");
 const db = require("../db.js");
+const venueModel = require("../models/venue.js");
+const PORTAL_URL = "http://localhost:5173";
 // if doesn't work, try with import
 /*
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -73,7 +75,7 @@ function escapeHtml(value) {
   })[character]);
 }
 
-function buildNotificationContent(event, recipient) {
+function buildNotificationContent(event, recipient, venueName) {
   const clubName = recipient.society_name || 'your selected club';
   const societyDetails = recipient.society_category
     ? `Category: ${recipient.society_category}`
@@ -93,8 +95,8 @@ function buildNotificationContent(event, recipient) {
 
   const subject = `New event from ${clubName}: ${event.eventName}`;
   const greeting = `Hi ${recipient.student_name || 'there'},`;
-  const text = `${greeting}\n\n${event.eventName} has been approved and published by ${clubName}.\n\nWhen: ${formattedDate}\nWhere: ${event.venueId || 'TBD'}\n\nEvent details:\n${event.description || 'Not provided'}`;
-  // const text = `${greeting}\n\n${event.eventName} has been approved and published by ${clubName}.\n\nWhen: ${formattedDate}\nWhere: ${event.venueId || 'TBD'}\n\nEvent details:\n${event.description || 'Not provided'}\n\nAbout ${clubName}:\n${societyDetails || 'Not provided'}`;
+  const text = `${greeting}\n\n${event.eventName} has been approved and published by ${clubName}.\n\nWhen: ${formattedDate}\nWhere: ${venueName || 'TBD'}\n\nEvent details:\n${event.description || 'Not provided'}\n\nVisit the ClubConnect portal: ${PORTAL_URL}`;
+  // const text = `${greeting}\n\n${event.eventName} has been approved and published by ${clubName}.\n\nWhen: ${formattedDate}\nWhere: ${event.venueName || 'TBD'}\n\nEvent details:\n${event.description || 'Not provided'}\n\nAbout ${clubName}:\n${societyDetails || 'Not provided'}\n\nVisit the ClubConnect portal: ${PORTAL_URL}`;
 
   /*
   ${
@@ -118,9 +120,10 @@ function buildNotificationContent(event, recipient) {
             </p>
 
             <p><strong>When:</strong> ${escapeHtml(formattedDate)}</p>
-            <p><strong>Where:</strong> ${escapeHtml(event.venueId || 'TBD')}</p>
+            <p><strong>Where:</strong> ${escapeHtml(venueName || 'TBD')}</p>
             <p><strong>Event details:</strong><br>${escapeHtml(event.description || 'Not provided')}</p>
             <p><strong>About ${escapeHtml(clubName)}:</strong><br>${escapeHtml(societyDetails || 'Not provided').replace(/\n/g, '<br>')}</p>
+            <p><a href="${PORTAL_URL}">Visit the ClubConnect portal</a></p>
         </div>
     `;
 
@@ -135,11 +138,14 @@ async function sendEventCreatedNotifications(event) {
     return { sent: 0, skipped: true, reason: "no-recipients" };
   }
 
+  const venue = await venueModel.findById(event.venueId);
+  const venueName = venue?.name;
+
   // const content = buildNotificationContent(event, null);
   let sentCount = 0;
 
   for (const recipient of recipients) {
-    const content = buildNotificationContent(event, recipient);
+    const content = buildNotificationContent(event, recipient, venueName);
     const result = await sendEmail({
       to: recipient.college_email_id,
       subject: content.subject,
@@ -150,6 +156,8 @@ async function sendEventCreatedNotifications(event) {
     if (result.sent) {
       sentCount += 1;
     }
+
+    console.log(`Sent Count: ${sentCount}`);
   }
 
   return { sent: sentCount, skipped: false };

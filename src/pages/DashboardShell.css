@@ -249,6 +249,23 @@
   background: #059669;
 }
 
+.btn-action-warning {
+  background: #f5ca4a;
+  color: #fff;
+  border: none;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: transform 0.2s ease;
+}
+
+.btn-action-warning:hover {
+  transform: translateY(-1px);
+  background: #f7b901;
+}
+
 .btn-action-danger {
   background: var(--bpit-maroon);
   color: #fff;
