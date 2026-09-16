@@ -46,6 +46,7 @@ const storySlides = {
 export default function StoriesBar({ onViewClub, clubName }) {
   const [activeStory, setActiveStory] = useState(null);
   const [dbStories, setDbStories] = useState([]);
+  const [allDbClubs, setAllDbClubs] = useState([]);
   const [seenStories, setSeenStories] = useState(new Set());
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -58,6 +59,14 @@ export default function StoriesBar({ onViewClub, clubName }) {
         if (data.stories && data.stories.length > 0) {
           setDbStories(data.stories);
         }
+      })
+      .catch(() => {});
+
+    // Fetch DB clubs for club profile navigation
+    fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.societies)) setAllDbClubs(data.societies);
       })
       .catch(() => {});
   }, []);
@@ -81,7 +90,7 @@ export default function StoriesBar({ onViewClub, clubName }) {
 
     // Increment view counter for DB stories
     if (story.isDbStory && story.id) {
-      fetch(`/api/stories/${story.id}/view`, { method: 'POST' }).catch(() => {});
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/stories/${story.id}/view`, { method: 'POST' }).catch(() => {});
     }
   };
 
@@ -191,6 +200,7 @@ export default function StoriesBar({ onViewClub, clubName }) {
           allStories={displayStories}
           onNavigate={(s) => { openStory(s); }}
           onViewClub={onViewClub}
+          allDbClubs={allDbClubs}
           onDeleteStory={(deletedId) => {
             setDbStories((prev) => prev.filter((s) => s.id !== deletedId));
           }}

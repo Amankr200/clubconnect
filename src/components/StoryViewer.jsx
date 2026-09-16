@@ -6,8 +6,18 @@ import { useAuth } from '../context/AuthContext';
 const STORY_DURATION = 5000;
 const LONG_PRESS_MS  = 180;
 
-function getClubIdForStory(story) {
-  const normalizedName = (story.clubName || '').toLowerCase();
+function getClubIdForStory(story, dbClubs = []) {
+  const normalizedName = (story.clubName || '').toLowerCase().trim();
+
+  // Search DB clubs first (prefixed with 'db-')
+  const dbMatch = dbClubs.find((club) => {
+    const n = String(club.name || '').toLowerCase().trim();
+    const fn = String(club.fullName || '').toLowerCase().trim();
+    return n === normalizedName || fn.includes(normalizedName) || normalizedName.includes(n);
+  });
+  if (dbMatch) return `db-${dbMatch.id}`;
+
+  // Fall back to static clubs
   const match = clubs.find((club) => {
     const clubName     = String(club.name     || '').toLowerCase();
     const clubFullName = String(club.fullName  || '').toLowerCase();
@@ -17,7 +27,7 @@ function getClubIdForStory(story) {
 }
 
 export default function StoryViewer({
-  story, slides, onClose, allStories, onNavigate, onViewClub, onDeleteStory, onUpdateStory,
+  story, slides, onClose, allStories, onNavigate, onViewClub, onDeleteStory, onUpdateStory, allDbClubs = [],
 }) {
   const { user, token } = useAuth();
   const allowedRoles    = ['student_coordinator', 'faculty_coordinator', 'hod', 'admin'];
@@ -307,7 +317,7 @@ export default function StoryViewer({
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              const clubId = getClubIdForStory(story);
+              const clubId = getClubIdForStory(story, allDbClubs);
               clubId && onViewClub ? onViewClub(clubId) : onClose();
             }}
           >View Club Profile →</button>
