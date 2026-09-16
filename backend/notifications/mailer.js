@@ -19,10 +19,17 @@ function hasCompleteTransportConfig() {
 
 async function sendEmail({ to, subject, text, html }) {
   if (!to) {
+    console.warn('[mailer] Skipping email: missing recipient');
     return { sent: false, skipped: true, reason: 'missing-recipient' };
   }
 
   if (!hasCompleteTransportConfig()) {
+    const config = getTransportConfig();
+    console.warn('[mailer] Skipping email: SMTP not fully configured. host=%s user=%s pass=%s',
+      config.host ? 'SET' : 'MISSING',
+      config.auth.user ? 'SET' : 'MISSING',
+      config.auth.pass ? 'SET' : 'MISSING'
+    );
     return { sent: false, skipped: true, reason: 'smtp-not-configured' };
   }
 
@@ -30,18 +37,24 @@ async function sendEmail({ to, subject, text, html }) {
   const fromAddress = process.env.SMTP_USER || '';
 
   if (!fromAddress) {
+    console.warn('[mailer] Skipping email: missing from address');
     return { sent: false, skipped: true, reason: 'missing-from-address' };
   }
 
-  await transporter.sendMail({
-    from: fromAddress,
-    to,
-    subject,
-    text,
-    html,
-  });
-
-  return { sent: true, skipped: false };
+  try {
+    await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      text,
+      html,
+    });
+    console.log('[mailer] Email sent successfully to:', to);
+    return { sent: true, skipped: false };
+  } catch (err) {
+    console.error('[mailer] Failed to send email to %s: %s', to, err.message);
+    return { sent: false, skipped: false, error: err.message };
+  }
 }
 
 module.exports = sendEmail;

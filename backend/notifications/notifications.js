@@ -131,17 +131,20 @@ function buildNotificationContent(event, recipient, venueName) {
 }
 
 async function sendEventCreatedNotifications(event) {
-  // const recipients = await getRecipients(event.clubId);
+  console.log('[notifications] sendEventCreatedNotifications called for hostClub:', event.hostClub, 'event:', event.eventName);
+
   const recipients = await getRecipients(event.hostClub);
+  console.log('[notifications] Recipients found:', recipients.length);
 
   if (recipients.length === 0) {
+    console.warn('[notifications] No recipients found for club:', event.hostClub);
     return { sent: 0, skipped: true, reason: "no-recipients" };
   }
 
   const venue = await venueModel.findById(event.venueId);
   const venueName = venue?.name;
+  console.log('[notifications] Venue:', venueName);
 
-  // const content = buildNotificationContent(event, null);
   let sentCount = 0;
 
   for (const recipient of recipients) {
@@ -157,9 +160,10 @@ async function sendEventCreatedNotifications(event) {
       sentCount += 1;
     }
 
-    console.log(`Sent Count: ${sentCount}`);
+    console.log(`[notifications] Sent Count: ${sentCount}`);
   }
 
+  console.log('[notifications] Final result: sent=%d total=%d', sentCount, recipients.length);
   return { sent: sentCount, skipped: false };
 }
 
