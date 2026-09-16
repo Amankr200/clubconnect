@@ -311,9 +311,7 @@ router.patch('/:bookingId/decision', async (req, res) => {
       currentReviewerRole = null;
       approvedAt = new Date();
 
-      // await sendEventCreatedNotifications(booking);
-      // await markEventCreationNotificationSent(booking.id);
-      shouldNotify = booking.status !== 'approved';
+      shouldNotify = true; // Always notify students when event receives final approval
     }
     changeRequest = {
       fromRole: '',
