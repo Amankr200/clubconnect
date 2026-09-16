@@ -1,20 +1,9 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-function getTransportConfig() {
-  return {
-    host: process.env.SMTP_HOST || '',
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: String(process.env.SMTP_SECURE || 'false') === 'true',
-    auth: {
-      user: process.env.SMTP_USER || '',
-      pass: process.env.SMTP_PASS || '',
-    },
-  };
-}
-
-function hasCompleteTransportConfig() {
-  const config = getTransportConfig();
-  return Boolean(config.host && config.auth.user && config.auth.pass);
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY || '';
+  if (!apiKey) return null;
+  return new Resend(apiKey);
 }
 
 async function sendEmail({ to, subject, text, html }) {
@@ -23,33 +12,29 @@ async function sendEmail({ to, subject, text, html }) {
     return { sent: false, skipped: true, reason: 'missing-recipient' };
   }
 
-  if (!hasCompleteTransportConfig()) {
-    const config = getTransportConfig();
-    console.warn('[mailer] Skipping email: SMTP not fully configured. host=%s user=%s pass=%s',
-      config.host ? 'SET' : 'MISSING',
-      config.auth.user ? 'SET' : 'MISSING',
-      config.auth.pass ? 'SET' : 'MISSING'
-    );
-    return { sent: false, skipped: true, reason: 'smtp-not-configured' };
+  const resend = getResendClient();
+  if (!resend) {
+    console.warn('[mailer] Skipping email: RESEND_API_KEY is not set');
+    return { sent: false, skipped: true, reason: 'resend-not-configured' };
   }
 
-  const transporter = nodemailer.createTransport(getTransportConfig());
-  const fromAddress = process.env.SMTP_USER || '';
-
-  if (!fromAddress) {
-    console.warn('[mailer] Skipping email: missing from address');
-    return { sent: false, skipped: true, reason: 'missing-from-address' };
-  }
+  const fromAddress = process.env.RESEND_FROM || 'ClubConnect <onboarding@resend.dev>';
 
   try {
-    await transporter.sendMail({
+    const result = await resend.emails.send({
       from: fromAddress,
       to,
       subject,
       text,
       html,
     });
-    console.log('[mailer] Email sent successfully to:', to);
+
+    if (result.error) {
+      console.error('[mailer] Resend API error for %s: %o', to, result.error);
+      return { sent: false, skipped: false, error: result.error.message };
+    }
+
+    console.log('[mailer] Email sent successfully to:', to, '| id:', result.data?.id);
     return { sent: true, skipped: false };
   } catch (err) {
     console.error('[mailer] Failed to send email to %s: %s', to, err.message);
