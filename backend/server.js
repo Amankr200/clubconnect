@@ -22,7 +22,11 @@ const hasFrontendBuild = fs.existsSync(frontendIndexPath);
 
 /* ─── Middleware ─────────────────────────────────────────── */
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: [
+    'http://localhost:5173', 
+    'http://127.0.0.1:5173',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true,
 }));
 app.use(express.json({ limit: '15mb' }));
