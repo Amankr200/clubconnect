@@ -397,7 +397,7 @@ export default function LandingPage({ onLoginSuccess }) {
 
   const fetchLiveApprovedEvents = useCallback(async (clubMap) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/venue-bookings/public?status=approved');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/venue-bookings/public?status=approved`);
       if (!res.ok) return;
       const data = await res.json();
       if (data.bookings && Array.isArray(data.bookings)) {

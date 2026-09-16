@@ -63,7 +63,7 @@ export default function EventsSection({ onLoginClick }) {
   }, []);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || '/api'}/venue-bookings/public?status=approved')
+    fetch(`${import.meta.env.VITE_API_URL || '/api'}/venue-bookings/public?status=approved`)
       .then((res) => res.json())
       .then((data) => {
         if (data.bookings) {
