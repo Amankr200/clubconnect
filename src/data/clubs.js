@@ -1,6 +1,7 @@
 // Club & Society data for BPIT
 const clubs = [
   // Technical
+  /*
   {
     id: 5,
     name: "GDSC",
@@ -77,7 +78,9 @@ const clubs = [
     head: "Suresh Kumar",
     coordinator: "Prof. Rajesh Gupta",
   },
+  */
   // Cultural / Non-Technical
+  /*
   {
     id: 10,
     name: "Aavaran",
@@ -211,6 +214,7 @@ const clubs = [
     head: "Neha Sharma",
     coordinator: "Dr. Poonam Arora",
   },
+  */
   // Innovation & Research
   {
     id: 18,
@@ -221,7 +225,7 @@ const clubs = [
     description: "IIC fosters startup ideas and innovation at BPIT (Shiksha-tech). Organizes startup pitches, guest lectures, mentorship sessions, and incubation support.",
     color: "#F59E0B",
     gradFrom: "#78350F",
-    gradTo:   "#F59E0B",
+    gradTo: "#F59E0B",
     emoji: "🚀",
     members: 160,
     events: 24,
@@ -240,7 +244,7 @@ const clubs = [
     description: "BPIT Research & Development Cell organizing Engineers' Day celebrations, research events, innovation contests, and bridging academia with industry.",
     color: "#6366F1",
     gradFrom: "#312E81",
-    gradTo:   "#6366F1",
+    gradTo: "#6366F1",
     emoji: "🧪",
     members: 140,
     events: 20,
@@ -259,7 +263,7 @@ const clubs = [
     description: "Under the School of Business Administration at BPIT. Conducts debate competitions, creative advertising contests, brand challenges, and business case studies.",
     color: "#EF4444",
     gradFrom: "#7F1D1D",
-    gradTo:   "#EF4444",
+    gradTo: "#EF4444",
     emoji: "📊",
     members: 100,
     events: 15,
