@@ -5,7 +5,7 @@ const { readState, updateState } = require('../../server/data/store.js');
 const sendEmail = require("./mailer.js");
 const db = require("../db.js");
 const venueModel = require("../models/venue.js");
-const PORTAL_URL = "http://localhost:5173";
+const PORTAL_URL = process.env.PORTAL_URL || "https://clubconnect-self.vercel.app/";
 // if doesn't work, try with import
 /*
 const DAY_MS = 24 * 60 * 60 * 1000;
