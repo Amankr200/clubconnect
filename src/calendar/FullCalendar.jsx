@@ -24,8 +24,8 @@ function formatEventTime(event) {
     return 'Time not available';
   }
 
-  const start = new Date(`${event.start}Z`);
-  const end = event.end ? new Date(`${event.end}Z`) : null;
+  const start = new Date(`${event.start}`);
+  const end = event.end ? new Date(`${event.end}`) : null;
   const options = { hour: '2-digit', minute: '2-digit', hour12: true };
 
   return `${start.toLocaleTimeString('en-US', options)}${end ? ` - ${end.toLocaleTimeString('en-US', options)}` : ''}`;
@@ -298,7 +298,7 @@ export default function CalendarPage() {
                     <small><b>Location:</b> {event.location}</small>
                     {event.start && event.end && !event.allDay && (
                       <small>
-                        <b>Duration:</b> {new Date(`${event.start}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(`${event.end}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        <b>Duration:</b> {new Date(`${event.start}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - {new Date(`${event.end}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </small>
                     )}
                     {/* <small>Description: {event.extendedProps?.descriptionText || '—'}</small> */}
