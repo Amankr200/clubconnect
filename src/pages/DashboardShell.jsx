@@ -512,7 +512,7 @@ export default function DashboardShell({ onNavigateHome }) {
 
   // Toggle Admin Venue
   const handleToggleVenue = async (id, currentIsActive) => {
-    await fetch(`/api/admin/venues/${id}/toggle`, {
+    await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/venues/${id}/toggle`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ isActive: !currentIsActive }),
@@ -523,7 +523,7 @@ export default function DashboardShell({ onNavigateHome }) {
   // Toggle Bug Status
   const handleToggleBug = async (id, currentStatus) => {
     const nextStatus = currentStatus === 'open' ? 'resolved' : 'open';
-    await fetch(`/api/bugs/${id}/status`, {
+    await fetch(`${import.meta.env.VITE_API_URL || '/api'}/bugs/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status: nextStatus }),
@@ -533,7 +533,7 @@ export default function DashboardShell({ onNavigateHome }) {
 
   // Approve Society Registration
   const handleApproveSociety = async (id) => {
-    await fetch(`/api/admin/society-registrations/${id}/approve`, {
+    await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/society-registrations/${id}/approve`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     });
