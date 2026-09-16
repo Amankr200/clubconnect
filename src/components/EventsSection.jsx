@@ -36,6 +36,10 @@ function isEventEnded(dateStr) {
   return eventDate < today;
 }
 
+function getEventRegistrationUrl(event) {
+  return event.extendedProps?.registrationLink || event.extendedProps?.registrationUrl || event.url || '';
+}
+
 export default function EventsSection({ onLoginClick }) {
   const [rsvpd, setRsvpd] = useState(new Set());
   const [pinned, setPinned] = useState(() => {
@@ -50,6 +54,7 @@ export default function EventsSection({ onLoginClick }) {
   const [approvedBookings, setApprovedBookings] = useState([]);
   const [clubs, setClubs] = useState([]);
   const [venues, setVenues] = useState([]);
+  const [activeEvent, setActiveEvent] = useState(null);
 
   useEffect(() => {
     getVenues()
@@ -366,11 +371,11 @@ export default function EventsSection({ onLoginClick }) {
               )}
               <div className="calendar-detail-section">
                 <strong>Date</strong>
-                <span>{formatDateLabel(activeEvent.start?.slice(0, 10) || selectedDate)}</span>
+                <span>{activeEvent.date}</span>
               </div>
               <div className="calendar-detail-section">
                 <strong>Time</strong>
-                <span>{formatEventTime(activeEvent)}</span>
+                <span>{activeEvent.time}</span>
               </div>
               <div className="calendar-detail-section">
                 <strong>Description</strong>
