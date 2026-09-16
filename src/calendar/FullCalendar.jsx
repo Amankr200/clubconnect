@@ -136,7 +136,7 @@ export default function CalendarPage() {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const response = await fetch("/api/societies");
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch societies");

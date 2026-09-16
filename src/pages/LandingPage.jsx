@@ -397,7 +397,7 @@ export default function LandingPage({ onLoginSuccess }) {
 
   const fetchLiveApprovedEvents = useCallback(async (clubMap) => {
     try {
-      const res = await fetch('/api/venue-bookings/public?status=approved');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/venue-bookings/public?status=approved');
       if (!res.ok) return;
       const data = await res.json();
       if (data.bookings && Array.isArray(data.bookings)) {
@@ -433,7 +433,7 @@ export default function LandingPage({ onLoginSuccess }) {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const response = await fetch("/api/societies");
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch societies");

@@ -17,7 +17,7 @@ export default function ReportBugModal({ isOpen, onClose }) {
     setSubmitting(true);
 
     try {
-      const res = await fetch('/api/bugs', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/bugs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

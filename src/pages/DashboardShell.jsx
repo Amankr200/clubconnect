@@ -209,7 +209,7 @@ export default function DashboardShell({ onNavigateHome }) {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const response = await fetch("/api/societies");
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch societies");
@@ -408,16 +408,16 @@ export default function DashboardShell({ onNavigateHome }) {
     }
 
     if (user?.role === 'admin') {
-      fetch('/api/admin/society-registrations', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/society-registrations`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setSocietyRegs(d.registrations || [])).catch(() => {});
 
-      fetch('/api/admin/venues', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/venues`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setAdminVenues(d.venues || [])).catch(() => {});
 
-      fetch('/api/bugs', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/bugs`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setBugReports(d.bugs || [])).catch(() => {});
 
-      fetch('/api/admin/weekly-events', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/weekly-events`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setWeeklyEvents(d.weeklyEvents || [])).catch(() => {});
     }
   };
@@ -455,7 +455,7 @@ export default function DashboardShell({ onNavigateHome }) {
     }
 
     try {
-      const res = await fetch('/api/stories', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/stories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

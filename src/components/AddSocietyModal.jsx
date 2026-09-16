@@ -59,7 +59,7 @@ export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreat
         banner: bannerFile ? await readFileAsDataUrl(bannerFile) : '',
       };
 
-      let response = await fetch('/api/societies', {
+      let response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ export default function AddSocietyModal({ isOpen, onClose, token, onSocietyCreat
       });
 
       if (!response.ok && response.status === 404) {
-        response = await fetch('/api/admin/societies', {
+        response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/societies`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

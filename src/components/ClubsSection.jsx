@@ -58,7 +58,7 @@ export default function ClubsSection({ onNavigateSociety }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/societies')
+    fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`)
       .then((res) => res.json())
       .then((data) => {
         if (!cancelled && Array.isArray(data.societies) && data.societies.length > 0) {

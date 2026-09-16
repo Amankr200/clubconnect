@@ -63,7 +63,7 @@ export default function EventsSection({ onLoginClick }) {
   }, []);
 
   useEffect(() => {
-    fetch('/api/venue-bookings/public?status=approved')
+    fetch(`${import.meta.env.VITE_API_URL || '/api'}/venue-bookings/public?status=approved')
       .then((res) => res.json())
       .then((data) => {
         if (data.bookings) {
@@ -76,7 +76,7 @@ export default function EventsSection({ onLoginClick }) {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const response = await fetch("/api/societies");
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch societies");

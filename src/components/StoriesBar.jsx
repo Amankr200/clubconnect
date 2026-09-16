@@ -52,7 +52,7 @@ export default function StoriesBar({ onViewClub, clubName }) {
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   useEffect(() => {
-    fetch('/api/stories')
+    fetch(`${import.meta.env.VITE_API_URL || '/api'}/stories`)
       .then((res) => res.json())
       .then((data) => {
         if (data.stories && data.stories.length > 0) {
