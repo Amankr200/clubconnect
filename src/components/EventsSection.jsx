@@ -26,6 +26,7 @@ export default function EventsSection({ onLoginClick }) {
   const [pinned, setPinned] = useState(new Set());
   const [activeFilter, setActiveFilter] = useState('All');
   const [approvedBookings, setApprovedBookings] = useState([]);
+  const [showNoRegDialog, setShowNoRegDialog] = useState(false);
 
   useEffect(() => {
     fetch('/api/venue-bookings/public?status=approved')
@@ -234,9 +235,12 @@ export default function EventsSection({ onLoginClick }) {
                       if (link) {
                         const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
                         window.open(normalized, '_blank', 'noopener,noreferrer');
-                      } else {
-                        onLoginClick();
+                        return;
                       }
+
+                      // No valid registration link — show temporary dialog
+                      setShowNoRegDialog(true);
+                      setTimeout(() => setShowNoRegDialog(false), 5000);
                     }}
                     // id={`rsvp-${event.id}`}
                     style={!isRsvpd ? { background: event.color, borderColor: event.color } : {}}
@@ -251,6 +255,27 @@ export default function EventsSection({ onLoginClick }) {
             );
           })}
         </div>
+
+        {showNoRegDialog && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#1f2937',
+              color: '#fff',
+              padding: '10px 16px',
+              borderRadius: 10,
+              zIndex: 9999,
+              boxShadow: '0 8px 24px rgba(15,23,42,0.25)'
+            }}
+          >
+            Registration Form not attached!
+          </div>
+        )}
 
         {/* Load more / view all */}
         <div className="events-footer-row">
