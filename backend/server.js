@@ -7,6 +7,7 @@ const db      = require('./db');
 
 const authRoutes = require('./routes/auth');
 const venueBookingRoutes = require('./routes/venueBookings');
+const venueRoutes = require('./routes/venues');
 const societyRoutes = require('./routes/societies');
 const storyRoutes = require('./routes/stories');
 const bugRoutes = require('./routes/bugs');
@@ -21,7 +22,11 @@ const hasFrontendBuild = fs.existsSync(frontendIndexPath);
 
 /* ─── Middleware ─────────────────────────────────────────── */
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: [
+    'http://localhost:5173', 
+    'http://127.0.0.1:5173',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true,
 }));
 app.use(express.json({ limit: '15mb' }));
@@ -34,6 +39,7 @@ if (hasFrontendBuild) {
 /* ─── Routes ─────────────────────────────────────────────── */
 app.use('/api/auth', authRoutes);
 app.use('/api/venue-bookings', venueBookingRoutes);
+app.use('/api/venues', venueRoutes);
 app.use('/api/societies', societyRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/bugs', bugRoutes);

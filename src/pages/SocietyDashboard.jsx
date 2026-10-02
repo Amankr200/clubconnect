@@ -65,7 +65,7 @@ export default function SocietyDashboard({ clubId, user, onNavigateBack }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/societies')
+    fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`)
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled && Array.isArray(data.societies)) {

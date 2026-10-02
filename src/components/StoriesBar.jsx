@@ -46,18 +46,27 @@ const storySlides = {
 export default function StoriesBar({ onViewClub, clubName }) {
   const [activeStory, setActiveStory] = useState(null);
   const [dbStories, setDbStories] = useState([]);
+  const [allDbClubs, setAllDbClubs] = useState([]);
   const [seenStories, setSeenStories] = useState(new Set());
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   useEffect(() => {
-    fetch('/api/stories')
+    fetch(`${import.meta.env.VITE_API_URL || '/api'}/stories`)
       .then((res) => res.json())
       .then((data) => {
         if (data.stories && data.stories.length > 0) {
           setDbStories(data.stories);
         }
+      })
+      .catch(() => {});
+
+    // Fetch DB clubs for club profile navigation
+    fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.societies)) setAllDbClubs(data.societies);
       })
       .catch(() => {});
   }, []);
@@ -81,7 +90,7 @@ export default function StoriesBar({ onViewClub, clubName }) {
 
     // Increment view counter for DB stories
     if (story.isDbStory && story.id) {
-      fetch(`/api/stories/${story.id}/view`, { method: 'POST' }).catch(() => {});
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/stories/${story.id}/view`, { method: 'POST' }).catch(() => {});
     }
   };
 
@@ -115,10 +124,12 @@ export default function StoriesBar({ onViewClub, clubName }) {
     if (story.isDbStory) {
       return [
         {
-          type: 'image',
+          type: story.mediaType || 'image',
           headline: story.title,
           sub: `👁️ ${story.viewsCount || 0} Views | 🖱️ ${story.clicksCount || 0} Clicks`,
-          bg: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url(${story.mediaUrl}) center/cover no-repeat`,
+          mediaUrl: story.mediaUrl,
+          mediaType: story.mediaType || 'image',
+          bg: '#0F172A',
           emoji: '📸',
         },
       ];
@@ -189,6 +200,13 @@ export default function StoriesBar({ onViewClub, clubName }) {
           allStories={displayStories}
           onNavigate={(s) => { openStory(s); }}
           onViewClub={onViewClub}
+          allDbClubs={allDbClubs}
+          onDeleteStory={(deletedId) => {
+            setDbStories((prev) => prev.filter((s) => s.id !== deletedId));
+          }}
+          onUpdateStory={(updated) => {
+            setDbStories((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+          }}
         />
       )}
     </section>

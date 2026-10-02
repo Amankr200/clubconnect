@@ -6,10 +6,12 @@ function formatBooking(row) {
     _id: row.id,
     id: row.id,
     venueId: row.venue_id,
+    venueName: row.venue_name,
     date: row.date,
     timeSlots: row.time_slots || [],
     eventName: row.event_name,
     hostClub: row.host_club,
+    clubName: row.club_name,
     photo: row.photo,
     photoFileName: row.photo_file_name,
     description: row.description,
@@ -32,7 +34,19 @@ function formatBooking(row) {
 
 async function findPublicBookings(status = 'approved') {
   const result = await db.query(
-    'SELECT * FROM venue_bookings WHERE status = $1 ORDER BY date ASC, created_at DESC',
+    `
+    SELECT
+      vb.*,
+      s.name AS club_name,
+      v.name AS venue_name
+    FROM venue_bookings vb
+    LEFT JOIN societies s
+      ON vb.host_club = s.id
+    LEFT JOIN venues v
+      ON vb.venue_id = v.id
+    WHERE vb.status = $1
+    ORDER BY vb.date ASC, vb.created_at DESC
+    `,
     [status]
   );
   return result.rows.map(formatBooking);
@@ -40,20 +54,57 @@ async function findPublicBookings(status = 'approved') {
 
 async function findAllActiveBookings() {
   const result = await db.query(
-    `SELECT * FROM venue_bookings 
-     WHERE status IN ('pending_faculty', 'pending_principal', 'approved')`
+    `
+    SELECT
+      vb.*,
+      s.name AS club_name,
+      v.name AS venue_name
+    FROM venue_bookings vb
+    LEFT JOIN societies s
+      ON vb.host_club = s.id
+    LEFT JOIN venues v
+      ON vb.venue_id = v.id
+    WHERE vb.status IN ('pending_faculty', 'pending_principal', 'approved')
+    `
   );
   return result.rows.map(formatBooking);
 }
 
 async function findAllBookings() {
-  const result = await db.query('SELECT * FROM venue_bookings ORDER BY created_at DESC');
+  const result = await db.query(
+    `
+    SELECT
+      vb.*,
+      s.name AS club_name,
+      v.name AS venue_name
+    FROM venue_bookings vb
+    LEFT JOIN societies s
+      ON vb.host_club = s.id
+    LEFT JOIN venues v
+      ON vb.venue_id = v.id
+    ORDER BY vb.created_at DESC
+    `
+  );
   return result.rows.map(formatBooking);
 }
 
 async function findById(id) {
   try {
-    const result = await db.query('SELECT * FROM venue_bookings WHERE id = $1', [id]);
+    const result = await db.query(
+      `
+      SELECT
+        vb.*,
+        s.name AS club_name,
+        v.name AS venue_name
+      FROM venue_bookings vb
+      LEFT JOIN societies s
+        ON vb.host_club = s.id
+      LEFT JOIN venues v
+        ON vb.venue_id = v.id
+      WHERE vb.id = $1
+      `,
+      [id]
+    );
     return formatBooking(result.rows[0]);
   } catch (err) {
     return null;

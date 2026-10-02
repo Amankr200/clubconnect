@@ -1,5 +1,5 @@
-// Uses Vite dev proxy (/api → http://localhost:5000) during development
-const API_BASE = '/api';
+// Uses VITE_API_URL in production, or Vite dev proxy (/api) during development
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 /**
  * Login with email + password.

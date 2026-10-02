@@ -50,9 +50,27 @@ async function incrementClick(id) {
   return formatStory(result.rows[0]);
 }
 
+async function deleteStory(id) {
+  const result = await db.query(
+    `DELETE FROM stories WHERE id::text = $1 RETURNING *`,
+    [String(id)]
+  );
+  return formatStory(result.rows[0]);
+}
+
+async function updateStory(id, { title, mediaUrl, mediaType }) {
+  const result = await db.query(
+    `UPDATE stories SET title = COALESCE($1, title), media_url = COALESCE($2, media_url), media_type = COALESCE($3, media_type) WHERE id::text = $4 RETURNING *`,
+    [title, mediaUrl, mediaType, String(id)]
+  );
+  return formatStory(result.rows[0]);
+}
+
 module.exports = {
   findActiveStories,
   createStory,
   incrementView,
   incrementClick,
+  deleteStory,
+  updateStory,
 };

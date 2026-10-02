@@ -1,6 +1,7 @@
 // Club & Society data for BPIT
-export const clubs = [
+const clubs = [
   // Technical
+  /*
   {
     id: 5,
     name: "GDSC",
@@ -77,7 +78,9 @@ export const clubs = [
     head: "Suresh Kumar",
     coordinator: "Prof. Rajesh Gupta",
   },
+  */
   // Cultural / Non-Technical
+  /*
   {
     id: 10,
     name: "Aavaran",
@@ -211,6 +214,7 @@ export const clubs = [
     head: "Neha Sharma",
     coordinator: "Dr. Poonam Arora",
   },
+  */
   // Innovation & Research
   {
     id: 18,
@@ -221,7 +225,7 @@ export const clubs = [
     description: "IIC fosters startup ideas and innovation at BPIT (Shiksha-tech). Organizes startup pitches, guest lectures, mentorship sessions, and incubation support.",
     color: "#F59E0B",
     gradFrom: "#78350F",
-    gradTo:   "#F59E0B",
+    gradTo: "#F59E0B",
     emoji: "🚀",
     members: 160,
     events: 24,
@@ -240,7 +244,7 @@ export const clubs = [
     description: "BPIT Research & Development Cell organizing Engineers' Day celebrations, research events, innovation contests, and bridging academia with industry.",
     color: "#6366F1",
     gradFrom: "#312E81",
-    gradTo:   "#6366F1",
+    gradTo: "#6366F1",
     emoji: "🧪",
     members: 140,
     events: 20,
@@ -259,7 +263,7 @@ export const clubs = [
     description: "Under the School of Business Administration at BPIT. Conducts debate competitions, creative advertising contests, brand challenges, and business case studies.",
     color: "#EF4444",
     gradFrom: "#7F1D1D",
-    gradTo:   "#EF4444",
+    gradTo: "#EF4444",
     emoji: "📊",
     members: 100,
     events: 15,
@@ -271,9 +275,9 @@ export const clubs = [
   },
 ];
 
-export const categories = ["All", "Technical", "Cultural", "Social & Environment", "Innovation & Research"];
+const categories = ["All", "Technical", "Cultural", "Social & Environment", "Innovation & Research"];
 
-export const storyData = [
+const storyData = [
   {
     id: 1,
     clubName: "#DEFINE",
@@ -357,7 +361,7 @@ export const storyData = [
   },
 ];
 
-export const upcomingEvents = [
+const upcomingEvents = [
   {
     id: 1,
     title: "Codenheimer 5.0",
@@ -450,13 +454,21 @@ export const upcomingEvents = [
   },
 ];
 
-export const announcements = [
+const announcements = [
   "🎉 ClubConnect is officially launched for BPIT! All societies now on one platform.",
-  "📢 #DEFINE Codenheimer 5.0 registrations now open – Register before July 1!",
-  "🎵 Octave Harmony Fest auditions on June 28 – Seminar Hall A at 4 PM",
-  "🚀 E-Cell Startup Pitch Day – Submit your idea by July 10",
-  "🩸 NSS Blood Donation Camp – Register as donor by July 25",
+  "📢 #DEFINE Codenheimer 5.0 registrations now open!",
+  "🎵 Octave Harmony Fest auditions on September 28 – Seminar Hall A at 4 PM",
+  "🚀 E-Cell Startup Pitch Day – Submit your idea by October 10",
+  "🩸 NSS Blood Donation Camp – Register as donor by September 25",
   "📋 Dean approval pending for Startup Pitch Day venue request",
-  "🏆 Mavericks won 1st place at North Zone Dance Championship 2025!",
+  "🏆 Mavericks won 1st place at North Zone Dance Championship 2026!",
   "📸 Kalam Literary Fest photos now uploaded on the platform",
 ];
+
+export {
+  clubs,
+  categories,
+  storyData,
+  upcomingEvents,
+  announcements
+};

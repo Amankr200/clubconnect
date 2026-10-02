@@ -52,10 +52,11 @@ export default function DashboardShell({ onNavigateHome }) {
     facultyCoordinator: { name: 'Dr. Ananya Sharma', email: 'ananya@bpit.ac.in' },
     studentCoordinators: [{ name: 'Aman Kumar', enrollmentNumber: '00123456', email: 'aman@bpit.ac.in' }],
   });
+  const [clubs, setClubs] = useState([]);
   const [societyUpdateError, setSocietyUpdateError] = useState('');
   const [societyUpdateSuccess, setSocietyUpdateSuccess] = useState('');
   const [societyUpdateSaving, setSocietyUpdateSaving] = useState(false);
-  const [societyLookupName, setSocietyLookupName] = useState('ACM');
+  const [societyLookupName, setSocietyLookupName] = useState('#Define');
   const [societyLookupStatus, setSocietyLookupStatus] = useState('idle');
   const [selectedEditFields, setSelectedEditFields] = useState([]);
 
@@ -205,6 +206,34 @@ export default function DashboardShell({ onNavigateHome }) {
     return () => clearTimeout(timer);
   }, [societyLookupName]);
 
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/societies`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch societies");
+        }
+
+        const data = await response.json();
+        setClubs(data.societies || []);
+      } catch (error) {
+        console.error("Error fetching societies:", error);
+        setClubs([]);
+      }
+    };
+
+    fetchClubs();
+  }, []);
+
+  const getClubName = (clubId) => {
+    return (
+      clubs.find(
+        (club) => String(club.id) === String(clubId)
+      )?.name || "Unknown club"
+    );
+  };
+
   const toggleEditField = (field) => {
     setSelectedEditFields((prev) => (
       prev.includes(field) ? prev.filter((item) => item !== field) : [...prev, field]
@@ -322,6 +351,22 @@ export default function DashboardShell({ onNavigateHome }) {
   const [storyTitle, setStoryTitle] = useState('');
   const [storyMediaUrl, setStoryMediaUrl] = useState('');
   const [storyMsg, setStoryMsg] = useState('');
+  const [storyInputMode, setStoryInputMode] = useState('file');
+  const [storyMediaType, setStoryMediaType] = useState('image');
+  const [storyFilePreview, setStoryFilePreview] = useState('');
+
+  const handleStoryFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isVid = file.type.startsWith('video/');
+    setStoryMediaType(isVid ? 'video' : 'image');
+    const reader = new FileReader();
+    reader.onload = () => {
+      setStoryFilePreview(String(reader.result || ''));
+      setStoryMediaUrl(String(reader.result || ''));
+    };
+    reader.readAsDataURL(file);
+  };
 
   // History Filter
   const [historyFilter, setHistoryFilter] = useState('all'); // 'all', '3m', '6m'
@@ -363,16 +408,16 @@ export default function DashboardShell({ onNavigateHome }) {
     }
 
     if (user?.role === 'admin') {
-      fetch('/api/admin/society-registrations', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/society-registrations`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setSocietyRegs(d.registrations || [])).catch(() => {});
 
-      fetch('/api/admin/venues', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/venues`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setAdminVenues(d.venues || [])).catch(() => {});
 
-      fetch('/api/bugs', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/bugs`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setBugReports(d.bugs || [])).catch(() => {});
 
-      fetch('/api/admin/weekly-events', { headers: { Authorization: `Bearer ${token}` } })
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/weekly-events`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setWeeklyEvents(d.weeklyEvents || [])).catch(() => {});
     }
   };
@@ -403,14 +448,24 @@ export default function DashboardShell({ onNavigateHome }) {
   const handlePublishStory = async (e) => {
     e.preventDefault();
     setStoryMsg('');
+    const finalMedia = storyInputMode === 'file' ? storyFilePreview : storyMediaUrl;
+    if (!finalMedia) {
+      setStoryMsg('⚠️ Please select a photo or video file, or enter a media URL.');
+      return;
+    }
+
     try {
-      const res = await fetch('/api/stories', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/stories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ title: storyTitle, mediaUrl: storyMediaUrl }),
+        body: JSON.stringify({
+          title: storyTitle,
+          mediaUrl: finalMedia,
+          mediaType: storyMediaType,
+        }),
       });
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -421,6 +476,7 @@ export default function DashboardShell({ onNavigateHome }) {
       setStoryMsg('✅ Story published live on landing page for 24 hours!');
       setStoryTitle('');
       setStoryMediaUrl('');
+      setStoryFilePreview('');
     } catch (err) {
       setStoryMsg(`⚠️ ${err.message}`);
     }
@@ -429,7 +485,7 @@ export default function DashboardShell({ onNavigateHome }) {
 
   // CSV Export Handler
   const handleExportCSV = () => {
-    const headers = ['Event Name', 'Host Club', 'Date', 'Time Slot', 'Venue ID', 'Status', 'Attendance'];
+    const headers = ['Event Name', 'Host Club', 'Date', 'Time Slot', 'Venue', 'Status', 'Attendance'];
     const rows = (myRequests.length > 0 ? myRequests : [
       { eventName: 'ACM Hackathon 2026', hostClub: 'ACM', date: '2026-06-15', timeSlots: [{ startTime: '10:00 AM', endTime: '04:00 PM' }], venueId: 1, status: 'approved', attendance: '250 Expected' },
       { eventName: 'DSA Bootcamp', hostClub: 'ACM', date: '2026-05-10', timeSlots: [{ startTime: '02:00 PM', endTime: '05:00 PM' }], venueId: 2, status: 'approved', attendance: '120 Expected' },
@@ -439,7 +495,7 @@ export default function DashboardShell({ onNavigateHome }) {
       `"${b.hostClub}"`,
       `"${b.date}"`,
       `"${b.timeSlots?.[0]?.startTime || ''} - ${b.timeSlots?.[0]?.endTime || ''}"`,
-      b.venueId,
+      `"${b.venueName || 'Venue Not Disclosed'}"`,
       b.status,
       `"${b.attendance}"`,
     ]);
@@ -456,7 +512,7 @@ export default function DashboardShell({ onNavigateHome }) {
 
   // Toggle Admin Venue
   const handleToggleVenue = async (id, currentIsActive) => {
-    await fetch(`/api/admin/venues/${id}/toggle`, {
+    await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/venues/${id}/toggle`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ isActive: !currentIsActive }),
@@ -467,7 +523,7 @@ export default function DashboardShell({ onNavigateHome }) {
   // Toggle Bug Status
   const handleToggleBug = async (id, currentStatus) => {
     const nextStatus = currentStatus === 'open' ? 'resolved' : 'open';
-    await fetch(`/api/bugs/${id}/status`, {
+    await fetch(`${import.meta.env.VITE_API_URL || '/api'}/bugs/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status: nextStatus }),
@@ -477,7 +533,7 @@ export default function DashboardShell({ onNavigateHome }) {
 
   // Approve Society Registration
   const handleApproveSociety = async (id) => {
-    await fetch(`/api/admin/society-registrations/${id}/approve`, {
+    await fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/society-registrations/${id}/approve`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -934,9 +990,9 @@ export default function DashboardShell({ onNavigateHome }) {
                     weeklyEvents.map((evt) => (
                       <tr key={evt.id}>
                         <td><strong>{evt.eventName}</strong></td>
-                        <td>{evt.hostClub}</td>
+                        <td>{getClubName(evt.hostClub)}</td>
                         <td>{evt.date}</td>
-                        <td>Venue #{evt.venueId}</td>
+                        <td>{evt.venueName || 'Venue Not Disclosed'}</td>
                         <td>
                           <span style={{ color: evt.status === 'approved' ? '#10b981' : '#f59e0b' }}>
                             {evt.status}
@@ -960,11 +1016,11 @@ export default function DashboardShell({ onNavigateHome }) {
         {['student_coordinator', 'faculty_coordinator'].includes(user?.role) && activeTab === 'story' && (
           <div className="dash-card">
             <h2 className="dash-card-title">📸 Publish 24-Hour Story on Landing Page</h2>
-            <p className="dash-card-subtitle">Promote your society's upcoming event or announcement. Stories automatically expire after 24 hours.</p>
+            <p className="dash-card-subtitle">Promote your society's upcoming event or announcement with high quality photos or videos. Stories automatically expire after 24 hours.</p>
 
             {storyMsg && <div style={{ marginBottom: '1rem', padding: '0.75rem', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#4ade80' }}>{storyMsg}</div>}
 
-            <form onSubmit={handlePublishStory} style={{ maxWidth: '600px' }}>
+            <form onSubmit={handlePublishStory} style={{ maxWidth: '640px' }}>
               <div style={{ marginBottom: '1.25rem' }}>
                 <label className="dash-field-label">Story Headline / Title</label>
                 <input
@@ -977,20 +1033,86 @@ export default function DashboardShell({ onNavigateHome }) {
                 />
               </div>
 
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label className="dash-field-label">Media Image URL</label>
-                <input
-                  type="url"
-                  className="dash-input"
-                  placeholder="https://images.unsplash.com/photo-..."
-                  required
-                  value={storyMediaUrl}
-                  onChange={(e) => setStoryMediaUrl(e.target.value)}
-                />
+              {/* Mode Switcher */}
+              <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  className={`dash-filter-chip ${storyInputMode === 'file' ? 'active' : ''}`}
+                  onClick={() => setStoryInputMode('file')}
+                  style={{ padding: '0.4rem 1rem' }}
+                >
+                  📁 Upload Photo / Video File
+                </button>
+                <button
+                  type="button"
+                  className={`dash-filter-chip ${storyInputMode === 'url' ? 'active' : ''}`}
+                  onClick={() => setStoryInputMode('url')}
+                  style={{ padding: '0.4rem 1rem' }}
+                >
+                  🔗 Paste Media URL
+                </button>
               </div>
 
+              {storyInputMode === 'file' ? (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label className="dash-field-label">Select Photo or Video File</label>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    className="dash-input"
+                    onChange={handleStoryFileChange}
+                    style={{ padding: '0.5rem' }}
+                  />
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                    Supports PNG, JPG, WEBP photos and MP4, WEBM videos.
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label className="dash-field-label">Media Image / Video URL</label>
+                  <input
+                    type="url"
+                    className="dash-input"
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={storyMediaUrl}
+                    onChange={(e) => {
+                      setStoryMediaUrl(e.target.value);
+                      if (e.target.value.includes('.mp4') || e.target.value.includes('.webm')) {
+                        setStoryMediaType('video');
+                      } else {
+                        setStoryMediaType('image');
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Instant Media Preview */}
+              {(storyFilePreview || (storyInputMode === 'url' && storyMediaUrl)) && (
+                <div style={{ marginBottom: '1.25rem', padding: '0.75rem', borderRadius: '12px', background: 'var(--bg-light)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-dark)' }}>
+                    👁️ Instant Media Preview:
+                  </div>
+                  {storyMediaType === 'video' ? (
+                    <video
+                      src={storyInputMode === 'file' ? storyFilePreview : storyMediaUrl}
+                      controls
+                      autoPlay
+                      muted
+                      style={{ width: '100%', maxHeight: '240px', borderRadius: '8px', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <img
+                      src={storyInputMode === 'file' ? storyFilePreview : storyMediaUrl}
+                      alt="Story preview"
+                      style={{ width: '100%', maxHeight: '240px', borderRadius: '8px', objectFit: 'cover' }}
+                    />
+                  )}
+                </div>
+              )}
+
               <button type="submit" className="btn-action-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '0.95rem' }}>
-                🚀 Publish Story (24h Active)
+                🚀 Publish 24h Story (Photo / Video)
               </button>
             </form>
           </div>
@@ -1371,8 +1493,8 @@ export default function DashboardShell({ onNavigateHome }) {
                             </span>
                           </div>
                           <div className="dash-booking-meta">
-                            <span>🏛️ <strong>Host Club:</strong> {booking.hostClub}</span>
-                            <span>📍 <strong>Venue ID:</strong> #{booking.venueId}</span>
+                            <span>🏛️ <strong>Host Club:</strong> {getClubName(booking.hostClub)}</span>
+                            <span>📍 <strong>Venue:</strong> {booking.venueName || 'Venue Not Disclosed'}</span>
                             <span>📅 <strong>Date &amp; Time:</strong> {booking.date} ({booking.timeSlots?.[0]?.startTime} - {booking.timeSlots?.[0]?.endTime})</span>
                             <span>👤 <strong>Requested By:</strong> {booking.requestedBy?.name} ({booking.requestedBy?.email})</span>
                           </div>
@@ -1467,14 +1589,21 @@ export default function DashboardShell({ onNavigateHome }) {
                             style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
                             onClick={() => handleDecision(booking.id, 'allow')}
                           >
-                            ✅ Allow / Approve Request
+                            ✅ Approve Request
+                          </button>
+                          <button
+                            className="btn-action-warning"
+                            style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
+                            onClick={() => handleDecision(booking.id, 'disallow')}
+                          >
+                            ⚠️ Request Revision
                           </button>
                           <button
                             className="btn-action-danger"
                             style={{ padding: '0.65rem 1.25rem', fontSize: '0.9rem' }}
                             onClick={() => handleDecision(booking.id, 'disallow')}
                           >
-                            ❌ Disallow / Request Revision
+                            ❌ Reject Request
                           </button>
                         </div>
                       </div>
@@ -1501,7 +1630,7 @@ export default function DashboardShell({ onNavigateHome }) {
                 <thead>
                   <tr>
                     <th>Event Name</th>
-                    <th>Venue ID</th>
+                    <th>Venue</th>
                     <th>Date</th>
                     <th>Time Slots</th>
                     <th>Current Status</th>
@@ -1520,7 +1649,7 @@ export default function DashboardShell({ onNavigateHome }) {
                             style={{ cursor: canUpdatePhoto(b) ? 'pointer' : 'default' }}
                           >
                             <td><strong>{b.eventName}</strong></td>
-                            <td>Venue #{b.venueId}</td>
+                            <td>{b.venueName || 'Venue Not Disclosed'}</td>
                             <td>{b.date}</td>
                             <td>{b.timeSlots?.[0]?.startTime} - {b.timeSlots?.[0]?.endTime}</td>
                             <td>

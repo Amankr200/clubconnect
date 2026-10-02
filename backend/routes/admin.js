@@ -2,6 +2,7 @@ const express = require('express');
 const adminModel = require('../models/adminModel');
 const societyModel = require('../models/societyModel');
 const venueBookingModel = require('../models/venueBookingModel');
+const venueModel = require('../models/venue');
 const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
@@ -149,7 +150,7 @@ router.patch('/society-registrations/:id/approve', async (req, res) => {
 // GET /api/admin/venues - Get all venue availability & details
 router.get('/venues', async (_req, res) => {
   try {
-    const venues = await adminModel.findAllVenues();
+    const venues = await venueModel.findAll();
     res.json({ venues });
   } catch (err) {
     console.error('[/api/admin/venues GET]', err);
@@ -161,7 +162,7 @@ router.get('/venues', async (_req, res) => {
 router.patch('/venues/:id/toggle', async (req, res) => {
   try {
     const { isActive } = req.body;
-    const venue = await adminModel.updateVenueStatus(Number(req.params.id), Boolean(isActive));
+    const venue = await venueModel.updateStatus(Number(req.params.id), Boolean(isActive));
     res.json({ venue, message: `Venue status updated to ${isActive ? 'Available' : 'Unavailable'}.` });
   } catch (err) {
     console.error('[/api/admin/venues/:id/toggle]', err);

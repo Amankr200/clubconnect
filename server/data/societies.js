@@ -4,7 +4,7 @@ const normalize = (value) => String(value || '')
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, '');
 
-export const societies = clubs.map((club) => ({
+const societies = clubs.map((club) => ({
   id: String(club.id),
   code: club.name,
   name: club.fullName,
@@ -13,9 +13,9 @@ export const societies = clubs.map((club) => ({
   selectedByDefault: true,
 }));
 
-export const defaultSocietyIds = societies.map((society) => society.id);
+const defaultSocietyIds = societies.map((society) => society.id);
 
-export function findSocietyByClubName(clubName) {
+function findSocietyByClubName(clubName) {
   const target = normalize(clubName);
   return societies.find((society) => {
     const normalizedCode = normalize(society.code);
@@ -24,7 +24,7 @@ export function findSocietyByClubName(clubName) {
   });
 }
 
-export function resolveSocietyIds(input) {
+function resolveSocietyIds(input) {
   const values = Array.isArray(input) ? input : [input];
   const ids = values
     .map((value) => String(value || '').trim())
@@ -36,3 +36,10 @@ export function resolveSocietyIds(input) {
     return society?.id || value;
   }))];
 }
+
+export default {
+  societies,
+  defaultSocietyIds,
+  findSocietyByClubName,
+  resolveSocietyIds,
+};
