@@ -61,6 +61,7 @@ export default function EventsSection({ onLoginClick }) {
       .then(setVenues)
       .catch(() => setVenues([]));
   }, []);
+  const [showNoRegDialog, setShowNoRegDialog] = useState(false);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL || '/api'}/venue-bookings/public?status=approved`)
@@ -123,6 +124,7 @@ export default function EventsSection({ onLoginClick }) {
     color: '#6366f1',
     description: b.description,
     photo: b.photo,
+    registrationLink: b.attendance || '',
     extendedProps: {
       bookingId: b.id,
       hostClub: b.hostClub,
@@ -324,7 +326,18 @@ export default function EventsSection({ onLoginClick }) {
                   ) : (
                     <button
                       className={`rsvp-btn ${isRsvpd ? 'rsvpd' : ''}`}
-                      onClick={onLoginClick}
+                      onClick={() => {
+                      const link = event.registrationLink || event.attendance || '';
+                      if (link) {
+                        const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+                        window.open(normalized, '_blank', 'noopener,noreferrer');
+                        return;
+                      }
+
+                      // No valid registration link — show temporary dialog
+                      setShowNoRegDialog(true);
+                      setTimeout(() => setShowNoRegDialog(false), 5000);
+                    }}
                       style={!isRsvpd ? { background: event.color, borderColor: event.color } : {}}
                     >
                       Register Here
@@ -339,6 +352,27 @@ export default function EventsSection({ onLoginClick }) {
             );
           })}
         </div>
+
+        {showNoRegDialog && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#1f2937',
+              color: '#fff',
+              padding: '10px 16px',
+              borderRadius: 10,
+              zIndex: 9999,
+              boxShadow: '0 8px 24px rgba(15,23,42,0.25)'
+            }}
+          >
+            Registration Form not attached!
+          </div>
+        )}
 
         {/* Load more / view all */}
         <div className="events-footer-row">
