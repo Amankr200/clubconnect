@@ -12,6 +12,7 @@ import CalendarPage from './calendar/FullCalendar.jsx';
 import DashboardShell from './pages/DashboardShell.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import { useAuth } from './context/AuthContext';
+import { Toaster } from 'sonner';
 
 import './App.css';
 
@@ -231,6 +232,7 @@ export default function App() {
     return (
       <>
         <LandingPage onLoginSuccess={(msg) => showToast(msg, 'success')} />
+        <Toaster position="top-center" richColors />
         {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
       </>
     );

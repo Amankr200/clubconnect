@@ -29,12 +29,23 @@ async function findByEmail(collegeEmailId) {
   const query = `
     SELECT *
     FROM students
-    WHERE college_email_id = $1;
+    WHERE LOWER(college_email_id) = LOWER($1);
   `;
 
-  const result = await db.query(query, [collegeEmailId]);
+  const result = await db.query(query, [collegeEmailId.trim()]);
 
   return formatStudent(result.rows[0]);
+}
+
+async function findByEmailForAuth(collegeEmailId) {
+  const result = await db.query(
+    `SELECT *
+     FROM students
+     WHERE LOWER(college_email_id) = LOWER($1);`,
+    [collegeEmailId.trim()]
+  );
+  const student = formatStudent(result.rows[0]);
+  return student ? { ...student, passwordHash: result.rows[0].password } : null;
 }
 
 async function findById(id) {
@@ -79,6 +90,7 @@ async function deleteById(id) {
 module.exports = {
   create,
   findByEmail,
+  findByEmailForAuth,
   findById,
   getAll,
   getAllNameAndEmail,
