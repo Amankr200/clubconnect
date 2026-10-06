@@ -81,6 +81,20 @@
   min-height: 100vh;
 }
 
+.lp-signup-trigger {
+  align-self: center;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--lp-text-500);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+}
+.lp-signup-trigger span { color: var(--lp-brand); font-weight: 800; }
+.lp-signup-trigger:hover span { text-decoration: underline; }
+.lp-signup-trigger:focus-visible { outline: 2px solid var(--lp-blue-500); outline-offset: 3px; }
+
 /* ══════════════════════════════════════════════════
    NAVBAR
 ══════════════════════════════════════════════════ */

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { ExternalLink, Sparkles, Code2 } from 'lucide-react';
+import StudentRegistrationModal from '../components/StudentRegistrationModal';
 import './LandingPage.css';
 
 function GithubIcon({ size = 16 }) {
@@ -267,6 +268,8 @@ function RoleCard({ role, onLoginSuccess }) {
   const [form, setForm] = useState({ email: role.defaultEmail || '', password: role.defaultPassword || '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showRegistration, setShowRegistration] = useState(false);
+  const closeRegistration = useCallback(() => setShowRegistration(false), []);
 
   const handleToggle = () => {
     setExpanded(prev => !prev);
@@ -350,8 +353,27 @@ function RoleCard({ role, onLoginSuccess }) {
             }
           </button>
           <div className="lp-form-footer-note">🔒 Secured via JWT &amp; HTTPS</div>
+          {role.id === 'student' && (
+            <button
+              className="lp-signup-trigger"
+              type="button"
+              onClick={() => setShowRegistration(true)}
+            >
+              Don&apos;t have an account yet? <span>Sign Up</span>
+            </button>
+          )}
         </form>
       </div>
+      {showRegistration && (
+        <StudentRegistrationModal
+          onClose={closeRegistration}
+          onRegistered={(email) => {
+            setForm((current) => ({ ...current, email, password: '' }));
+            setError('');
+            setShowRegistration(false);
+          }}
+        />
+      )}
     </div>
   );
 }
