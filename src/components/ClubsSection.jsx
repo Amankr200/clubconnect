@@ -96,7 +96,7 @@ export default function ClubsSection({ onNavigateSociety }) {
 
   return (
     <section className="clubs-section" id="clubs" aria-label="Clubs Directory">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0rem' }}>
         {/* Header */}
         <div className="section-header">
           <div className="section-heading-blue">
