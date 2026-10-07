@@ -81,7 +81,15 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_app_password
+# Optional; defaults to SMTP_USER
+SMTP_FROM=ClubConnect <your_email@gmail.com>
 ```
+
+For Gmail, `SMTP_PASS` must be a Google **App Password**, not your normal account
+password. Enable 2-Step Verification before creating one. Restart the backend
+after changing `backend/.env`; environment variables are read when the server
+starts. Resend can be used instead by setting `RESEND_API_KEY` and
+`RESEND_FROM`.
 
 ### 3. Install dependencies
 

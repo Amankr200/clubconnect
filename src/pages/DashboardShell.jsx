@@ -1978,7 +1978,7 @@ export default function DashboardShell({ onNavigateHome }) {
               </div>
               <div className="dash-stat-box">
                 <span className="dash-stat-label">Certificates Earned</span>
-                <span className="dash-stat-value">4 Certs</span>
+                <span className="dash-stat-value">4 Certificates</span>
                 <span className="dash-stat-desc">Verified & downloadable</span>
               </div>
               <div className="dash-stat-box">
