@@ -3,6 +3,8 @@ import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
 import { cancelEventRegistration, getMyEventRegistrations } from '../api/eventRegistrations.js';
+import AttendanceWindowEditor from '../components/AttendanceWindowEditor.jsx';
+import EventPassesPage from './EventPassesPage.jsx';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import './DashboardShell.css';
@@ -771,6 +773,9 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'approvals' ? 'active' : ''}`} onClick={() => setActiveTab('approvals')}>
                 📋 Pending Approvals ({inbox.filter((b) => b.currentReviewerRole === 'faculty_coordinator').length})
               </button>
+              <button className={`dash-tab-btn ${activeTab === 'attendance_windows' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_windows')}>
+                ⏱ Attendance Windows
+              </button>
               <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
                 ➕ Book Department Event
               </button>
@@ -831,6 +836,9 @@ export default function DashboardShell({ onNavigateHome }) {
             <>
               <button className={`dash-tab-btn ${activeTab === 'student_overview' ? 'active' : ''}`} onClick={() => setActiveTab('student_overview')}>
                 🎒 My Student Overview
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'event_passes' ? 'active' : ''}`} onClick={() => setActiveTab('event_passes')}>
+                🎟 My Event Passes
               </button>
             </>
           )}
@@ -1642,6 +1650,26 @@ export default function DashboardShell({ onNavigateHome }) {
           </div>
         )}
 
+        {user?.role === 'faculty_coordinator' && activeTab === 'attendance_windows' && (
+          <div className="dash-card">
+            <h2 className="dash-card-title">Attendance Windows</h2>
+            <p className="dash-card-subtitle">Set when registered students can display their event pass QR. This does not record attendance.</p>
+            {myRequests.length ? myRequests.map((booking) => (
+              <section className="dash-booking-card" key={booking.id}>
+                <h3 className="dash-booking-title">{booking.eventName}</h3>
+                <p className="dash-booking-meta">{booking.date} · {booking.venueName || 'Venue to be announced'} · {booking.status}</p>
+                <AttendanceWindowEditor
+                  booking={booking}
+                  token={token}
+                  onUpdated={(updatedBooking) => setMyRequests((previous) => previous.map((item) => (
+                    item.id === updatedBooking.id ? updatedBooking : item
+                  )))}
+                />
+              </section>
+            )) : <div className="dash-empty-state">No event requests found for this account.</div>}
+          </div>
+        )}
+
         {/* ── STUDENT: My Event Requests ── */}
         {user?.role === 'student_coordinator' && activeTab === 'my_bookings' && (
           <div className="dash-card">
@@ -1914,6 +1942,10 @@ export default function DashboardShell({ onNavigateHome }) {
         )}
 
         {/* ── STUDENT: Overview Panel ── */}
+        {user?.role === 'student' && activeTab === 'event_passes' && (
+          <EventPassesPage token={token} />
+        )}
+
         {user?.role === 'student' && activeTab === 'student_overview' && (
           <div>
             <div className="dash-analytics-grid">

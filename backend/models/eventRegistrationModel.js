@@ -1,5 +1,6 @@
 const db = require('../db');
 const studentModel = require('./studentModel');
+const eventPassModel = require('./eventPassModel');
 
 class RegistrationError extends Error {
   constructor(code, message) {
@@ -85,6 +86,7 @@ async function register(eventId, studentId) {
       throw new RegistrationError('CAPACITY_REACHED', 'Registration is closed because this event is full.');
     }
 
+    let registrationId = existing?.id;
     if (existing) {
       await client.query(
         `UPDATE event_registrations
@@ -93,12 +95,16 @@ async function register(eventId, studentId) {
         [existing.id],
       );
     } else {
-      await client.query(
+      const inserted = await client.query(
         `INSERT INTO event_registrations (event_id, student_id, registration_status)
-         VALUES ($1, $2, 'REGISTERED')`,
+         VALUES ($1, $2, 'REGISTERED')
+         RETURNING id`,
         [eventId, studentId],
       );
+      registrationId = inserted.rows[0]?.id;
     }
+
+    await eventPassModel.ensureForRegistration(client, registrationId);
 
     const student = await studentModel.findById(studentId);
 

@@ -99,3 +99,16 @@ export async function updateVenueBookingPhoto(token, bookingId, payload) {
 
   return parseJsonResponse(res);
 }
+
+export async function updateAttendanceWindow(token, bookingId, payload) {
+  const res = await fetch(`${API_BASE}/venue-bookings/${encodeURIComponent(bookingId)}/attendance-window`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(token),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJsonResponse(res);
+}

@@ -20,6 +20,21 @@ function normalizeSlots(slots) {
     .filter((slot) => slot.startTime && slot.endTime);
 }
 
+function getAttendanceWindow(date, slots, startValue, endValue, fallback = {}) {
+  const firstSlot = slots[0];
+  const lastSlot = slots[slots.length - 1];
+  const defaultStart = firstSlot?.startTime ? new Date(`${date}T${firstSlot.startTime}:00`) : null;
+  const defaultEnd = lastSlot?.endTime ? new Date(`${date}T${lastSlot.endTime}:00`) : null;
+  if (defaultEnd && !Number.isNaN(defaultEnd.getTime())) defaultEnd.setMinutes(defaultEnd.getMinutes() + 10);
+
+  const start = startValue ? new Date(startValue) : (fallback.start || defaultStart);
+  const end = endValue ? new Date(endValue) : (fallback.end || defaultEnd);
+  if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+    return null;
+  }
+  return { start, end };
+}
+
 function getTodayDate() {
   const today = new Date();
   const year = today.getFullYear();
@@ -84,6 +99,8 @@ function toBookingResponse(booking) {
     timeSlots: booking.timeSlots,
     capacity: booking.capacity,
     registrationDeadline: booking.registrationDeadline,
+    attendanceStartTime: booking.attendanceStartTime,
+    attendanceEndTime: booking.attendanceEndTime,
     registrationCount: booking.registrationCount,
     eventName: booking.eventName,
     hostClub: booking.hostClub,
@@ -202,6 +219,12 @@ router.post('/', async (req, res) => {
   const feedback = String(req.body?.feedback || '').trim();
   const studentCoordinators = String(req.body?.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots);
+  const attendanceWindow = getAttendanceWindow(
+    date,
+    slots,
+    req.body?.attendanceStartTime,
+    req.body?.attendanceEndTime,
+  );
 
   console.log("REQ BODY:", req.body);
   console.log("NORMALIZED SLOTS:", slots);
@@ -214,6 +237,9 @@ router.post('/', async (req, res) => {
   }
   if (registrationDeadline && Number.isNaN(registrationDeadline.getTime())) {
     return res.status(400).json({ message: 'registrationDeadline must be a valid date and time.' });
+  }
+  if (!attendanceWindow) {
+    return res.status(400).json({ message: 'Attendance window must contain valid start and end times, with end after start.' });
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
@@ -244,6 +270,8 @@ router.post('/', async (req, res) => {
     attendance,
     capacity,
     registrationDeadline,
+    attendanceStartTime: attendanceWindow.start,
+    attendanceEndTime: attendanceWindow.end,
     feedback,
     studentCoordinators,
     requestedBy: {
@@ -401,6 +429,13 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
   const feedback = String(req.body?.feedback || booking.feedback || '').trim();
   const studentCoordinators = String(req.body?.studentCoordinators || booking.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots || booking.timeSlots);
+  const attendanceWindow = getAttendanceWindow(
+    date,
+    slots,
+    req.body?.attendanceStartTime,
+    req.body?.attendanceEndTime,
+    { start: booking.attendanceStartTime, end: booking.attendanceEndTime },
+  );
 
   if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
     return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
@@ -410,6 +445,9 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
   }
   if (registrationDeadline && Number.isNaN(new Date(registrationDeadline).getTime())) {
     return res.status(400).json({ message: 'registrationDeadline must be a valid date and time.' });
+  }
+  if (!attendanceWindow) {
+    return res.status(400).json({ message: 'Attendance window must contain valid start and end times, with end after start.' });
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
@@ -451,6 +489,8 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
     attendance,
     capacity,
     registrationDeadline,
+    attendanceStartTime: attendanceWindow.start,
+    attendanceEndTime: attendanceWindow.end,
     feedback,
     studentCoordinators,
     status,
@@ -466,6 +506,29 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
       message: 'Event approval request was resubmitted after changes.',
     },
   });
+});
+
+router.patch('/:bookingId/attendance-window', async (req, res) => {
+  if (req.user.role !== 'faculty_coordinator') {
+    return res.status(403).json({ message: 'Only faculty coordinators can edit attendance windows.' });
+  }
+
+  const booking = await findBookingOr404(req, res);
+  if (!booking) return;
+
+  const attendanceStartTime = new Date(req.body?.attendanceStartTime);
+  const attendanceEndTime = new Date(req.body?.attendanceEndTime);
+  if (Number.isNaN(attendanceStartTime.getTime())
+    || Number.isNaN(attendanceEndTime.getTime())
+    || attendanceEndTime <= attendanceStartTime) {
+    return res.status(400).json({ message: 'Attendance window must contain valid start and end times, with end after start.' });
+  }
+
+  const updatedBooking = await venueBookingModel.updateBooking(booking.id, {
+    attendanceStartTime,
+    attendanceEndTime,
+  });
+  return res.json({ booking: toBookingResponse(updatedBooking) });
 });
 
 router.patch('/:bookingId/photo', async (req, res) => {

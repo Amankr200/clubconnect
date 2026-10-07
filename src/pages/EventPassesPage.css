@@ -1,0 +1,127 @@
+.event-passes-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.event-passes-header,
+.event-pass-heading,
+.event-pass-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.event-passes-header h1 {
+  margin: 0;
+  color: var(--text-primary, #172033);
+  font-size: 1.5rem;
+}
+
+.event-passes-header p,
+.event-pass-row p,
+.event-pass-heading p {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted, #64748b);
+}
+
+.event-pass-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.event-pass-row {
+  flex-wrap: wrap;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.event-pass-row h2 {
+  margin: 0;
+  color: var(--text-primary, #172033);
+  font-size: 1rem;
+}
+
+.event-pass-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border, #d5dbe5);
+  border-radius: 4px;
+  color: var(--text-secondary, #475569);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.event-pass-status--active {
+  border-color: #16834a;
+  color: #126b3d;
+  background: #eaf7ef;
+}
+
+.event-pass-status--closed {
+  border-color: #c2413b;
+  color: #a32d29;
+  background: #fff0ef;
+}
+
+.event-pass-detail {
+  padding: 1.25rem;
+  border-radius: 6px;
+}
+
+.event-pass-detail .dash-card-title {
+  margin: 0;
+}
+
+.event-pass-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem 1.25rem;
+  margin: 1.25rem 0;
+}
+
+.event-pass-meta div {
+  min-width: 0;
+}
+
+.event-pass-meta dt {
+  color: var(--text-muted, #64748b);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.event-pass-meta dd {
+  overflow-wrap: anywhere;
+  margin: 0.25rem 0 0;
+  color: var(--text-primary, #172033);
+}
+
+.event-pass-qr {
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  padding: 1rem;
+  border: 1px solid var(--border, #d5dbe5);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.event-pass-qr p {
+  margin: 0;
+  color: var(--text-secondary, #475569);
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .event-pass-heading,
+  .event-pass-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .event-pass-row button {
+    width: 100%;
+  }
+}
