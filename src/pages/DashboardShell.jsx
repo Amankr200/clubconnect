@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
+import { cancelEventRegistration, getMyEventRegistrations } from '../api/eventRegistrations.js';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import './DashboardShell.css';
@@ -38,6 +39,12 @@ export default function DashboardShell({ onNavigateHome }) {
   const [adminVenues, setAdminVenues] = useState([]);
   const [bugReports, setBugReports] = useState([]);
   const [weeklyEvents, setWeeklyEvents] = useState([]);
+  const [eventRegistrations, setEventRegistrations] = useState([]);
+  const [registrationError, setRegistrationError] = useState('');
+  const [selectedRegisteredEvent, setSelectedRegisteredEvent] = useState(null);
+  const activeEventRegistrations = eventRegistrations.filter(
+    (registration) => registration.registrationStatus === 'REGISTERED',
+  );
 
   // Faculty & Society Data States
   const [mySociety, setMySociety] = useState({
@@ -399,6 +406,12 @@ export default function DashboardShell({ onNavigateHome }) {
   const refreshData = async () => {
     if (!token) return;
 
+    if (user?.role === 'student') {
+      getMyEventRegistrations(token)
+        .then(setEventRegistrations)
+        .catch(() => setEventRegistrations([]));
+    }
+
     if (['faculty_coordinator', 'hod', 'principal_dean', 'dean'].includes(user?.role)) {
       getVenueBookingInbox(token).then((data) => setInbox(data.bookings || [])).catch(() => {});
     }
@@ -419,6 +432,16 @@ export default function DashboardShell({ onNavigateHome }) {
 
       fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/weekly-events`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setWeeklyEvents(d.weeklyEvents || [])).catch(() => {});
+    }
+  };
+
+  const handleCancelEventRegistration = async (registration) => {
+    setRegistrationError('');
+    try {
+      await cancelEventRegistration(token, registration.id);
+      await refreshData();
+    } catch (error) {
+      setRegistrationError(error.message);
     }
   };
 
@@ -1910,46 +1933,68 @@ export default function DashboardShell({ onNavigateHome }) {
                 <span className="dash-stat-desc">Verified & downloadable</span>
               </div>
               <div className="dash-stat-box">
-                <span className="dash-stat-label">Upcoming RSVPs</span>
-                <span className="dash-stat-value">2 Events</span>
-                <span className="dash-stat-desc">Registered this week</span>
+                <span className="dash-stat-label">Registered Events</span>
+                <span className="dash-stat-value">{activeEventRegistrations.length}</span>
+                <span className="dash-stat-desc">Active registrations</span>
               </div>
             </div>
 
             <div className="dash-card">
-              <h2 className="dash-card-title">🎒 Your Activity Feed</h2>
-              <p className="dash-card-subtitle">
-                Logged in as <strong>{user?.name}</strong> · {user?.department} ·{' '}
-                <span style={{ color: '#06B6D4', fontWeight: 700 }}>Regular Student</span>
-              </p>
+              <h2 className="dash-card-title">My Registered Events</h2>
+              <p className="dash-card-subtitle">Events you are currently registered for.</p>
+              {registrationError && <p role="alert" className="form-error">{registrationError}</p>}
               <div className="dash-table-wrapper">
                 <table className="dash-table">
                   <thead>
                     <tr>
                       <th>Event</th>
-                      <th>Club</th>
                       <th>Date</th>
+                      <th>Venue</th>
                       <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { event: 'ACM Hackathon 2026', club: 'ACM', date: 'Aug 15', status: '🎟️ RSVP Done' },
-                      { event: 'Rangmanch Drama Fest', club: 'Rotaract', date: 'Aug 22', status: '🎟️ RSVP Done' },
-                      { event: 'IEEE AI Workshop', club: 'IEEE', date: 'Sep 5', status: '⏳ Upcoming' },
-                      { event: 'Startup Pitch Night', club: 'E-Cell', date: 'Sep 12', status: '📋 Registered' },
-                    ].map((row, i) => (
-                      <tr key={i}>
-                        <td><strong>{row.event}</strong></td>
-                        <td>{row.club}</td>
-                        <td>{row.date}</td>
-                        <td>{row.status}</td>
+                    {activeEventRegistrations.length ? activeEventRegistrations.map((registration) => (
+                      <tr key={registration.id}>
+                        <td><strong>{registration.title}</strong><br /><small>{registration.societyName}</small></td>
+                        <td>{registration.date}</td>
+                        <td>{registration.venue}</td>
+                        <td>{registration.registrationStatus}</td>
+                        <td>
+                          <button className="btn-outline" type="button" onClick={() => setSelectedRegisteredEvent(registration)}>View Details</button>{' '}
+                          {registration.registrationStatus === 'REGISTERED' && (
+                            <button className="btn-outline" type="button" onClick={() => handleCancelEventRegistration(registration)}>Cancel</button>
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                    )) : (
+                      <tr><td colSpan="5">You have no active event registrations.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {selectedRegisteredEvent && (
+              <div className="calendar-detail-modal" role="presentation" onClick={() => setSelectedRegisteredEvent(null)}>
+                <div className="calendar-detail-dialog" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                  <div className="calendar-detail-header">
+                    <div>
+                      <h3>{selectedRegisteredEvent.title}</h3>
+                      <p>{selectedRegisteredEvent.societyName}</p>
+                    </div>
+                    <button className="calendar-detail-close" type="button" aria-label="Close event details" onClick={() => setSelectedRegisteredEvent(null)}>✕</button>
+                  </div>
+                  <div className="calendar-detail-body">
+                    <div className="calendar-detail-section"><strong>Date</strong><span>{selectedRegisteredEvent.date}</span></div>
+                    <div className="calendar-detail-section"><strong>Time</strong><span>{selectedRegisteredEvent.time}</span></div>
+                    <div className="calendar-detail-section"><strong>Venue</strong><span>{selectedRegisteredEvent.venue}</span></div>
+                    <div className="calendar-detail-section"><strong>Registration</strong><span>{selectedRegisteredEvent.registrationStatus}</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

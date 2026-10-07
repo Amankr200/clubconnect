@@ -16,6 +16,14 @@ const createEmptyScheduleEntry = () => ({
 });
 */
 
+function toLocalDateTimeInput(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+}
+
 export default function VenueBookingModal({
   isOpen,
   onClose,
@@ -42,6 +50,8 @@ export default function VenueBookingModal({
   const [description, setDescription] = useState("");
   const [eligibility, setEligibility] = useState("");
   const [attendance, setAttendance] = useState("");
+  const [capacity, setCapacity] = useState("");
+  const [registrationDeadline, setRegistrationDeadline] = useState("");
   const [feedback, setFeedback] = useState("");
   const [studentCoordinators, setStudentCoordinators] = useState("");
   const [bookingError, setBookingError] = useState("");
@@ -139,6 +149,8 @@ export default function VenueBookingModal({
     setDescription(booking?.description || "");
     setEligibility(booking?.eligibility || "");
     setAttendance(booking?.attendance || "");
+    setCapacity(booking?.capacity == null ? "" : String(booking.capacity));
+    setRegistrationDeadline(toLocalDateTimeInput(booking?.registrationDeadline));
     setFeedback(booking?.feedback || "");
     setStudentCoordinators(booking?.studentCoordinators || "");
     setBookingError("");
@@ -274,6 +286,10 @@ export default function VenueBookingModal({
         description,
         eligibility,
         attendance,
+        capacity: capacity === "" ? null : Number(capacity),
+        registrationDeadline: registrationDeadline
+          ? new Date(registrationDeadline).toISOString()
+          : null,
         feedback,
         studentCoordinators,
       };
@@ -594,6 +610,29 @@ export default function VenueBookingModal({
               onChange={(event) => setStudentCoordinators(event.target.value)}
               required
               maxLength={120}
+            />
+          </div>
+
+          <div className="booking-form-group">
+            <label htmlFor="capacity">Registration Capacity</label>
+            <input
+              id="capacity"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Leave blank for unlimited registrations"
+              value={capacity}
+              onChange={(event) => setCapacity(event.target.value)}
+            />
+          </div>
+
+          <div className="booking-form-group">
+            <label htmlFor="registrationDeadline">Registration Deadline</label>
+            <input
+              id="registrationDeadline"
+              type="datetime-local"
+              value={registrationDeadline}
+              onChange={(event) => setRegistrationDeadline(event.target.value)}
             />
           </div>
 

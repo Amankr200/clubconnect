@@ -82,6 +82,9 @@ function toBookingResponse(booking) {
     venueName: booking.venueName,
     date: booking.date,
     timeSlots: booking.timeSlots,
+    capacity: booking.capacity,
+    registrationDeadline: booking.registrationDeadline,
+    registrationCount: booking.registrationCount,
     eventName: booking.eventName,
     hostClub: booking.hostClub,
     photo: booking.photo,
@@ -194,6 +197,8 @@ router.post('/', async (req, res) => {
   const description = String(req.body?.description || '').trim();
   const eligibility = String(req.body?.eligibility || '').trim();
   const attendance = String(req.body?.attendance || '').trim();
+  const capacity = req.body?.capacity == null || req.body.capacity === '' ? null : Number(req.body.capacity);
+  const registrationDeadline = req.body?.registrationDeadline ? new Date(req.body.registrationDeadline) : null;
   const feedback = String(req.body?.feedback || '').trim();
   const studentCoordinators = String(req.body?.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots);
@@ -203,6 +208,12 @@ router.post('/', async (req, res) => {
 
   if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
     return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
+  }
+  if (capacity !== null && (!Number.isInteger(capacity) || capacity < 1)) {
+    return res.status(400).json({ message: 'capacity must be a positive whole number.' });
+  }
+  if (registrationDeadline && Number.isNaN(registrationDeadline.getTime())) {
+    return res.status(400).json({ message: 'registrationDeadline must be a valid date and time.' });
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
@@ -231,6 +242,8 @@ router.post('/', async (req, res) => {
     description,
     eligibility,
     attendance,
+    capacity,
+    registrationDeadline,
     feedback,
     studentCoordinators,
     requestedBy: {
@@ -379,12 +392,24 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
   const description = String(req.body?.description || booking.description || '').trim();
   const eligibility = String(req.body?.eligibility || booking.eligibility || '').trim();
   const attendance = String(req.body?.attendance || booking.attendance || '').trim();
+  const capacity = req.body?.capacity == null || req.body.capacity === ''
+    ? (booking.capacity ?? null)
+    : Number(req.body.capacity);
+  const registrationDeadline = req.body?.registrationDeadline
+    ? new Date(req.body.registrationDeadline)
+    : booking.registrationDeadline;
   const feedback = String(req.body?.feedback || booking.feedback || '').trim();
   const studentCoordinators = String(req.body?.studentCoordinators || booking.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots || booking.timeSlots);
 
   if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
     return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
+  }
+  if (capacity !== null && (!Number.isInteger(capacity) || capacity < 1)) {
+    return res.status(400).json({ message: 'capacity must be a positive whole number.' });
+  }
+  if (registrationDeadline && Number.isNaN(new Date(registrationDeadline).getTime())) {
+    return res.status(400).json({ message: 'registrationDeadline must be a valid date and time.' });
   }
 
   const activeBookings = await venueBookingModel.findAllActiveBookings();
@@ -424,6 +449,8 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
     description,
     eligibility,
     attendance,
+    capacity,
+    registrationDeadline,
     feedback,
     studentCoordinators,
     status,

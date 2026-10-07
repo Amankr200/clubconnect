@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { upcomingEvents, clubs } from '../data/clubs';
 import { getVenues } from '../api/venues.js';
+import { getMyEventRegistrations, registerForEvent } from '../api/eventRegistrations.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import './EventsSection.css';
 
 const STATUS_MAP = {
@@ -41,7 +43,12 @@ function getEventRegistrationUrl(event) {
 }
 
 export default function EventsSection({ onLoginClick }) {
-  const [rsvpd, setRsvpd] = useState(new Set());
+  const { user, token } = useAuth();
+  const [registrations, setRegistrations] = useState([]);
+  const [registeringEventId, setRegisteringEventId] = useState(null);
+  const [newlyRegisteredEventId, setNewlyRegisteredEventId] = useState(null);
+  const [registrationClosedIds, setRegistrationClosedIds] = useState(new Set());
+  const [registrationMessage, setRegistrationMessage] = useState('');
   const [pinned, setPinned] = useState(() => {
     try {
       const saved = localStorage.getItem('clubconnect_pinned_events');
@@ -62,6 +69,16 @@ export default function EventsSection({ onLoginClick }) {
       .catch(() => setVenues([]));
   }, []);
   const [showNoRegDialog, setShowNoRegDialog] = useState(false);
+
+  useEffect(() => {
+    if (!token || user?.role !== 'student') {
+      setRegistrations([]);
+      return;
+    }
+    getMyEventRegistrations(token)
+      .then(setRegistrations)
+      .catch(() => setRegistrations([]));
+  }, [token, user?.role]);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL || '/api'}/venue-bookings/public?status=approved`)
@@ -118,7 +135,8 @@ export default function EventsSection({ onLoginClick }) {
     time: b.timeSlots?.[0] ? `${b.timeSlots[0].startTime} - ${b.timeSlots[0].endTime}` : 'Full Day',
     venue: getVenueName(b.venueId),
     location: getVenueName(b.venueId),
-    rsvp: 120,
+    rsvp: b.registrationCount || 0,
+    capacity: b.capacity,
     status: 'approved',
     type: 'Technical',
     color: '#6366f1',
@@ -172,13 +190,34 @@ export default function EventsSection({ onLoginClick }) {
     return 0;
   });
 
-  const handleRsvp = (id, status) => {
-    if (status !== 'approved') return;
-    setRsvpd((prev) => {
-      const n = new Set(prev);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
-    });
+  const handleRsvp = async (event) => {
+    const eventId = event.extendedProps?.bookingId;
+    if (!token || user?.role !== 'student') {
+      onLoginClick?.();
+      return;
+    }
+    setRegisteringEventId(eventId);
+    setRegistrationMessage('');
+    try {
+      await registerForEvent(token, eventId);
+      setNewlyRegisteredEventId(eventId);
+      setApprovedBookings((bookings) => bookings.map((booking) => (
+        String(booking.id) === String(eventId)
+          ? { ...booking, registrationCount: (booking.registrationCount || 0) + 1 }
+          : booking
+      )));
+      getMyEventRegistrations(token).then(setRegistrations).catch(() => {});
+    } catch (error) {
+      setRegistrationMessage(error.message);
+      if (error.code === 'ALREADY_REGISTERED') {
+        getMyEventRegistrations(token).then(setRegistrations).catch(() => {});
+      }
+      if (error.code === 'CAPACITY_REACHED' || error.code === 'REGISTRATION_CLOSED') {
+        setRegistrationClosedIds((previous) => new Set(previous).add(eventId));
+      }
+    } finally {
+      setRegisteringEventId(null);
+    }
   };
 
   const handlePin = (id) => {
@@ -244,7 +283,8 @@ export default function EventsSection({ onLoginClick }) {
         <div className="events-grid">
           {sortedEvents.map((event) => {
             const st = STATUS_MAP[event.effectiveStatus] || STATUS_MAP.approved;
-            const isRsvpd = rsvpd.has(event.id);
+            const registration = registrations.find((item) => String(item.eventId) === String(event.extendedProps?.bookingId));
+            const isRsvpd = registration?.registrationStatus === 'REGISTERED';
             const isPinned = pinned.has(event.id);
             return (
               <article
@@ -313,7 +353,7 @@ export default function EventsSection({ onLoginClick }) {
                   </div>
                   <div className="event-detail-item">
                     <span className="edl">👥 SIGN-UPS</span>
-                    <span className="edv">{event.rsvp + (isRsvpd ? 1 : 0)} registered</span>
+                    <span className="edv">{event.rsvp}{event.capacity ? ` / ${event.capacity}` : ''} registered</span>
                   </div>
                 </div>
 
@@ -323,22 +363,39 @@ export default function EventsSection({ onLoginClick }) {
                     <button className="rsvp-btn ended" disabled style={{ background: '#94A3B8', borderColor: '#94A3B8', cursor: 'not-allowed', color: '#FFF' }}>
                       Event Ended
                     </button>
-                  ) : (
+                  ) : event.extendedProps?.isBooked ? (
                     <button
                       className={`rsvp-btn ${isRsvpd ? 'rsvpd' : ''}`}
-                      onClick={() => {
-                      const link = event.registrationLink || event.attendance || '';
-                      if (link) {
-                        const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
-                        window.open(normalized, '_blank', 'noopener,noreferrer');
-                        return;
-                      }
-
-                      // No valid registration link — show temporary dialog
-                      setShowNoRegDialog(true);
-                      setTimeout(() => setShowNoRegDialog(false), 5000);
-                    }}
+                      onClick={() => handleRsvp(event)}
+                      disabled={registeringEventId === event.extendedProps.bookingId || newlyRegisteredEventId === event.extendedProps.bookingId || isRsvpd || registrationClosedIds.has(event.extendedProps.bookingId) || (user?.role && user.role !== 'student')}
                       style={!isRsvpd ? { background: event.color, borderColor: event.color } : {}}
+                    >
+                      {registeringEventId === event.extendedProps.bookingId
+                        ? 'Registering...'
+                        : registrationClosedIds.has(event.extendedProps.bookingId)
+                          ? 'Registration Closed'
+                          : newlyRegisteredEventId === event.extendedProps.bookingId
+                            ? 'Registered ✓'
+                            : isRsvpd
+                              ? 'Already Registered'
+                              : user?.role && user.role !== 'student'
+                                ? 'Students Only'
+                                : 'RSVP'}
+                    </button>
+                  ) : (
+                    <button
+                      className="rsvp-btn"
+                      onClick={() => {
+                        const link = event.registrationLink || event.attendance || '';
+                        if (link) {
+                          const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+                          window.open(normalized, '_blank', 'noopener,noreferrer');
+                          return;
+                        }
+                        setShowNoRegDialog(true);
+                        setTimeout(() => setShowNoRegDialog(false), 5000);
+                      }}
+                      style={{ background: event.color, borderColor: event.color }}
                     >
                       Register Here
                     </button>
@@ -352,6 +409,12 @@ export default function EventsSection({ onLoginClick }) {
             );
           })}
         </div>
+
+        {registrationMessage && (
+          <div role="alert" aria-live="polite" className="registration-feedback">
+            {registrationMessage}
+          </div>
+        )}
 
         {showNoRegDialog && (
           <div

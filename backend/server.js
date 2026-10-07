@@ -12,6 +12,7 @@ const societyRoutes = require('./routes/societies');
 const storyRoutes = require('./routes/stories');
 const bugRoutes = require('./routes/bugs');
 const adminRoutes = require('./routes/admin');
+const eventRegistrationRoutes = require('./routes/eventRegistrations');
 
 const app  = express();
 const PORT = process.env.PORT || 5001;
@@ -44,6 +45,7 @@ app.use('/api/societies', societyRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/bugs', bugRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', eventRegistrationRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
