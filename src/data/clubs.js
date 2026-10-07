@@ -457,9 +457,9 @@ const upcomingEvents = [
 const announcements = [
   "🎉 ClubConnect is officially launched for BPIT! All societies now on one platform.",
   "📢 #DEFINE Codenheimer 5.0 registrations now open!",
-  "🎵 Octave Harmony Fest auditions on September 28 – Seminar Hall A at 4 PM",
+  "🎵 Octave Harmony Fest auditions coming soon!",
   "🚀 E-Cell Startup Pitch Day – Submit your idea by October 10",
-  "🩸 NSS Blood Donation Camp – Register as donor by September 25",
+  "🩸 NSS Blood Donation Camp – Register as donor by October 26",
   "📋 Dean approval pending for Startup Pitch Day venue request",
   "🏆 Mavericks won 1st place at North Zone Dance Championship 2026!",
   "📸 Kalam Literary Fest photos now uploaded on the platform",
