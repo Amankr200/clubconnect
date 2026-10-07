@@ -19,7 +19,7 @@ SET attendance_start_time = COALESCE(
         WHEN schedule.event_date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
          AND schedule.start_time ~ '^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$'
         THEN (schedule.event_date || ' ' || schedule.start_time)::timestamp
-             AT TIME ZONE current_setting('TIMEZONE')
+             AT TIME ZONE 'Asia/Kolkata'
       END
     ),
     attendance_end_time = COALESCE(
@@ -28,7 +28,7 @@ SET attendance_start_time = COALESCE(
         WHEN schedule.event_date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
          AND schedule.end_time ~ '^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$'
         THEN ((schedule.event_date || ' ' || schedule.end_time)::timestamp + INTERVAL '10 minutes')
-             AT TIME ZONE current_setting('TIMEZONE')
+             AT TIME ZONE 'Asia/Kolkata'
       END
     )
 FROM event_schedule AS schedule

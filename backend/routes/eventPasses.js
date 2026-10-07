@@ -32,7 +32,7 @@ function sendPassError(res, error) {
   });
 }
 
-router.use(requireAuth, requireStudent);
+router.use('/event-passes', requireAuth, requireStudent);
 
 router.get('/event-passes/my', async (req, res) => {
   try {

@@ -1,6 +1,7 @@
 const db = require('../db');
 const studentModel = require('./studentModel');
 const eventPassModel = require('./eventPassModel');
+const eventAttendanceModel = require('./eventAttendanceModel');
 
 class RegistrationError extends Error {
   constructor(code, message) {
@@ -105,6 +106,7 @@ async function register(eventId, studentId) {
     }
 
     await eventPassModel.ensureForRegistration(client, registrationId);
+    await eventAttendanceModel.ensureForRegistration(client, registrationId);
 
     const student = await studentModel.findById(studentId);
 
@@ -138,11 +140,14 @@ async function findForStudent(studentId) {
        vb.date AS event_date,
        vb.time_slots,
        v.name AS venue_name,
-       s.name AS society_name
+      s.name AS society_name,
+      attendance.attendance_status,
+      attendance.attendance_marked_at
      FROM event_registrations er
      JOIN venue_bookings vb ON vb.id = er.event_id
      LEFT JOIN venues v ON v.id = vb.venue_id
      LEFT JOIN societies s ON s.id = vb.host_club
+    LEFT JOIN event_attendance attendance ON attendance.registration_id = er.id
      WHERE er.student_id = $1
      ORDER BY vb.date ASC, er.registered_at DESC`,
     [studentId],
@@ -163,6 +168,8 @@ async function findForStudent(studentId) {
       venue: row.venue_name || 'Venue to be announced',
       societyName: row.society_name || 'Society event',
       registrationStatus: row.registration_status,
+      attendanceStatus: row.attendance_status === true ? 'PRESENT' : 'NOT_MARKED',
+      attendanceTime: row.attendance_marked_at,
     };
   });
 }

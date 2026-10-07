@@ -14,6 +14,7 @@ const bugRoutes = require('./routes/bugs');
 const adminRoutes = require('./routes/admin');
 const eventRegistrationRoutes = require('./routes/eventRegistrations');
 const eventPassRoutes = require('./routes/eventPasses');
+const attendanceRoutes = require('./routes/attendance');
 
 const app  = express();
 const PORT = process.env.PORT || 5001;
@@ -48,6 +49,7 @@ app.use('/api/bugs', bugRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', eventRegistrationRoutes);
 app.use('/api', eventPassRoutes);
+app.use('/api', attendanceRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));

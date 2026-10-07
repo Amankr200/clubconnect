@@ -40,10 +40,10 @@ function getAttendanceWindow(row) {
   const lastSlot = slots[slots.length - 1];
 
   if ((!start || Number.isNaN(start.getTime())) && firstSlot?.startTime) {
-    start = new Date(`${row.event_date}T${firstSlot.startTime}:00`);
+    start = new Date(`${row.event_date}T${firstSlot.startTime}:00+05:30`);
   }
   if ((!end || Number.isNaN(end.getTime())) && lastSlot?.endTime) {
-    end = new Date(`${row.event_date}T${lastSlot.endTime}:00`);
+    end = new Date(`${row.event_date}T${lastSlot.endTime}:00+05:30`);
     if (!Number.isNaN(end.getTime())) end.setMinutes(end.getMinutes() + 10);
   }
 

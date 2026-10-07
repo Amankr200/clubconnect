@@ -166,6 +166,16 @@ async function initDb() {
       'utf8'
     );
     await client.query(eventPassMigration);
+    const attendanceTimezoneMigration = fs.readFileSync(
+      path.join(__dirname, 'migrations', '003_fix_attendance_window_timezone.sql'),
+      'utf8'
+    );
+    await client.query(attendanceTimezoneMigration);
+    const attendanceMigration = fs.readFileSync(
+      path.join(__dirname, 'migrations', '004_event_attendance.sql'),
+      'utf8'
+    );
+    await client.query(attendanceMigration);
     console.log('✅ All PostgreSQL database schemas verified');
   } finally {
     client.release();

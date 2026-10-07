@@ -23,8 +23,8 @@ function normalizeSlots(slots) {
 function getAttendanceWindow(date, slots, startValue, endValue, fallback = {}) {
   const firstSlot = slots[0];
   const lastSlot = slots[slots.length - 1];
-  const defaultStart = firstSlot?.startTime ? new Date(`${date}T${firstSlot.startTime}:00`) : null;
-  const defaultEnd = lastSlot?.endTime ? new Date(`${date}T${lastSlot.endTime}:00`) : null;
+  const defaultStart = firstSlot?.startTime ? new Date(`${date}T${firstSlot.startTime}:00+05:30`) : null;
+  const defaultEnd = lastSlot?.endTime ? new Date(`${date}T${lastSlot.endTime}:00+05:30`) : null;
   if (defaultEnd && !Number.isNaN(defaultEnd.getTime())) defaultEnd.setMinutes(defaultEnd.getMinutes() + 10);
 
   const start = startValue ? new Date(startValue) : (fallback.start || defaultStart);

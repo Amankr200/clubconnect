@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
 import { cancelEventRegistration, getMyEventRegistrations } from '../api/eventRegistrations.js';
 import AttendanceWindowEditor from '../components/AttendanceWindowEditor.jsx';
+import AttendanceManagementPage from './AttendanceManagementPage.jsx';
 import EventPassesPage from './EventPassesPage.jsx';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
@@ -751,6 +752,9 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'weekly' ? 'active' : ''}`} onClick={() => setActiveTab('weekly')}>
                 📅 Weekly Events
               </button>
+              <button className={`dash-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
+                📊 Attendance
+              </button>
             </>
           )}
 
@@ -758,6 +762,9 @@ export default function DashboardShell({ onNavigateHome }) {
             <>
               <button className={`dash-tab-btn ${activeTab === 'my_bookings' ? 'active' : ''}`} onClick={() => setActiveTab('my_bookings')}>
                 📅 My Event Requests
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'attendance_scanner' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_scanner')}>
+                📷 Attendance Scanner
               </button>
               <button className="dash-tab-btn" onClick={() => { setSelectedPhotoBookingId(null); setEditingBooking(null); setIsVenueModalOpen(true); }}>
                 ➕ Request Event Approval
@@ -775,6 +782,9 @@ export default function DashboardShell({ onNavigateHome }) {
               </button>
               <button className={`dash-tab-btn ${activeTab === 'attendance_windows' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_windows')}>
                 ⏱ Attendance Windows
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
+                📊 Attendance Management
               </button>
               <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
                 ➕ Book Department Event
@@ -845,6 +855,13 @@ export default function DashboardShell({ onNavigateHome }) {
         </div>
 
         {/* ── ADMIN: Society Registrations ── */}
+        {['faculty_coordinator', 'admin'].includes(user?.role) && activeTab === 'attendance' && (
+          <AttendanceManagementPage token={token} canScan={user?.role === 'faculty_coordinator'} canManage={user?.role === 'faculty_coordinator'} />
+        )}
+        {user?.role === 'student_coordinator' && activeTab === 'attendance_scanner' && (
+          <AttendanceManagementPage token={token} canScan canManage={false} canViewDashboard={false} />
+        )}
+
         {user?.role === 'admin' && activeTab === 'registrations' && (
           <div className="dash-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
@@ -1983,6 +2000,7 @@ export default function DashboardShell({ onNavigateHome }) {
                       <th>Date</th>
                       <th>Venue</th>
                       <th>Status</th>
+                      <th>Attendance</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -1993,6 +2011,7 @@ export default function DashboardShell({ onNavigateHome }) {
                         <td>{registration.date}</td>
                         <td>{registration.venue}</td>
                         <td>{registration.registrationStatus}</td>
+                        <td>{registration.attendanceStatus === 'PRESENT' ? 'Present' : 'Not Marked'}</td>
                         <td>
                           <button className="btn-outline" type="button" onClick={() => setSelectedRegisteredEvent(registration)}>View Details</button>{' '}
                           {registration.registrationStatus === 'REGISTERED' && (
@@ -2001,7 +2020,7 @@ export default function DashboardShell({ onNavigateHome }) {
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan="5">You have no active event registrations.</td></tr>
+                      <tr><td colSpan="6">You have no active event registrations.</td></tr>
                     )}
                   </tbody>
                 </table>
