@@ -9,6 +9,11 @@ function formatBooking(row) {
     venueName: row.venue_name,
     date: row.date,
     timeSlots: row.time_slots || [],
+    capacity: row.capacity ?? null,
+    registrationDeadline: row.registration_deadline || null,
+    attendanceStartTime: row.attendance_start_time || null,
+    attendanceEndTime: row.attendance_end_time || null,
+    registrationCount: Number(row.registration_count || 0),
     eventName: row.event_name,
     hostClub: row.host_club,
     clubName: row.club_name,
@@ -38,7 +43,10 @@ async function findPublicBookings(status = 'approved') {
     SELECT
       vb.*,
       s.name AS club_name,
-      v.name AS venue_name
+      v.name AS venue_name,
+      (SELECT COUNT(*)::integer
+        FROM event_registrations er
+        WHERE er.event_id = vb.id AND er.registration_status = 'REGISTERED') AS registration_count
     FROM venue_bookings vb
     LEFT JOIN societies s
       ON vb.host_club = s.id
@@ -116,6 +124,10 @@ async function createBooking(data) {
     venueId,
     date,
     timeSlots,
+    capacity = null,
+    registrationDeadline = null,
+    attendanceStartTime = null,
+    attendanceEndTime = null,
     eventName,
     hostClub,
     photo = '',
@@ -137,10 +149,11 @@ async function createBooking(data) {
     `INSERT INTO venue_bookings (
       venue_id, date, time_slots, event_name, host_club, photo, photo_file_name,
       description, eligibility, attendance, feedback, student_coordinators,
+      capacity, registration_deadline, attendance_start_time, attendance_end_time,
       requested_by, assigned_faculty_coordinator, status, current_reviewer_role,
       change_request, review_trail
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
     ) RETURNING *`,
     [
       venueId,
@@ -155,6 +168,10 @@ async function createBooking(data) {
       attendance,
       feedback,
       studentCoordinators,
+      capacity,
+      registrationDeadline,
+      attendanceStartTime,
+      attendanceEndTime,
       JSON.stringify(requestedBy),
       JSON.stringify(assignedFacultyCoordinator),
       status,
@@ -176,6 +193,10 @@ async function updateBooking(id, fields) {
     venueId: 'venue_id',
     date: 'date',
     timeSlots: 'time_slots',
+    capacity: 'capacity',
+    registrationDeadline: 'registration_deadline',
+    attendanceStartTime: 'attendance_start_time',
+    attendanceEndTime: 'attendance_end_time',
     eventName: 'event_name',
     hostClub: 'host_club',
     photo: 'photo',

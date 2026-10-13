@@ -4,6 +4,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { getApprovedVenueBookings } from '../api/venueBookings.js';
 import { getVenues } from '../api/venues.js';
+import { getMyEventRegistrations } from '../api/eventRegistrations.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function formatDateLabel(value) {
   const date = new Date(`${value}T12:00:00`);
@@ -43,7 +45,7 @@ function getEventRegistrationUrl(event) {
 //   );
 // };
 
-function convertBookingsToEvents(bookings, clubMap, venueMap) {
+function convertBookingsToEvents(bookings, clubMap, venueMap, registeredEventIds) {
   return bookings.map((booking, idx) => {
 
     const venueName = venueMap.get(String(booking.venueId)) || 'Unknown Venue';
@@ -60,6 +62,7 @@ function convertBookingsToEvents(bookings, clubMap, venueMap) {
     const endDateTime = `${booking.date}T${endH}:${endM}:00`;
 
     const clubName = clubMap.get(String(booking.hostClub)) || 'Society Event';
+    const isRegistered = registeredEventIds.has(String(booking.id));
 
     return {
       id: `booking-${booking.id}`,
@@ -68,7 +71,8 @@ function convertBookingsToEvents(bookings, clubMap, venueMap) {
       end: endDateTime,
       description: `Venue: ${venueName}\nHost: ${clubName}`,
       location: venueName,
-      color: '#f59e0b', // Amber color for bookings
+      color: isRegistered ? '#13805c' : '#f59e0b',
+      classNames: isRegistered ? ['registered-calendar-event'] : [],
       extendedProps: {
         bookingId: booking.id,
         venue: venueName,
@@ -81,7 +85,8 @@ function convertBookingsToEvents(bookings, clubMap, venueMap) {
         attendance: booking.attendance,
         feedback: booking.feedback,
         studentCoordinators: booking.studentCoordinators,
-        isBooked: true
+        isBooked: true,
+        isRegistered
       }
     };
   }).filter(Boolean);
@@ -100,12 +105,24 @@ function getYYYYMMDD(val) {
 }
 
 export default function CalendarPage() {
+  const { user, token } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [viewDate, setViewDate] = useState(new Date());
   const [approvedBookings, setApprovedBookings] = useState([]);
   const [activeEvent, setActiveEvent] = useState(null);
   const [clubs, setClubs] = useState([]);
   const [venues, setVenues] = useState([]);
+  const [registrations, setRegistrations] = useState([]);
+
+  useEffect(() => {
+    if (!token || user?.role !== 'student') {
+      setRegistrations([]);
+      return;
+    }
+    getMyEventRegistrations(token)
+      .then(setRegistrations)
+      .catch(() => setRegistrations([]));
+  }, [token, user?.role]);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,10 +182,15 @@ export default function CalendarPage() {
     [venues]
   );
 
+  const registeredEventIds = useMemo(
+    () => new Set(registrations.filter((item) => item.registrationStatus === 'REGISTERED').map((item) => String(item.eventId))),
+    [registrations]
+  );
+
   const events = useMemo(() => {
-    const bookedEvents = convertBookingsToEvents(approvedBookings, clubMap, venueMap);
+    const bookedEvents = convertBookingsToEvents(approvedBookings, clubMap, venueMap, registeredEventIds);
     return [...bookedEvents];
-  }, [approvedBookings, clubMap, venueMap]);
+  }, [approvedBookings, clubMap, venueMap, registeredEventIds]);
 
   const eventDatesSet = useMemo(() => {
     const set = new Set();
@@ -237,6 +259,14 @@ export default function CalendarPage() {
               dayMaxEvents={3}
               events={events}
               eventDisplay="block"
+              eventContent={({ event }) => (
+                <div>
+                  <span>{event.title}</span>
+                  {event.extendedProps?.isRegistered && (
+                    <span style={{ display: 'block', fontSize: '10px', fontWeight: 700 }}>REGISTERED</span>
+                  )}
+                </div>
+              )}
               eventClick={(info) => setSelectedDate(info.event.startStr.slice(0, 10))}
               dateClick={(info) => setSelectedDate(info.dateStr)}
               datesSet={(arg) => setViewDate(arg.view.currentStart)}
@@ -284,6 +314,11 @@ export default function CalendarPage() {
                           fontWeight: '600'
                         }}>
                           BOOKED
+                        </span>
+                      )}
+                      {event.extendedProps?.isRegistered && (
+                        <span style={{ background: '#13805c', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>
+                          REGISTERED
                         </span>
                       )}
                     </div>

@@ -2,6 +2,10 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
+import { cancelEventRegistration, getMyEventRegistrations } from '../api/eventRegistrations.js';
+import AttendanceWindowEditor from '../components/AttendanceWindowEditor.jsx';
+import AttendanceManagementPage from './AttendanceManagementPage.jsx';
+import EventPassesPage from './EventPassesPage.jsx';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import './DashboardShell.css';
@@ -38,6 +42,12 @@ export default function DashboardShell({ onNavigateHome }) {
   const [adminVenues, setAdminVenues] = useState([]);
   const [bugReports, setBugReports] = useState([]);
   const [weeklyEvents, setWeeklyEvents] = useState([]);
+  const [eventRegistrations, setEventRegistrations] = useState([]);
+  const [registrationError, setRegistrationError] = useState('');
+  const [selectedRegisteredEvent, setSelectedRegisteredEvent] = useState(null);
+  const activeEventRegistrations = eventRegistrations.filter(
+    (registration) => registration.registrationStatus === 'REGISTERED',
+  );
 
   // Faculty & Society Data States
   const [mySociety, setMySociety] = useState({
@@ -399,6 +409,12 @@ export default function DashboardShell({ onNavigateHome }) {
   const refreshData = async () => {
     if (!token) return;
 
+    if (user?.role === 'student') {
+      getMyEventRegistrations(token)
+        .then(setEventRegistrations)
+        .catch(() => setEventRegistrations([]));
+    }
+
     if (['faculty_coordinator', 'hod', 'principal_dean', 'dean'].includes(user?.role)) {
       getVenueBookingInbox(token).then((data) => setInbox(data.bookings || [])).catch(() => {});
     }
@@ -419,6 +435,16 @@ export default function DashboardShell({ onNavigateHome }) {
 
       fetch(`${import.meta.env.VITE_API_URL || '/api'}/admin/weekly-events`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json()).then((d) => setWeeklyEvents(d.weeklyEvents || [])).catch(() => {});
+    }
+  };
+
+  const handleCancelEventRegistration = async (registration) => {
+    setRegistrationError('');
+    try {
+      await cancelEventRegistration(token, registration.id);
+      await refreshData();
+    } catch (error) {
+      setRegistrationError(error.message);
     }
   };
 
@@ -726,6 +752,9 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'weekly' ? 'active' : ''}`} onClick={() => setActiveTab('weekly')}>
                 📅 Weekly Events
               </button>
+              <button className={`dash-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
+                📊 Attendance
+              </button>
             </>
           )}
 
@@ -733,6 +762,9 @@ export default function DashboardShell({ onNavigateHome }) {
             <>
               <button className={`dash-tab-btn ${activeTab === 'my_bookings' ? 'active' : ''}`} onClick={() => setActiveTab('my_bookings')}>
                 📅 My Event Requests
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'attendance_scanner' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_scanner')}>
+                📷 Attendance Scanner
               </button>
               <button className="dash-tab-btn" onClick={() => { setSelectedPhotoBookingId(null); setEditingBooking(null); setIsVenueModalOpen(true); }}>
                 ➕ Request Event Approval
@@ -747,6 +779,12 @@ export default function DashboardShell({ onNavigateHome }) {
             <>
               <button className={`dash-tab-btn ${activeTab === 'approvals' ? 'active' : ''}`} onClick={() => setActiveTab('approvals')}>
                 📋 Pending Approvals ({inbox.filter((b) => b.currentReviewerRole === 'faculty_coordinator').length})
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'attendance_windows' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_windows')}>
+                ⏱ Attendance Windows
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
+                📊 Attendance Management
               </button>
               <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
                 ➕ Book Department Event
@@ -809,11 +847,21 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'student_overview' ? 'active' : ''}`} onClick={() => setActiveTab('student_overview')}>
                 🎒 My Student Overview
               </button>
+              <button className={`dash-tab-btn ${activeTab === 'event_passes' ? 'active' : ''}`} onClick={() => setActiveTab('event_passes')}>
+                🎟 My Event Passes
+              </button>
             </>
           )}
         </div>
 
         {/* ── ADMIN: Society Registrations ── */}
+        {['faculty_coordinator', 'admin'].includes(user?.role) && activeTab === 'attendance' && (
+          <AttendanceManagementPage token={token} canScan={user?.role === 'faculty_coordinator'} canManage={user?.role === 'faculty_coordinator'} />
+        )}
+        {user?.role === 'student_coordinator' && activeTab === 'attendance_scanner' && (
+          <AttendanceManagementPage token={token} canScan canManage={false} canViewDashboard={false} />
+        )}
+
         {user?.role === 'admin' && activeTab === 'registrations' && (
           <div className="dash-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
@@ -1619,6 +1667,26 @@ export default function DashboardShell({ onNavigateHome }) {
           </div>
         )}
 
+        {user?.role === 'faculty_coordinator' && activeTab === 'attendance_windows' && (
+          <div className="dash-card">
+            <h2 className="dash-card-title">Attendance Windows</h2>
+            <p className="dash-card-subtitle">Set when registered students can display their event pass QR. This does not record attendance.</p>
+            {myRequests.length ? myRequests.map((booking) => (
+              <section className="dash-booking-card" key={booking.id}>
+                <h3 className="dash-booking-title">{booking.eventName}</h3>
+                <p className="dash-booking-meta">{booking.date} · {booking.venueName || 'Venue to be announced'} · {booking.status}</p>
+                <AttendanceWindowEditor
+                  booking={booking}
+                  token={token}
+                  onUpdated={(updatedBooking) => setMyRequests((previous) => previous.map((item) => (
+                    item.id === updatedBooking.id ? updatedBooking : item
+                  )))}
+                />
+              </section>
+            )) : <div className="dash-empty-state">No event requests found for this account.</div>}
+          </div>
+        )}
+
         {/* ── STUDENT: My Event Requests ── */}
         {user?.role === 'student_coordinator' && activeTab === 'my_bookings' && (
           <div className="dash-card">
@@ -1891,6 +1959,10 @@ export default function DashboardShell({ onNavigateHome }) {
         )}
 
         {/* ── STUDENT: Overview Panel ── */}
+        {user?.role === 'student' && activeTab === 'event_passes' && (
+          <EventPassesPage token={token} />
+        )}
+
         {user?.role === 'student' && activeTab === 'student_overview' && (
           <div>
             <div className="dash-analytics-grid">
@@ -1910,46 +1982,70 @@ export default function DashboardShell({ onNavigateHome }) {
                 <span className="dash-stat-desc">Verified & downloadable</span>
               </div>
               <div className="dash-stat-box">
-                <span className="dash-stat-label">Upcoming RSVPs</span>
-                <span className="dash-stat-value">2 Events</span>
-                <span className="dash-stat-desc">Registered this week</span>
+                <span className="dash-stat-label">Registered Events</span>
+                <span className="dash-stat-value">{activeEventRegistrations.length}</span>
+                <span className="dash-stat-desc">Active registrations</span>
               </div>
             </div>
 
             <div className="dash-card">
-              <h2 className="dash-card-title">🎒 Your Activity Feed</h2>
-              <p className="dash-card-subtitle">
-                Logged in as <strong>{user?.name}</strong> · {user?.department} ·{' '}
-                <span style={{ color: '#06B6D4', fontWeight: 700 }}>Regular Student</span>
-              </p>
+              <h2 className="dash-card-title">My Registered Events</h2>
+              <p className="dash-card-subtitle">Events you are currently registered for.</p>
+              {registrationError && <p role="alert" className="form-error">{registrationError}</p>}
               <div className="dash-table-wrapper">
                 <table className="dash-table">
                   <thead>
                     <tr>
                       <th>Event</th>
-                      <th>Club</th>
                       <th>Date</th>
+                      <th>Venue</th>
                       <th>Status</th>
+                      <th>Attendance</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { event: 'ACM Hackathon 2026', club: 'ACM', date: 'Aug 15', status: '🎟️ RSVP Done' },
-                      { event: 'Rangmanch Drama Fest', club: 'Rotaract', date: 'Aug 22', status: '🎟️ RSVP Done' },
-                      { event: 'IEEE AI Workshop', club: 'IEEE', date: 'Sep 5', status: '⏳ Upcoming' },
-                      { event: 'Startup Pitch Night', club: 'E-Cell', date: 'Sep 12', status: '📋 Registered' },
-                    ].map((row, i) => (
-                      <tr key={i}>
-                        <td><strong>{row.event}</strong></td>
-                        <td>{row.club}</td>
-                        <td>{row.date}</td>
-                        <td>{row.status}</td>
+                    {activeEventRegistrations.length ? activeEventRegistrations.map((registration) => (
+                      <tr key={registration.id}>
+                        <td><strong>{registration.title}</strong><br /><small>{registration.societyName}</small></td>
+                        <td>{registration.date}</td>
+                        <td>{registration.venue}</td>
+                        <td>{registration.registrationStatus}</td>
+                        <td>{registration.attendanceStatus === 'PRESENT' ? 'Present' : 'Not Marked'}</td>
+                        <td>
+                          <button className="btn-outline" type="button" onClick={() => setSelectedRegisteredEvent(registration)}>View Details</button>{' '}
+                          {registration.registrationStatus === 'REGISTERED' && (
+                            <button className="btn-outline" type="button" onClick={() => handleCancelEventRegistration(registration)}>Cancel</button>
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                    )) : (
+                      <tr><td colSpan="6">You have no active event registrations.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {selectedRegisteredEvent && (
+              <div className="calendar-detail-modal" role="presentation" onClick={() => setSelectedRegisteredEvent(null)}>
+                <div className="calendar-detail-dialog" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                  <div className="calendar-detail-header">
+                    <div>
+                      <h3>{selectedRegisteredEvent.title}</h3>
+                      <p>{selectedRegisteredEvent.societyName}</p>
+                    </div>
+                    <button className="calendar-detail-close" type="button" aria-label="Close event details" onClick={() => setSelectedRegisteredEvent(null)}>✕</button>
+                  </div>
+                  <div className="calendar-detail-body">
+                    <div className="calendar-detail-section"><strong>Date</strong><span>{selectedRegisteredEvent.date}</span></div>
+                    <div className="calendar-detail-section"><strong>Time</strong><span>{selectedRegisteredEvent.time}</span></div>
+                    <div className="calendar-detail-section"><strong>Venue</strong><span>{selectedRegisteredEvent.venue}</span></div>
+                    <div className="calendar-detail-section"><strong>Registration</strong><span>{selectedRegisteredEvent.registrationStatus}</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

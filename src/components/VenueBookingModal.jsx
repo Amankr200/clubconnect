@@ -16,6 +16,22 @@ const createEmptyScheduleEntry = () => ({
 });
 */
 
+function toLocalDateTimeInput(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+}
+
+function defaultDateTimeInput(dateValue, timeValue, extraMinutes = 0) {
+  if (!dateValue || !timeValue) return '';
+  const date = new Date(`${dateValue}T${timeValue}:00`);
+  if (Number.isNaN(date.getTime())) return '';
+  date.setMinutes(date.getMinutes() + extraMinutes);
+  return toLocalDateTimeInput(date);
+}
+
 export default function VenueBookingModal({
   isOpen,
   onClose,
@@ -26,7 +42,7 @@ export default function VenueBookingModal({
   const MAX_PHOTO_SIZE_MB = 5;
   const MAX_PHOTO_SIZE_BYTES = MAX_PHOTO_SIZE_MB * 1024 * 1024;
 
-  const { token: authToken } = useAuth();
+  const { token: authToken, user } = useAuth();
   const activeToken = token || authToken;
   const [selectedVenue, setSelectedVenue] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
@@ -42,6 +58,10 @@ export default function VenueBookingModal({
   const [description, setDescription] = useState("");
   const [eligibility, setEligibility] = useState("");
   const [attendance, setAttendance] = useState("");
+  const [capacity, setCapacity] = useState("");
+  const [registrationDeadline, setRegistrationDeadline] = useState("");
+  const [attendanceStartTime, setAttendanceStartTime] = useState("");
+  const [attendanceEndTime, setAttendanceEndTime] = useState("");
   const [feedback, setFeedback] = useState("");
   const [studentCoordinators, setStudentCoordinators] = useState("");
   const [bookingError, setBookingError] = useState("");
@@ -51,6 +71,8 @@ export default function VenueBookingModal({
   const venueDetails = selectedVenue
     ? venues.find((venue) => venue.id === parseInt(selectedVenue, 10))
     : null;
+  const defaultAttendanceStart = defaultDateTimeInput(selectedDate, selectedStartTime);
+  const defaultAttendanceEnd = defaultDateTimeInput(selectedDate, selectedEndTime, 10);
 
   const getTodayDate = () => {
     const today = new Date();
@@ -139,6 +161,10 @@ export default function VenueBookingModal({
     setDescription(booking?.description || "");
     setEligibility(booking?.eligibility || "");
     setAttendance(booking?.attendance || "");
+    setCapacity(booking?.capacity == null ? "" : String(booking.capacity));
+    setRegistrationDeadline(toLocalDateTimeInput(booking?.registrationDeadline));
+    setAttendanceStartTime(toLocalDateTimeInput(booking?.attendanceStartTime));
+    setAttendanceEndTime(toLocalDateTimeInput(booking?.attendanceEndTime));
     setFeedback(booking?.feedback || "");
     setStudentCoordinators(booking?.studentCoordinators || "");
     setBookingError("");
@@ -241,6 +267,15 @@ export default function VenueBookingModal({
       return;
     }
 
+    if (user?.role === 'faculty_coordinator') {
+      const effectiveStart = attendanceStartTime || defaultAttendanceStart;
+      const effectiveEnd = attendanceEndTime || defaultAttendanceEnd;
+      if (!effectiveStart || !effectiveEnd || new Date(effectiveEnd) <= new Date(effectiveStart)) {
+        setBookingError('Attendance window must end after it starts.');
+        return;
+      }
+    }
+
     if (!activeToken && !isEditing) {
       setBookingError(
         "Please sign in as a student coordinator to request a venue.",
@@ -274,6 +309,12 @@ export default function VenueBookingModal({
         description,
         eligibility,
         attendance,
+        capacity: capacity === "" ? null : Number(capacity),
+        registrationDeadline: registrationDeadline
+          ? new Date(registrationDeadline).toISOString()
+          : null,
+        attendanceStartTime: attendanceStartTime ? new Date(attendanceStartTime).toISOString() : null,
+        attendanceEndTime: attendanceEndTime ? new Date(attendanceEndTime).toISOString() : null,
         feedback,
         studentCoordinators,
       };
@@ -596,6 +637,50 @@ export default function VenueBookingModal({
               maxLength={120}
             />
           </div>
+
+          <div className="booking-form-group">
+            <label htmlFor="capacity">Registration Capacity</label>
+            <input
+              id="capacity"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Leave blank for unlimited registrations"
+              value={capacity}
+              onChange={(event) => setCapacity(event.target.value)}
+            />
+          </div>
+
+          <div className="booking-form-group">
+            <label htmlFor="registrationDeadline">Registration Deadline</label>
+            <input
+              id="registrationDeadline"
+              type="datetime-local"
+              value={registrationDeadline}
+              onChange={(event) => setRegistrationDeadline(event.target.value)}
+            />
+          </div>
+
+          {user?.role === 'faculty_coordinator' && (
+            <div className="booking-form-group">
+              <label>Attendance Window</label>
+              <p className="booking-schedule-footnote">Defaults to event start through 10 minutes after event end.</p>
+              <label htmlFor="attendanceStartTime">QR activation starts</label>
+              <input
+                id="attendanceStartTime"
+                type="datetime-local"
+                value={attendanceStartTime || defaultAttendanceStart}
+                onChange={(event) => setAttendanceStartTime(event.target.value)}
+              />
+              <label htmlFor="attendanceEndTime">QR activation ends</label>
+              <input
+                id="attendanceEndTime"
+                type="datetime-local"
+                value={attendanceEndTime || defaultAttendanceEnd}
+                onChange={(event) => setAttendanceEndTime(event.target.value)}
+              />
+            </div>
+          )}
 
           <div className="booking-form-group">
             <label htmlFor="attendance">Registration Link *</label>

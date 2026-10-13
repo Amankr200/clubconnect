@@ -13,9 +13,11 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^7.0.5",
+    "pdfkit": "^0.20.2",
     "pg": "^8.22.0",
     "resend": "^6.28.1"
   },
