@@ -10,6 +10,7 @@ function formatUser(row) {
     passwordHash: row.password_hash,
     role: row.role,
     department: row.department || '',
+    societyId: row.society_id || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -32,12 +33,12 @@ async function findById(id) {
   return formatUser(result.rows[0]);
 }
 
-async function createUser({ name, email, passwordHash, role, department = '' }) {
+async function createUser({ name, email, passwordHash, role, department = '', societyId = null }) {
   const result = await db.query(
-    `INSERT INTO users (name, email, password_hash, role, department)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO users (name, email, password_hash, role, department, society_id)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [name, email.toLowerCase().trim(), passwordHash, role, department]
+    [name, email.toLowerCase().trim(), passwordHash, role, department, societyId]
   );
   return formatUser(result.rows[0]);
 }

@@ -8,6 +8,7 @@ import AttendanceManagementPage from './AttendanceManagementPage.jsx';
 import EventPassesPage from './EventPassesPage.jsx';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
+import AddFacultyCoordinatorModal from '../components/AddFacultyCoordinatorModal.jsx';
 import './DashboardShell.css';
 
 function readFileAsDataUrl(file) {
@@ -26,6 +27,7 @@ export default function DashboardShell({ onNavigateHome }) {
   const [isVenueModalOpen, setIsVenueModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
   const [isAddSocietyModalOpen, setIsAddSocietyModalOpen] = useState(false);
+  const [isAddFacultyModalOpen, setIsAddFacultyModalOpen] = useState(false);
 
   // Shared Data States
   const [inbox, setInbox] = useState([]);
@@ -742,6 +744,9 @@ export default function DashboardShell({ onNavigateHome }) {
               </button>
               <button className="dash-tab-btn" onClick={() => setIsAddSocietyModalOpen(true)}>
                 ➕ Add New Society
+              </button>
+              <button className="dash-tab-btn" onClick={() => setIsAddFacultyModalOpen(true)}>
+                ➕ Add Faculty Coordinator
               </button>
               <button className={`dash-tab-btn ${activeTab === 'venues' ? 'active' : ''}`} onClick={() => setActiveTab('venues')}>
                 📍 Venue Availability
@@ -2074,6 +2079,12 @@ export default function DashboardShell({ onNavigateHome }) {
         onSocietyCreated={async () => {
           refreshData();
         }}
+      />
+
+      <AddFacultyCoordinatorModal
+        isOpen={isAddFacultyModalOpen}
+        token={token}
+        onClose={() => setIsAddFacultyModalOpen(false)}
       />
     </div>
   );

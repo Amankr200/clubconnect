@@ -29,6 +29,11 @@ async function findSocietyByName(name) {
   return formatSociety(result.rows[0]);
 }
 
+async function findSocietyById(id) {
+  const result = await db.query('SELECT * FROM societies WHERE id = $1', [id]);
+  return formatSociety(result.rows[0]);
+}
+
 async function createSociety(data) {
   const { name, fullName, category, description, vision = '', mission = '', logo, banner, rating = 4.5, facultyCoordinator = {}, studentCoordinators = [] } = data;
   const facultyJson = typeof facultyCoordinator === 'string' ? facultyCoordinator : JSON.stringify(facultyCoordinator);
@@ -132,6 +137,7 @@ async function updateSociety(name, updates) {
 module.exports = {
   findAllSocieties,
   findSocietyByName,
+  findSocietyById,
   createSociety,
   updateSociety,
 };

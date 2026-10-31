@@ -52,6 +52,11 @@ async function initDb() {
     `);
 
     await client.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS society_id INTEGER REFERENCES societies(id) ON DELETE SET NULL;
+    `);
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS "venues" (
         id integer PRIMARY KEY,
         name varchar(255) NOT NULL,

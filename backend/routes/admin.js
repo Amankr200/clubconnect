@@ -1,5 +1,7 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const adminModel = require('../models/adminModel');
+const userModel = require('../models/userModel');
 const societyModel = require('../models/societyModel');
 const venueBookingModel = require('../models/venueBookingModel');
 const venueModel = require('../models/venue');
@@ -38,6 +40,61 @@ router.use((req, res, next) => {
     return res.status(403).json({ message: 'Access restricted to administrators.' });
   }
   next();
+});
+
+// POST /api/admin/faculty-coordinators - Create a faculty coordinator account
+router.post('/faculty-coordinators', async (req, res) => {
+  try {
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const password = typeof req.body.password === 'string' ? req.body.password : '';
+    const societyId = Number(req.body.societyId);
+
+    if (name.length < 2 || name.length > 255) {
+      return res.status(400).json({ message: 'Name must be between 2 and 255 characters.' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Enter a valid email address.' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+    }
+    if (!Number.isInteger(societyId) || societyId <= 0) {
+      return res.status(400).json({ message: 'Select a society.' });
+    }
+
+    const society = await societyModel.findSocietyById(societyId);
+    if (!society) {
+      return res.status(400).json({ message: 'Selected society was not found.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const coordinator = await userModel.createUser({
+      name,
+      email,
+      passwordHash,
+      role: 'faculty_coordinator',
+      societyId,
+    });
+
+    return res.status(201).json({
+      user: {
+        id: coordinator.id,
+        name: coordinator.name,
+        email: coordinator.email,
+        role: coordinator.role,
+        societyId: coordinator.societyId,
+        societyName: society.name,
+      },
+      message: 'Faculty coordinator account created successfully.',
+    });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ message: 'An account with this email already exists.' });
+    }
+    console.error('[/api/admin/faculty-coordinators POST]', err);
+    return res.status(500).json({ message: 'Failed to create faculty coordinator account.' });
+  }
 });
 
 // POST /api/admin/societies - Direct creation of a new society by Admin
