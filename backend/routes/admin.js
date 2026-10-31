@@ -8,6 +8,14 @@ const venueModel = require('../models/venue');
 const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
+const USER_ROLES = new Set([
+  'admin',
+  'student_coordinator',
+  'faculty_coordinator',
+  'hod',
+  'principal',
+  'dean',
+]);
 
 // POST /api/admin/society-registrations - Public or logged in user submit new society application
 router.post('/society-registrations', async (req, res) => {
@@ -40,6 +48,97 @@ router.use((req, res, next) => {
     return res.status(403).json({ message: 'Access restricted to administrators.' });
   }
   next();
+});
+
+function getUserPayload(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    department: user.department,
+    societyId: user.societyId,
+  };
+}
+
+// GET /api/admin/users - List existing non-student accounts for user management
+router.get('/users', async (_req, res) => {
+  try {
+    const users = await userModel.findAllUsers();
+    res.json({ users: users.map(getUserPayload) });
+  } catch (err) {
+    console.error('[/api/admin/users GET]', err);
+    res.status(500).json({ message: 'Failed to fetch users.' });
+  }
+});
+
+// PATCH /api/admin/users/:id - Update an existing user account
+router.patch('/users/:id', async (req, res) => {
+  try {
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const password = typeof req.body.password === 'string' ? req.body.password : '';
+    const role = typeof req.body.role === 'string' ? req.body.role : '';
+    const department = typeof req.body.department === 'string' ? req.body.department.trim() : '';
+    const societyId = req.body.societyId ? Number(req.body.societyId) : null;
+
+    if (name.length < 2 || name.length > 255) {
+      return res.status(400).json({ message: 'Name must be between 2 and 255 characters.' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Enter a valid email address.' });
+    }
+    if (!USER_ROLES.has(role)) {
+      return res.status(400).json({ message: 'Select a valid role.' });
+    }
+    if (password && password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+    }
+    if (societyId !== null && (!Number.isInteger(societyId) || societyId <= 0)) {
+      return res.status(400).json({ message: 'Select a valid society.' });
+    }
+    if (societyId !== null && !(await societyModel.findSocietyById(societyId))) {
+      return res.status(400).json({ message: 'Selected society was not found.' });
+    }
+
+    const passwordHash = password ? await bcrypt.hash(password, 12) : null;
+    const updatedUser = await userModel.updateUser(req.params.id, {
+      name,
+      email,
+      passwordHash,
+      role,
+      department,
+      societyId,
+    });
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    return res.json({ user: getUserPayload(updatedUser), message: 'User updated successfully.' });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ message: 'An account with this email already exists.' });
+    }
+    console.error('[/api/admin/users/:id PATCH]', err);
+    return res.status(500).json({ message: 'Failed to update user.' });
+  }
+});
+
+// DELETE /api/admin/users/:id - Delete an existing user account
+router.delete('/users/:id', async (req, res) => {
+  try {
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ message: 'You cannot delete your own admin account.' });
+    }
+    const deletedUser = await userModel.deleteUser(req.params.id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    return res.json({ message: 'User deleted successfully.' });
+  } catch (err) {
+    console.error('[/api/admin/users/:id DELETE]', err);
+    res.status(500).json({ message: 'Failed to delete user.' });
+  }
 });
 
 // POST /api/admin/faculty-coordinators - Create a faculty coordinator account

@@ -48,9 +48,36 @@ async function findAllUsers() {
   return result.rows.map(formatUser);
 }
 
+async function updateUser(id, { name, email, passwordHash, role, department = '', societyId = null }) {
+  const result = await db.query(
+    `UPDATE users
+     SET name = $1,
+         email = $2,
+         password_hash = COALESCE($3, password_hash),
+         role = $4,
+         department = $5,
+         society_id = $6,
+         updated_at = NOW()
+     WHERE id = $7
+     RETURNING *`,
+    [name, email.toLowerCase().trim(), passwordHash, role, department, societyId, id]
+  );
+  return formatUser(result.rows[0]);
+}
+
+async function deleteUser(id) {
+  const result = await db.query(
+    'DELETE FROM users WHERE id = $1 RETURNING id',
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
 module.exports = {
   findByEmail,
   findById,
   createUser,
   findAllUsers,
+  updateUser,
+  deleteUser,
 };

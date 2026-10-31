@@ -32,11 +32,19 @@ const ROLES = [
     color:       '#8B5CF6',
   },
   {
-    id:          'principal_dean',
-    label:       'Principal / Dean',
+    id:          'principal',
+    label:       'Principal',
     emoji:       '🎓',
     color:       '#3B82F6',
     description: 'Overall institutional oversight and final authority',
+    color:       '#3B82F6',
+  },
+  {
+    id:          'dean',
+    label:       'Dean',
+    emoji:       '🎓',
+    color:       '#3B82F6',
+    description: 'Overall institutional oversight',
     color:       '#3B82F6',
   },
 ];
@@ -61,14 +69,16 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
       student_coordinator: 'student.coord@bpit.ac.in',
       faculty_coordinator: 'faculty.coord@bpit.ac.in',
       hod: 'hod@bpit.ac.in',
-      principal_dean: 'principal@bpit.ac.in',
+      principal: 'principal@bpit.ac.in',
+      dean: 'dean@bpit.ac.in',
     };
     const defaultPasswords = {
       admin: 'Admin@123',
       student_coordinator: 'Student@123',
       faculty_coordinator: 'Faculty@123',
       hod: 'Hod@123',
-      principal_dean: 'Principal@123',
+      principal: 'Principal@123',
+      dean: 'Dean@123',
     };
 
     setForm({

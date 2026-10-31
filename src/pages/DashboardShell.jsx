@@ -9,6 +9,7 @@ import EventPassesPage from './EventPassesPage.jsx';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import AddFacultyCoordinatorModal from '../components/AddFacultyCoordinatorModal.jsx';
+import UserManagementModal from '../components/UserManagementModal.jsx';
 import './DashboardShell.css';
 
 function readFileAsDataUrl(file) {
@@ -28,6 +29,7 @@ export default function DashboardShell({ onNavigateHome }) {
   const [editingBooking, setEditingBooking] = useState(null);
   const [isAddSocietyModalOpen, setIsAddSocietyModalOpen] = useState(false);
   const [isAddFacultyModalOpen, setIsAddFacultyModalOpen] = useState(false);
+  const [isUserManagementModalOpen, setIsUserManagementModalOpen] = useState(false);
 
   // Shared Data States
   const [inbox, setInbox] = useState([]);
@@ -402,7 +404,7 @@ export default function DashboardShell({ onNavigateHome }) {
     else if (user?.role === 'student_coordinator') setActiveTab('my_bookings');
     else if (user?.role === 'faculty_coordinator') setActiveTab('approvals');
     else if (user?.role === 'hod') setActiveTab('dept_approvals');
-    else if (user?.role === 'principal_dean') setActiveTab('final_approvals');
+    else if (user?.role === 'principal') setActiveTab('final_approvals');
     else if (user?.role === 'dean') setActiveTab('dean_overview');
     else if (user?.role === 'student') setActiveTab('student_overview');
   }, [user?.role]);
@@ -417,7 +419,7 @@ export default function DashboardShell({ onNavigateHome }) {
         .catch(() => setEventRegistrations([]));
     }
 
-    if (['faculty_coordinator', 'hod', 'principal_dean', 'dean'].includes(user?.role)) {
+    if (['faculty_coordinator', 'hod', 'principal', 'dean'].includes(user?.role)) {
       getVenueBookingInbox(token).then((data) => setInbox(data.bookings || [])).catch(() => {});
     }
 
@@ -613,7 +615,7 @@ export default function DashboardShell({ onNavigateHome }) {
       { icon: '👥', label: 'Assign Coordinators', tab: 'assign' },
       { icon: '📈', label: 'Department Analytics', tab: 'dept_analytics' },
     ],
-    principal_dean: [
+    principal: [
       { icon: '🎓', label: 'Final Approvals Queue', tab: 'final_approvals' },
       { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
     ],
@@ -748,6 +750,9 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className="dash-tab-btn" onClick={() => setIsAddFacultyModalOpen(true)}>
                 ➕ Add Faculty Coordinator
               </button>
+              <button className="dash-tab-btn" onClick={() => setIsUserManagementModalOpen(true)}>
+                👥 Update Users
+              </button>
               <button className={`dash-tab-btn ${activeTab === 'venues' ? 'active' : ''}`} onClick={() => setActiveTab('venues')}>
                 📍 Venue Availability
               </button>
@@ -823,7 +828,7 @@ export default function DashboardShell({ onNavigateHome }) {
             </>
           )}
 
-          {user?.role === 'principal_dean' && (
+          {user?.role === 'principal' && (
             <>
               <button className={`dash-tab-btn ${activeTab === 'final_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('final_approvals')}>
                 🎓 Final Approvals Queue ({inbox.filter((b) => b.currentReviewerRole === 'principal').length})
@@ -2085,6 +2090,13 @@ export default function DashboardShell({ onNavigateHome }) {
         isOpen={isAddFacultyModalOpen}
         token={token}
         onClose={() => setIsAddFacultyModalOpen(false)}
+      />
+
+      <UserManagementModal
+        isOpen={isUserManagementModalOpen}
+        token={token}
+        currentUserId={user?.id}
+        onClose={() => setIsUserManagementModalOpen(false)}
       />
     </div>
   );

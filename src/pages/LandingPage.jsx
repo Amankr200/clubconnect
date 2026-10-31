@@ -32,7 +32,7 @@ const ROLE_GROUPS = [
     roles: [
       {
         id: 'principal',
-        backendRole: 'principal_dean',
+        backendRole: 'principal',
         label: 'Principal',
         emoji: '🎓',
         description: 'Institutional oversight, final event approvals & college-wide analytics',

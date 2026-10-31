@@ -31,7 +31,7 @@ export const ROLE_META = {
     color:       '#8B5CF6',
     description: 'Department event approval, coordinator assignments & department analytics',
   },
-  principal_dean: {
+  principal: {
     label:       'Principal',
     emoji:       '🎓',
     color:       '#1A3A8B',
