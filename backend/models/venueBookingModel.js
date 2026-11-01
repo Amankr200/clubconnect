@@ -21,8 +21,6 @@ function formatBooking(row) {
     photoFileName: row.photo_file_name,
     description: row.description,
     eligibility: row.eligibility,
-    attendance: row.attendance,
-    feedback: row.feedback,
     studentCoordinators: row.student_coordinators,
     requestedBy: row.requested_by || {},
     assignedFacultyCoordinator: row.assigned_faculty_coordinator || {},
@@ -134,8 +132,6 @@ async function createBooking(data) {
     photoFileName = '',
     description,
     eligibility,
-    attendance,
-    feedback,
     studentCoordinators,
     requestedBy,
     assignedFacultyCoordinator = {},
@@ -148,12 +144,12 @@ async function createBooking(data) {
   const result = await db.query(
     `INSERT INTO venue_bookings (
       venue_id, date, time_slots, event_name, host_club, photo, photo_file_name,
-      description, eligibility, attendance, feedback, student_coordinators,
+      description, eligibility, student_coordinators,
       capacity, registration_deadline, attendance_start_time, attendance_end_time,
       requested_by, assigned_faculty_coordinator, status, current_reviewer_role,
       change_request, review_trail
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
     ) RETURNING *`,
     [
       venueId,
@@ -165,8 +161,6 @@ async function createBooking(data) {
       photoFileName,
       description,
       eligibility,
-      attendance,
-      feedback,
       studentCoordinators,
       capacity,
       registrationDeadline,
@@ -203,8 +197,6 @@ async function updateBooking(id, fields) {
     photoFileName: 'photo_file_name',
     description: 'description',
     eligibility: 'eligibility',
-    attendance: 'attendance',
-    feedback: 'feedback',
     studentCoordinators: 'student_coordinators',
     requestedBy: 'requested_by',
     assignedFacultyCoordinator: 'assigned_faculty_coordinator',

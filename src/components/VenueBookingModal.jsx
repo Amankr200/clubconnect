@@ -57,12 +57,10 @@ export default function VenueBookingModal({
   const [photoFileName, setPhotoFileName] = useState("");
   const [description, setDescription] = useState("");
   const [eligibility, setEligibility] = useState("");
-  const [attendance, setAttendance] = useState("");
   const [capacity, setCapacity] = useState("");
   const [registrationDeadline, setRegistrationDeadline] = useState("");
   const [attendanceStartTime, setAttendanceStartTime] = useState("");
   const [attendanceEndTime, setAttendanceEndTime] = useState("");
-  const [feedback, setFeedback] = useState("");
   const [studentCoordinators, setStudentCoordinators] = useState("");
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState("");
@@ -160,12 +158,10 @@ export default function VenueBookingModal({
     setPhotoFileName(booking?.photoFileName || "");
     setDescription(booking?.description || "");
     setEligibility(booking?.eligibility || "");
-    setAttendance(booking?.attendance || "");
     setCapacity(booking?.capacity == null ? "" : String(booking.capacity));
     setRegistrationDeadline(toLocalDateTimeInput(booking?.registrationDeadline));
     setAttendanceStartTime(toLocalDateTimeInput(booking?.attendanceStartTime));
     setAttendanceEndTime(toLocalDateTimeInput(booking?.attendanceEndTime));
-    setFeedback(booking?.feedback || "");
     setStudentCoordinators(booking?.studentCoordinators || "");
     setBookingError("");
     setBookingSuccess("");
@@ -217,8 +213,6 @@ export default function VenueBookingModal({
       !hostClub ||
       !description ||
       !eligibility ||
-      !attendance ||
-      !feedback ||
       !studentCoordinators
     ) {
       setBookingError(
@@ -308,14 +302,12 @@ export default function VenueBookingModal({
         photoFileName,
         description,
         eligibility,
-        attendance,
         capacity: capacity === "" ? null : Number(capacity),
         registrationDeadline: registrationDeadline
           ? new Date(registrationDeadline).toISOString()
           : null,
         attendanceStartTime: attendanceStartTime ? new Date(attendanceStartTime).toISOString() : null,
         attendanceEndTime: attendanceEndTime ? new Date(attendanceEndTime).toISOString() : null,
-        feedback,
         studentCoordinators,
       };
 
@@ -681,32 +673,6 @@ export default function VenueBookingModal({
               />
             </div>
           )}
-
-          <div className="booking-form-group">
-            <label htmlFor="attendance">Registration Link *</label>
-            <input
-              id="attendance"
-              type="url"
-              placeholder="Link to registration form"
-              value={attendance}
-              onChange={(event) => setAttendance(event.target.value)}
-              required
-              maxLength={80}
-            />
-          </div>
-
-          <div className="booking-form-group">
-            <label htmlFor="feedback">Feedback Link*</label>
-            <input
-              id="feedback"
-              type="url"
-              placeholder="Link to feedback form"
-              value={feedback}
-              onChange={(event) => setFeedback(event.target.value)}
-              required
-              maxLength={120}
-            />
-          </div>
 
           <div className="booking-actions">
             <button

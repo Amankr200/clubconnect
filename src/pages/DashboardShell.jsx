@@ -511,11 +511,11 @@ export default function DashboardShell({ onNavigateHome }) {
 
   // CSV Export Handler
   const handleExportCSV = () => {
-    const headers = ['Event Name', 'Host Club', 'Date', 'Time Slot', 'Venue', 'Status', 'Attendance'];
+    const headers = ['Event Name', 'Host Club', 'Date', 'Time Slot', 'Venue', 'Status', 'Registered Count'];
     const rows = (myRequests.length > 0 ? myRequests : [
-      { eventName: 'ACM Hackathon 2026', hostClub: 'ACM', date: '2026-06-15', timeSlots: [{ startTime: '10:00 AM', endTime: '04:00 PM' }], venueId: 1, status: 'approved', attendance: '250 Expected' },
-      { eventName: 'DSA Bootcamp', hostClub: 'ACM', date: '2026-05-10', timeSlots: [{ startTime: '02:00 PM', endTime: '05:00 PM' }], venueId: 2, status: 'approved', attendance: '120 Expected' },
-      { eventName: 'Web3 Tech Talk', hostClub: 'ACM', date: '2026-03-20', timeSlots: [{ startTime: '11:00 AM', endTime: '01:00 PM' }], venueId: 1, status: 'approved', attendance: '180 Expected' },
+      { eventName: 'ACM Hackathon 2026', hostClub: 'ACM', date: '2026-06-15', timeSlots: [{ startTime: '10:00 AM', endTime: '04:00 PM' }], venueId: 1, status: 'approved', registrationCount: 250 },
+      { eventName: 'DSA Bootcamp', hostClub: 'ACM', date: '2026-05-10', timeSlots: [{ startTime: '02:00 PM', endTime: '05:00 PM' }], venueId: 2, status: 'approved', registrationCount: 120 },
+      { eventName: 'Web3 Tech Talk', hostClub: 'ACM', date: '2026-03-20', timeSlots: [{ startTime: '11:00 AM', endTime: '01:00 PM' }], venueId: 1, status: 'approved', registrationCount: 180 },
     ]).map((b) => [
       `"${b.eventName}"`,
       `"${b.hostClub}"`,
@@ -523,7 +523,7 @@ export default function DashboardShell({ onNavigateHome }) {
       `"${b.timeSlots?.[0]?.startTime || ''} - ${b.timeSlots?.[0]?.endTime || ''}"`,
       `"${b.venueName || 'Venue Not Disclosed'}"`,
       b.status,
-      `"${b.attendance}"`,
+      Number(b.registrationCount || 0),
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -1587,18 +1587,8 @@ export default function DashboardShell({ onNavigateHome }) {
                             </div>
 
                             <div>
-                              <strong style={{ color: 'var(--bpit-blue)' }}>Attendance Link:</strong>
-                              <div style={{ color: 'var(--text-secondary)' }}>{booking.attendance || 'N/A'}</div>
-                            </div>
-
-                            <div>
                               <strong style={{ color: 'var(--bpit-blue)' }}>Student Coordinators:</strong>
                               <div style={{ color: 'var(--text-secondary)' }}>{booking.studentCoordinators || 'N/A'}</div>
-                            </div>
-
-                            <div>
-                              <strong style={{ color: 'var(--bpit-blue)' }}>Feedback &amp; QR Link:</strong>
-                              <div style={{ color: 'var(--text-secondary)' }}>{booking.feedback || 'N/A'}</div>
                             </div>
 
                             {booking.reviewTrail && booking.reviewTrail.length > 0 && (
@@ -2011,7 +2001,11 @@ export default function DashboardShell({ onNavigateHome }) {
                         <td>{registration.date}</td>
                         <td>{registration.venue}</td>
                         <td>{registration.registrationStatus}</td>
-                        <td>{registration.attendanceStatus === 'PRESENT' ? 'Present' : 'Not Marked'}</td>
+                        <td>{registration.attendanceStatus === 'PRESENT'
+                          ? 'Present'
+                          : registration.attendanceStatus === 'ATTENDANCE_WINDOW_CLOSED'
+                            ? 'Attendance Window Closed'
+                            : 'Attendance Pending'}</td>
                         <td>
                           <button className="btn-outline" type="button" onClick={() => setSelectedRegisteredEvent(registration)}>View Details</button>{' '}
                           {registration.registrationStatus === 'REGISTERED' && (

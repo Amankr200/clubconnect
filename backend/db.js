@@ -141,8 +141,6 @@ async function initDb() {
         photo_file_name VARCHAR(255),
         description TEXT NOT NULL,
         eligibility TEXT NOT NULL,
-        attendance VARCHAR(100) NOT NULL,
-        feedback TEXT NOT NULL,
         student_coordinators TEXT NOT NULL,
         requested_by JSONB NOT NULL,
         assigned_faculty_coordinator JSONB DEFAULT '{}'::jsonb,
@@ -176,6 +174,11 @@ async function initDb() {
       'utf8'
     );
     await client.query(attendanceMigration);
+    const scannerPermissionMigration = fs.readFileSync(
+      path.join(__dirname, 'migrations', '005_scanner_permissions_and_booking_cleanup.sql'),
+      'utf8'
+    );
+    await client.query(scannerPermissionMigration);
     console.log('✅ All PostgreSQL database schemas verified');
   } finally {
     client.release();

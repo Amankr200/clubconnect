@@ -10,6 +10,7 @@ Use development accounts for a student, faculty coordinator, and admin. Use an i
 - [ ] Confirm `(registration_id)` is unique and references `event_registrations(id)`.
 - [ ] Confirm `marked_by` and audit actor IDs match the existing UUID user IDs.
 - [ ] Confirm student section is nullable and blank for students without section data.
+- [ ] Cancel and reactivate an RSVP that was already marked present; confirm its existing attendance mark/timestamp is preserved and no duplicate attendance row is created.
 
 ## QR scanner authorization and validation
 
@@ -24,12 +25,16 @@ Use development accounts for a student, faculty coordinator, and admin. Use an i
 - [ ] Scan again after successful marking; expect `ALREADY_MARKED` and exactly one attendance record.
 - [ ] Attempt scanning as an ordinary student and admin; both must receive HTTP 403.
 - [ ] Confirm a student coordinator can scan but cannot open the participant dashboard or perform manual overrides.
+- [ ] Grant two or more student coordinators scanner access to one event; verify each can scan that event.
+- [ ] Verify a scanner authorized for Event A cannot scan a pass from Event B without a separate active grant.
+- [ ] Revoke a scanner and immediately scan again; expect `SCANNER_NOT_AUTHORIZED`.
+- [ ] Attempt to grant the same coordinator twice while access is active; expect a conflict and one active permission row.
 - [ ] Scan two copies of the same QR concurrently; verify one mark is committed and the other receives the duplicate response.
 
 ## Manual override and audit log
 
-- [ ] Faculty marks an active RSVP Present; verify `attendance_status = TRUE`, marked time and faculty user ID are written, and a `MANUAL_PRESENT` log exists.
-- [ ] Faculty changes that row to Absent; verify the status becomes false, marked time is cleared, actor is recorded, and a `MANUAL_ABSENT` log exists.
+- [ ] Faculty marks an active RSVP Present; verify `attendance_status = TRUE`, marked time and faculty user ID are written, and a `MANUAL_MARK_PRESENT` log exists with prior/new states and reason.
+- [ ] Faculty changes that row to Absent; verify the status becomes false, marked time is cleared, actor is recorded, and a `MANUAL_MARK_ABSENT` log exists with prior/new states and reason.
 - [ ] Verify each successful override appends one audit row with attendance ID, action, actor, and timestamp.
 - [ ] Attempt an override as admin and student; both must receive HTTP 403.
 - [ ] Submit a non-boolean status or missing attendance ID; expect a 400/404 error and no audit entry.
@@ -49,6 +54,8 @@ Use development accounts for a student, faculty coordinator, and admin. Use an i
 - [ ] Download CSV, XLSX, and PDF as faculty and admin; verify each file opens and contains the requested participant columns.
 - [ ] Confirm attendance time is blank for absent/unmarked participants and present for marked participants.
 - [ ] Confirm registration status and cancelled rows are represented correctly without affecting active attendance percentages.
+- [ ] Confirm filenames include a sanitized event name and event date.
+- [ ] Include spreadsheet-like values beginning with `=`, `+`, `-`, or `@` in test names/reasons; confirm CSV cells are neutralized against formula injection.
 - [ ] Attempt event export as a student; expect HTTP 403.
 
 ## Scope guard

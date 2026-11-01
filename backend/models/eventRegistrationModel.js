@@ -139,6 +139,7 @@ async function findForStudent(studentId) {
        vb.event_name,
        vb.date AS event_date,
        vb.time_slots,
+      vb.attendance_end_time,
        v.name AS venue_name,
       s.name AS society_name,
       attendance.attendance_status,
@@ -158,6 +159,7 @@ async function findForStudent(studentId) {
     const first = slots[0];
     const last = slots[slots.length - 1];
     const eventTime = first && last ? `${first.startTime} - ${last.endTime}` : 'Time not specified';
+      const attendanceEnd = row.attendance_end_time ? new Date(row.attendance_end_time).getTime() : NaN;
 
     return {
       id: row.id,
@@ -168,7 +170,11 @@ async function findForStudent(studentId) {
       venue: row.venue_name || 'Venue to be announced',
       societyName: row.society_name || 'Society event',
       registrationStatus: row.registration_status,
-      attendanceStatus: row.attendance_status === true ? 'PRESENT' : 'NOT_MARKED',
+      attendanceStatus: row.attendance_status === true
+        ? 'PRESENT'
+        : Number.isFinite(attendanceEnd) && Date.now() > attendanceEnd
+          ? 'ATTENDANCE_WINDOW_CLOSED'
+          : 'ATTENDANCE_PENDING',
       attendanceTime: row.attendance_marked_at,
     };
   });

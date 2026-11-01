@@ -435,7 +435,7 @@ export default function LandingPage({ onLoginSuccess }) {
               date: b.date ? new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Upcoming',
               rawDate: b.date,
               time: b.timeSlots?.[0] ? `${b.timeSlots[0].startTime} - ${b.timeSlots[0].endTime}` : '',
-              attendees: b.attendance || '150+ Expected',
+              attendees: `${Number(b.registrationCount || 0)} registered`,
               icon: b.photo ? null : '🎉',
               photo: b.photo || null,
               color: '#EFF6FF',

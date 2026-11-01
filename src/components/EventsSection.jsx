@@ -39,7 +39,7 @@ function isEventEnded(dateStr) {
 }
 
 function getEventRegistrationUrl(event) {
-  return event.extendedProps?.registrationLink || event.extendedProps?.registrationUrl || event.url || '';
+  return event.url || '';
 }
 
 export default function EventsSection({ onLoginClick }) {
@@ -142,7 +142,6 @@ export default function EventsSection({ onLoginClick }) {
     color: '#6366f1',
     description: b.description,
     photo: b.photo,
-    registrationLink: b.attendance || '',
     extendedProps: {
       bookingId: b.id,
       hostClub: b.hostClub,
@@ -150,8 +149,6 @@ export default function EventsSection({ onLoginClick }) {
       photoFileName: b.photoFileName,
       descriptionText: b.description,
       eligibility: b.eligibility,
-      attendance: b.attendance,
-      feedback: b.feedback,
       studentCoordinators: b.studentCoordinators,
       isBooked: true
     }
@@ -386,7 +383,7 @@ export default function EventsSection({ onLoginClick }) {
                     <button
                       className="rsvp-btn"
                       onClick={() => {
-                        const link = event.registrationLink || event.attendance || '';
+                        const link = event.url || '';
                         if (link) {
                           const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
                           window.open(normalized, '_blank', 'noopener,noreferrer');
@@ -490,19 +487,12 @@ export default function EventsSection({ onLoginClick }) {
                   <span>{activeEvent.extendedProps.studentCoordinators}</span>
                 </div>
               )}
-              {activeEvent.extendedProps?.attendance && (
+              {activeEvent.extendedProps?.isBooked ? (
                 <div className="calendar-detail-section">
-                  <strong>Expected Attendance</strong>
-                  <span>{activeEvent.extendedProps.attendance}</span>
+                  <strong>Registration</strong>
+                  <span>Use the RSVP button on the ClubConnect event listing.</span>
                 </div>
-              )}
-              {activeEvent.extendedProps?.feedback && (
-                <div className="calendar-detail-section">
-                  <strong>Feedback Notes</strong>
-                  <p>{activeEvent.extendedProps.feedback}</p>
-                </div>
-              )}
-              {getEventRegistrationUrl(activeEvent) ? (
+              ) : getEventRegistrationUrl(activeEvent) ? (
                 <div className="calendar-detail-action">
                   <a
                     href={getEventRegistrationUrl(activeEvent)}

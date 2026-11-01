@@ -5,6 +5,10 @@ import {
   downloadAttendanceExport,
   getAttendanceEvents,
   getEventAttendance,
+  getAttendanceTeam,
+  getEligibleScanners,
+  grantAttendanceScanner,
+  revokeAttendanceScanner,
   scanAttendance,
   updateAttendance,
 } from '../api/attendance.js';
@@ -35,6 +39,11 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [attendance, setAttendance] = useState(null);
+  const [team, setTeam] = useState([]);
+  const [eligibleScanners, setEligibleScanners] = useState([]);
+  const [selectedScannerId, setSelectedScannerId] = useState('');
+  const [teamSearch, setTeamSearch] = useState('');
+  const [teamLoading, setTeamLoading] = useState(false);
   const [activeView, setActiveView] = useState(canScan ? 'scanner' : 'dashboard');
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
@@ -44,9 +53,14 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState('');
+  const [manualReasons, setManualReasons] = useState({});
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
   const busyRef = useRef(false);
+  const shouldResumeScannerRef = useRef(false);
+  const resumeTimerRef = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(resumeTimerRef.current), []);
 
   const loadAttendance = async (eventId = selectedEventId) => {
     if (!eventId) {
@@ -87,7 +101,47 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
   }, [canViewDashboard, token, selectedEventId]);
 
   useEffect(() => {
-    if (!scanning || !canScan) return undefined;
+    if (!canViewDashboard || activeView !== 'dashboard' || !selectedEventId) return undefined;
+    let active = true;
+    const refreshAttendance = async () => {
+      try {
+        const result = await getEventAttendance(token, selectedEventId);
+        if (active) setAttendance(result);
+      } catch (refreshError) {
+        if (active) setError(refreshError.message || 'Unable to refresh attendance.');
+      }
+    };
+    const interval = window.setInterval(refreshAttendance, 10000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [activeView, canViewDashboard, selectedEventId, token]);
+
+  useEffect(() => {
+    let active = true;
+    if (!canManage || activeView !== 'team' || !selectedEventId) return undefined;
+    setTeamLoading(true);
+    Promise.all([
+      getAttendanceTeam(token, selectedEventId),
+      getEligibleScanners(token, selectedEventId),
+    ]).then(([members, candidates]) => {
+      if (!active) return;
+      setTeam(members);
+      setEligibleScanners(candidates);
+      setSelectedScannerId((current) => candidates.some((candidate) => candidate.id === current)
+        ? current
+        : candidates[0]?.id || '');
+    }).catch((teamError) => {
+      if (active) setError(teamError.message || 'Unable to load the attendance team.');
+    }).finally(() => {
+      if (active) setTeamLoading(false);
+    });
+    return () => { active = false; };
+  }, [activeView, canManage, selectedEventId, token]);
+
+  useEffect(() => {
+    if (!scanning || !canScan || activeView !== 'scanner') return undefined;
     let disposed = false;
     busyRef.current = false;
     setError('');
@@ -102,6 +156,9 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
       if (!passToken) {
         setError('This QR code does not contain a valid ClubConnect event pass.');
         busyRef.current = false;
+        resumeTimerRef.current = window.setTimeout(() => {
+          if (shouldResumeScannerRef.current) setScanning(true);
+        }, 1800);
         return;
       }
 
@@ -110,15 +167,15 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
         const response = await scanAttendance(token, passToken);
         setScanResult(response.attendance);
         setError('');
-        if (selectedEventId) {
-          const updated = await getEventAttendance(token, selectedEventId);
-          setAttendance(updated);
-        }
+        if (canViewDashboard && response.attendance.eventId) setSelectedEventId(response.attendance.eventId);
       } catch (scanError) {
         setError(scanError.message || 'Unable to mark attendance.');
       } finally {
         setScanBusy(false);
         busyRef.current = false;
+        resumeTimerRef.current = window.setTimeout(() => {
+          if (shouldResumeScannerRef.current) setScanning(true);
+        }, 1800);
       }
     }).then((controls) => {
       if (disposed) controls.stop();
@@ -135,7 +192,7 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
       scannerRef.current?.stop?.();
       scannerRef.current = null;
     };
-  }, [canScan, scanning, selectedEventId, token]);
+  }, [activeView, canScan, canViewDashboard, scanning, token]);
 
   const filteredParticipants = useMemo(() => {
     const participants = attendance?.participants || [];
@@ -151,8 +208,14 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
 
   const handleManualUpdate = async (participant, attendanceStatus) => {
     setError('');
+    const reason = manualReasons[participant.attendanceId]?.trim();
+    if (!reason) {
+      setError('Enter a reason before correcting attendance.');
+      return;
+    }
     try {
-      await updateAttendance(token, participant.attendanceId, attendanceStatus);
+      await updateAttendance(token, participant.attendanceId, attendanceStatus, reason);
+      setManualReasons((current) => ({ ...current, [participant.attendanceId]: '' }));
       await loadAttendance();
     } catch (updateError) {
       setError(updateError.message || 'Unable to update attendance.');
@@ -164,11 +227,11 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
     setExporting(format);
     setError('');
     try {
-      const blob = await downloadAttendanceExport(token, selectedEventId, format);
+      const { blob, filename } = await downloadAttendanceExport(token, selectedEventId, format);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `${selectedEventId}-attendance.${format}`;
+      anchor.download = filename;
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (exportError) {
@@ -179,10 +242,61 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
   };
 
   const startScanner = () => {
+    shouldResumeScannerRef.current = true;
     setScanResult(null);
     setError('');
     setScanning(true);
   };
+
+  const stopScanner = () => {
+    shouldResumeScannerRef.current = false;
+    window.clearTimeout(resumeTimerRef.current);
+    setScanning(false);
+  };
+
+  const handleGrantScanner = async () => {
+    if (!selectedScannerId || !selectedEventId) return;
+    setError('');
+    setTeamLoading(true);
+    try {
+      await grantAttendanceScanner(token, selectedEventId, selectedScannerId);
+      const [members, candidates] = await Promise.all([
+        getAttendanceTeam(token, selectedEventId),
+        getEligibleScanners(token, selectedEventId),
+      ]);
+      setTeam(members);
+      setEligibleScanners(candidates);
+      setSelectedScannerId(candidates[0]?.id || '');
+    } catch (grantError) {
+      setError(grantError.message || 'Unable to authorize this scanner.');
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  const handleRevokeScanner = async (permissionId) => {
+    setError('');
+    setTeamLoading(true);
+    try {
+      await revokeAttendanceScanner(token, selectedEventId, permissionId);
+      const [members, candidates] = await Promise.all([
+        getAttendanceTeam(token, selectedEventId),
+        getEligibleScanners(token, selectedEventId),
+      ]);
+      setTeam(members);
+      setEligibleScanners(candidates);
+      setSelectedScannerId(candidates[0]?.id || '');
+    } catch (revokeError) {
+      setError(revokeError.message || 'Unable to revoke scanner access.');
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  const visibleCandidates = eligibleScanners.filter((candidate) => {
+    const query = teamSearch.trim().toLowerCase();
+    return !query || candidate.name.toLowerCase().includes(query) || candidate.email.toLowerCase().includes(query);
+  });
 
   return (
     <section className="attendance-management">
@@ -193,12 +307,15 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
         </div>
         {canScan && canViewDashboard && (
           <div className="attendance-view-tabs" role="tablist" aria-label="Attendance views">
-            <button type="button" className={activeView === 'scanner' ? 'active' : ''} onClick={() => setActiveView('scanner')}>
+            <button type="button" className={activeView === 'scanner' ? 'active' : ''} onClick={() => { shouldResumeScannerRef.current = true; setActiveView('scanner'); }}>
               <ScanLine size={17} /> Scanner
             </button>
-            <button type="button" className={activeView === 'dashboard' ? 'active' : ''} onClick={() => setActiveView('dashboard')}>
+            <button type="button" className={activeView === 'dashboard' ? 'active' : ''} onClick={() => { stopScanner(); setActiveView('dashboard'); }}>
               Attendance Dashboard
             </button>
+            {canManage && <button type="button" className={activeView === 'team' ? 'active' : ''} onClick={() => { stopScanner(); setActiveView('team'); }}>
+              Attendance Team
+            </button>}
           </div>
         )}
       </header>
@@ -222,7 +339,7 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
                   <ScanLine size={17} /> {scanBusy ? 'Validating…' : 'Open Scanner'}
                 </button>
               ) : (
-                <button className="btn-outline" type="button" onClick={() => setScanning(false)}>Stop Camera</button>
+                <button className="btn-outline" type="button" onClick={stopScanner}>Stop Camera</button>
               )}
             </div>
           </div>
@@ -241,15 +358,60 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
         </div>
       )}
 
+      {canViewDashboard && (activeView === 'dashboard' || activeView === 'team') && (
+        <div className="attendance-event-picker">
+          <label htmlFor="attendance-event">Event</label>
+          <select id="attendance-event" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
+            <option value="">Select an assigned approved event</option>
+            {events.map((event) => <option value={event.id} key={event.id}>{event.eventName} · {event.eventDate}</option>)}
+          </select>
+        </div>
+      )}
+
+      {canManage && activeView === 'team' && (
+        <div className="dash-card attendance-team-card">
+          <div className="attendance-table-heading">
+            <div>
+              <h2 className="dash-card-title">Attendance Team</h2>
+              <p className="dash-card-subtitle">Authorize student coordinators to scan passes for this event only.</p>
+            </div>
+          </div>
+          {!selectedEventId ? <p>Select an event you manage to view its scanners.</p> : teamLoading ? <p role="status">Loading attendance team…</p> : (
+            <>
+              <div className="attendance-team-add">
+                <label className="attendance-search">
+                  <Search size={16} />
+                  <input value={teamSearch} onChange={(event) => setTeamSearch(event.target.value)} placeholder="Search student coordinators" />
+                </label>
+                <select aria-label="Student coordinator" value={selectedScannerId} onChange={(event) => setSelectedScannerId(event.target.value)} disabled={!visibleCandidates.length}>
+                  {visibleCandidates.length ? visibleCandidates.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name} · {candidate.email}</option>) : <option value="">No eligible coordinators found</option>}
+                </select>
+                <button type="button" className="btn-action-primary" disabled={!selectedScannerId} onClick={handleGrantScanner}>Add Scanner</button>
+              </div>
+              <div className="dash-table-wrapper">
+                <table className="dash-table">
+                  <thead><tr><th>Coordinator</th><th>Status</th><th>Authorized By</th><th>Granted</th><th>Revoked</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {team.length ? team.map((member) => (
+                      <tr key={member.permissionId}>
+                        <td>{member.name}<br /><small>{member.email}</small></td>
+                        <td>{member.active ? 'Active' : 'Revoked'}</td>
+                        <td>{member.grantedByName || 'Faculty coordinator'}</td>
+                        <td>{formatTimestamp(member.grantedAt)}</td>
+                        <td>{formatTimestamp(member.revokedAt)}</td>
+                        <td>{member.active && <button type="button" className="btn-outline" onClick={() => handleRevokeScanner(member.permissionId)}>Revoke Access</button>}</td>
+                      </tr>
+                    )) : <tr><td colSpan="6">No scanner access has been granted for this event.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {canViewDashboard && (!canScan || activeView === 'dashboard') && (
         <>
-          <div className="attendance-event-picker">
-            <label htmlFor="attendance-event">Event</label>
-            <select id="attendance-event" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
-              <option value="">Select an approved event</option>
-              {events.map((event) => <option value={event.id} key={event.id}>{event.eventName} · {event.eventDate}</option>)}
-            </select>
-          </div>
           {loading ? <p role="status">Loading attendance events…</p> : attendance ? (
             <>
               <div className="attendance-summary-grid">
@@ -290,7 +452,7 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
                   <table className="dash-table attendance-table">
                     <thead><tr>
                       <th>Student Name</th><th>Enrollment Number</th><th>Branch</th><th>Section</th>
-                      <th>Registration</th><th>Attendance</th><th>Attendance Time</th>
+                      <th>Registration</th><th>Attendance</th><th>Attendance Time</th><th>Marked By</th>
                       {canManage && <th>Manual Override</th>}
                     </tr></thead>
                     <tbody>
@@ -303,16 +465,24 @@ export default function AttendanceManagementPage({ token, canScan, canManage = c
                           <td>{participant.registrationStatus}</td>
                           <td>{attendanceLabel(participant)}</td>
                           <td>{formatTimestamp(participant.attendanceTime)}</td>
+                          <td>{participant.markedBy || '—'}</td>
                           {canManage && <td>
                             {participant.registrationStatus === 'REGISTERED' ? (
                               <div className="attendance-row-actions">
+                                <input
+                                  value={manualReasons[participant.attendanceId] || ''}
+                                  onChange={(event) => setManualReasons((current) => ({ ...current, [participant.attendanceId]: event.target.value }))}
+                                  placeholder="Correction reason"
+                                  aria-label={`Correction reason for ${participant.studentName}`}
+                                  maxLength={500}
+                                />
                                 <button type="button" className="attendance-icon-button attendance-icon-button--present" title="Mark Present" aria-label={`Mark ${participant.studentName} present`} disabled={participant.attendanceStatus} onClick={() => handleManualUpdate(participant, true)}><UserCheck size={17} /></button>
                                 <button type="button" className="attendance-icon-button attendance-icon-button--absent" title="Mark Absent" aria-label={`Mark ${participant.studentName} absent`} disabled={!participant.attendanceStatus} onClick={() => handleManualUpdate(participant, false)}><UserX size={17} /></button>
                               </div>
                             ) : '—'}
                           </td>}
                         </tr>
-                      )) : <tr><td colSpan={canManage ? 8 : 7}>No participants match this filter.</td></tr>}
+                      )) : <tr><td colSpan={canManage ? 9 : 8}>No participants match this filter.</td></tr>}
                     </tbody>
                   </table>
                 </div>
