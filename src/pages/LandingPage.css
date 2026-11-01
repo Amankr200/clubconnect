@@ -898,6 +898,41 @@
 .lp-events-scroll::-webkit-scrollbar { height: 4px; }
 .lp-events-scroll::-webkit-scrollbar-track { background: transparent; }
 .lp-events-scroll::-webkit-scrollbar-thumb { background: var(--lp-blue-200); border-radius: 4px; }
+.lp-no-active-events {
+  margin: 0 0 20px;
+  color: var(--lp-text-500);
+  font-size: 1rem;
+  text-align: center;
+}
+.lp-past-month-label {
+  align-self: center;
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--lp-blue-50);
+  color: var(--lp-blue-700);
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.lp-load-past-events {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px 20px;
+  border: 1px solid var(--lp-blue-200);
+  border-radius: 12px;
+  background: var(--lp-blue-50);
+  color: var(--lp-blue-700);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.lp-load-past-events:hover {
+  background: var(--lp-blue-100);
+  transform: translateY(-1px);
+}
 .lp-event-card {
   flex-shrink: 0;
   width: 290px;
@@ -1622,4 +1657,3 @@
   background: #0A66C2;
   color: #FFFFFF;
 }
-

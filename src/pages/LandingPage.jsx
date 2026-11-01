@@ -204,14 +204,6 @@ const DEVELOPERS = [
   },
 ];
 
-const SAMPLE_EVENTS = [
-  { icon: '💻', color: '#EFF6FF', cat: 'Technical', title: 'Annual Hackathon 2026', date: 'Aug 15', attendees: '240+' },
-  { icon: '🎭', color: '#FFF1F2', cat: 'Cultural', title: 'Rangmanch Drama Festival', date: 'Aug 22', attendees: '180+' },
-  { icon: '🚀', color: '#FFFBEB', cat: 'Entrepreneur', title: 'StartUp Pitch Night', date: 'Sep 5', attendees: '120+' },
-  { icon: '🎵', color: '#F0FDF4', cat: 'Arts & Music', title: 'Harmony Music Concert', date: 'Sep 12', attendees: '300+' },
-  { icon: '🏅', color: '#F5F3FF', cat: 'Sports', title: 'Inter-College Cricket Cup', date: 'Sep 20', attendees: '400+' },
-];
-
 /* ── Scroll Reveal Hook ────────────────────────────── */
 function useReveal() {
   const ref = useRef(null);
@@ -392,6 +384,7 @@ export default function LandingPage({ onLoginSuccess }) {
   const [clubs, setClubs] = useState([]);
   const [approvedEvents, setApprovedEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
+  const [pastMonthCount, setPastMonthCount] = useState(0);
   const [lpPinned, setLpPinned] = useState(() => {
     try {
       const saved = localStorage.getItem('clubconnect_lp_pinned');
@@ -497,19 +490,34 @@ export default function LandingPage({ onLoginSuccess }) {
     });
   };
 
-  const rawEventsList = approvedEvents.length > 0
-    ? approvedEvents
-    : SAMPLE_EVENTS.map((e, idx) => {
-        const ended = isEventEnded(e.date);
-        return {
-          ...e,
-          id: `sample-${idx}`,
-          status: ended ? 'Ended' : 'Live',
-          isEnded: ended,
-        };
-      });
+  const activeEvents = approvedEvents.filter((event) => !event.isEnded);
+  const pastEvents = approvedEvents.filter((event) => event.isEnded);
+  const pastMonths = [...new Map(
+    pastEvents
+      .map((event) => {
+        const eventDate = new Date(event.rawDate);
+        if (isNaN(eventDate.getTime())) return null;
+        const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
+        return [monthKey, {
+          key: monthKey,
+          label: eventDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          events: [],
+        }];
+      })
+      .filter(Boolean),
+  ).values()].sort((a, b) => b.key.localeCompare(a.key));
 
-  const displayEvents = [...rawEventsList].sort((a, b) => {
+  pastMonths.forEach((month) => {
+    month.events = pastEvents.filter((event) => {
+      const eventDate = new Date(event.rawDate);
+      return `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}` === month.key;
+    });
+  });
+
+  const loadedPastEvents = pastMonths
+    .slice(0, pastMonthCount)
+    .flatMap((month) => month.events);
+  const displayEvents = [...activeEvents, ...loadedPastEvents].sort((a, b) => {
     const aPinned = lpPinned.has(a.id);
     const bPinned = lpPinned.has(b.id);
 
@@ -519,7 +527,7 @@ export default function LandingPage({ onLoginSuccess }) {
     if (!a.isEnded && b.isEnded) return -1;
     if (a.isEnded && !b.isEnded) return 1;
 
-    return 0;
+    return new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime();
   });
 
   // Scroll reveal for multiple elements
@@ -704,51 +712,81 @@ export default function LandingPage({ onLoginSuccess }) {
             </p>
           </div>
 
+          {!loadingEvents && activeEvents.length === 0 && (
+            <p className="lp-no-active-events">
+              There are currently no live or upcoming events.
+            </p>
+          )}
+
           <div className="lp-events-scroll">
             {displayEvents.map((ev, i) => {
               const isPinned = lpPinned.has(ev.id);
+              const eventDate = new Date(ev.rawDate);
+              const previousEvent = displayEvents[i - 1];
+              const previousDate = previousEvent ? new Date(previousEvent.rawDate) : null;
+              const startsPastMonth = ev.isEnded && (
+                !previousEvent
+                || !previousEvent.isEnded
+                || eventDate.getFullYear() !== previousDate.getFullYear()
+                || eventDate.getMonth() !== previousDate.getMonth()
+              );
+              const monthLabel = startsPastMonth
+                ? eventDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                : '';
               return (
-                <div
-                  key={ev.id || i}
-                  className={`lp-event-card ${isPinned ? 'pinned' : ''} ${ev.isEnded ? 'ended-card' : ''}`}
-                  style={{ animationDelay: `${i * 80}ms`, position: 'relative' }}
-                >
-                  {isPinned && <div className="pin-ribbon">📌 Pinned</div>}
-                  <div className="lp-event-card-header" style={{ background: ev.color || '#EFF6FF', position: 'relative', overflow: 'hidden' }}>
-                    {ev.photo ? (
-                      <img src={ev.photo} alt={ev.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: ev.isEnded ? 0.75 : 1 }} />
-                    ) : (
-                      <span>{ev.icon || '🎉'}</span>
-                    )}
-                    {ev.isEnded ? (
-                      <span className="lp-event-status-badge ended" style={{ background: '#64748B' }}>🔴 Ended</span>
-                    ) : (
-                      <span className="lp-event-status-badge">✅ Live</span>
-                    )}
-                  </div>
-                  <div className="lp-event-card-body">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div className="lp-event-card-cat">{ev.cat}</div>
-                      <button
-                        className={`pin-btn ${isPinned ? 'active' : ''}`}
-                        onClick={() => handleLpPin(ev.id)}
-                        title={isPinned ? 'Unpin event' : 'Pin to top left'}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: isPinned ? 1 : 0.4 }}
-                      >
-                        📌
-                      </button>
+                <React.Fragment key={ev.id || i}>
+                  {monthLabel && <div className="lp-past-month-label">{monthLabel}</div>}
+                  <div
+                    className={`lp-event-card ${isPinned ? 'pinned' : ''} ${ev.isEnded ? 'ended-card' : ''}`}
+                    style={{ animationDelay: `${i * 80}ms`, position: 'relative' }}
+                  >
+                    {isPinned && <div className="pin-ribbon">📌 Pinned</div>}
+                    <div className="lp-event-card-header" style={{ background: ev.color || '#EFF6FF', position: 'relative', overflow: 'hidden' }}>
+                      {ev.photo ? (
+                        <img src={ev.photo} alt={ev.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: ev.isEnded ? 0.75 : 1 }} />
+                      ) : (
+                        <span>{ev.icon || '🎉'}</span>
+                      )}
+                      {ev.isEnded ? (
+                        <span className="lp-event-status-badge ended" style={{ background: '#64748B' }}>🔴 Ended</span>
+                      ) : (
+                        <span className="lp-event-status-badge">✅ Live</span>
+                      )}
                     </div>
-                    <div className="lp-event-card-title">{ev.title}</div>
-                    <div className="lp-event-card-meta">
-                      <span className="lp-event-meta-item">📅 {ev.date}</span>
-                      {ev.time && <span className="lp-event-meta-item">⏰ {ev.time}</span>}
-                      <span className="lp-event-meta-item">👥 {ev.attendees}</span>
+                    <div className="lp-event-card-body">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className="lp-event-card-cat">{ev.cat}</div>
+                        <button
+                          className={`pin-btn ${isPinned ? 'active' : ''}`}
+                          onClick={() => handleLpPin(ev.id)}
+                          title={isPinned ? 'Unpin event' : 'Pin to top left'}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: isPinned ? 1 : 0.4 }}
+                        >
+                          📌
+                        </button>
+                      </div>
+                      <div className="lp-event-card-title">{ev.title}</div>
+                      <div className="lp-event-card-meta">
+                        <span className="lp-event-meta-item">📅 {ev.date}</span>
+                        {ev.time && <span className="lp-event-meta-item">⏰ {ev.time}</span>}
+                        <span className="lp-event-meta-item">👥 {ev.attendees}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
+
+          {pastMonthCount < pastMonths.length && (
+            <button
+              className="lp-load-past-events"
+              type="button"
+              onClick={() => setPastMonthCount((count) => count + 1)}
+            >
+              Load Past Events
+            </button>
+          )}
         </div>
       </section>
 
