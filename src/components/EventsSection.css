@@ -156,6 +156,34 @@
   margin-bottom: 28px;
 }
 
+.events-no-active-message {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.events-load-past-btn {
+  display: block;
+  width: 100%;
+  margin: 0 0 28px;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border-blue);
+  border-radius: var(--r-md);
+  background: var(--bg-light);
+  color: var(--bpit-blue);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.events-load-past-btn:hover {
+  background: var(--bpit-blue-pale);
+  transform: translateY(-1px);
+}
+
 /* ── Event Card ── */
 .event-card {
   padding: 18px;
