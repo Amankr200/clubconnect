@@ -8,7 +8,7 @@ import AttendanceManagementPage from './AttendanceManagementPage.jsx';
 import EventPassesPage from './EventPassesPage.jsx';
 import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
-import AddFacultyCoordinatorModal from '../components/AddFacultyCoordinatorModal.jsx';
+import AddUserModal from '../components/AddUserModal.jsx';
 import UserManagementModal from '../components/UserManagementModal.jsx';
 import './DashboardShell.css';
 
@@ -28,7 +28,7 @@ export default function DashboardShell({ onNavigateHome }) {
   const [isVenueModalOpen, setIsVenueModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
   const [isAddSocietyModalOpen, setIsAddSocietyModalOpen] = useState(false);
-  const [isAddFacultyModalOpen, setIsAddFacultyModalOpen] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [isUserManagementModalOpen, setIsUserManagementModalOpen] = useState(false);
 
   // Shared Data States
@@ -747,8 +747,8 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className="dash-tab-btn" onClick={() => setIsAddSocietyModalOpen(true)}>
                 ➕ Add New Society
               </button>
-              <button className="dash-tab-btn" onClick={() => setIsAddFacultyModalOpen(true)}>
-                ➕ Add Faculty Coordinator
+              <button className="dash-tab-btn" onClick={() => setIsAddUserModalOpen(true)}>
+                ➕ Add New User
               </button>
               <button className="dash-tab-btn" onClick={() => setIsUserManagementModalOpen(true)}>
                 👥 Update Users
@@ -2086,10 +2086,10 @@ export default function DashboardShell({ onNavigateHome }) {
         }}
       />
 
-      <AddFacultyCoordinatorModal
-        isOpen={isAddFacultyModalOpen}
+      <AddUserModal
+        isOpen={isAddUserModalOpen}
         token={token}
-        onClose={() => setIsAddFacultyModalOpen(false)}
+        onClose={() => setIsAddUserModalOpen(false)}
       />
 
       <UserManagementModal

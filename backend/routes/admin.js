@@ -141,13 +141,16 @@ router.delete('/users/:id', async (req, res) => {
   }
 });
 
-// POST /api/admin/faculty-coordinators - Create a faculty coordinator account
-router.post('/faculty-coordinators', async (req, res) => {
+
+// POST /api/admin/users - Create a new user account
+router.post('/users', async (req, res) => {
   try {
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
     const password = typeof req.body.password === 'string' ? req.body.password : '';
-    const societyId = Number(req.body.societyId);
+    const role = typeof req.body.role === 'string' ? req.body.role : '';
+    const department = typeof req.body.department === 'string' ? req.body.department.trim() : '';
+    const societyId = req.body.societyId ? Number(req.body.societyId) : null;
 
     if (name.length < 2 || name.length > 255) {
       return res.status(400).json({ message: 'Name must be between 2 and 255 characters.' });
@@ -158,12 +161,18 @@ router.post('/faculty-coordinators', async (req, res) => {
     if (password.length < 8) {
       return res.status(400).json({ message: 'Password must be at least 8 characters.' });
     }
-    if (!Number.isInteger(societyId) || societyId <= 0) {
-      return res.status(400).json({ message: 'Select a society.' });
+    if (!USER_ROLES.has(role)) {
+      return res.status(400).json({ message: 'Select a valid role.' });
+    }
+    if (department.length > 100) {
+      return res.status(400).json({ message: 'Department must be 100 characters or fewer.' });
+    }
+    if (societyId !== null && (!Number.isInteger(societyId) || societyId <= 0)) {
+      return res.status(400).json({ message: 'Select a valid society.' });
     }
 
-    const society = await societyModel.findSocietyById(societyId);
-    if (!society) {
+    const society = societyId === null ? null : await societyModel.findSocietyById(societyId);
+    if (societyId !== null && !society) {
       return res.status(400).json({ message: 'Selected society was not found.' });
     }
 
@@ -172,7 +181,8 @@ router.post('/faculty-coordinators', async (req, res) => {
       name,
       email,
       passwordHash,
-      role: 'faculty_coordinator',
+      role,
+      department,
       societyId,
     });
 
@@ -182,8 +192,9 @@ router.post('/faculty-coordinators', async (req, res) => {
         name: coordinator.name,
         email: coordinator.email,
         role: coordinator.role,
+        department: coordinator.department,
         societyId: coordinator.societyId,
-        societyName: society.name,
+        societyName: society?.name || '',
       },
       message: 'Faculty coordinator account created successfully.',
     });
@@ -191,7 +202,7 @@ router.post('/faculty-coordinators', async (req, res) => {
     if (err.code === '23505') {
       return res.status(409).json({ message: 'An account with this email already exists.' });
     }
-    console.error('[/api/admin/faculty-coordinators POST]', err);
+    console.error('[/api/admin/users POST]', err);
     return res.status(500).json({ message: 'Failed to create faculty coordinator account.' });
   }
 });
