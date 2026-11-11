@@ -10,6 +10,7 @@ import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import AddUserModal from '../components/AddUserModal.jsx';
 import UserManagementModal from '../components/UserManagementModal.jsx';
+import { CertificateManagementPage, MyCertificatesPage } from './CertificatePages.jsx';
 import './DashboardShell.css';
 
 function readFileAsDataUrl(file) {
@@ -735,138 +736,156 @@ export default function DashboardShell({ onNavigateHome }) {
         </div>
       </header>
 
-      {/* Main Dashboard Container */}
-      <main className="dash-main-container">
-        {/* Navigation Tabs Header per Role */}
-        <div className="dash-tabs-bar">
-          {user?.role === 'admin' && (
-            <>
-              <button className={`dash-tab-btn ${activeTab === 'registrations' ? 'active' : ''}`} onClick={() => setActiveTab('registrations')}>
-                🏛️ Society Registrations
-              </button>
-              <button className="dash-tab-btn" onClick={() => setIsAddSocietyModalOpen(true)}>
-                ➕ Add New Society
-              </button>
-              <button className="dash-tab-btn" onClick={() => setIsAddUserModalOpen(true)}>
-                ➕ Add New User
-              </button>
-              <button className="dash-tab-btn" onClick={() => setIsUserManagementModalOpen(true)}>
-                👥 Update Users
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'venues' ? 'active' : ''}`} onClick={() => setActiveTab('venues')}>
-                📍 Venue Availability
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'bugs' ? 'active' : ''}`} onClick={() => setActiveTab('bugs')}>
-                🐛 Bug Reports ({bugReports.filter((b) => b.status === 'open').length})
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'weekly' ? 'active' : ''}`} onClick={() => setActiveTab('weekly')}>
-                📅 Weekly Events
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
-                📊 Attendance
-              </button>
-            </>
-          )}
+      {/* Main Dashboard Layout: Sidebar + Main Content */}
+      <div className="dash-layout-container">
+        {/* Navigation Sidebar (Vertical Buttons on Left) */}
+        <aside className="dash-sidebar" aria-label="Dashboard Navigation">
+          <div className="dash-sidebar-header">
+            <span className="dash-sidebar-title">NAVIGATION</span>
+          </div>
 
-          {user?.role === 'student_coordinator' && (
-            <>
-              <button className={`dash-tab-btn ${activeTab === 'my_bookings' ? 'active' : ''}`} onClick={() => setActiveTab('my_bookings')}>
-                📅 My Event Requests
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'attendance_scanner' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_scanner')}>
-                📷 Attendance Scanner
-              </button>
-              <button className="dash-tab-btn" onClick={() => { setSelectedPhotoBookingId(null); setEditingBooking(null); setIsVenueModalOpen(true); }}>
-                ➕ Request Event Approval
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'story' ? 'active' : ''}`} onClick={() => setActiveTab('story')}>
-                📸 Publish 24h Story
-              </button>
-            </>
-          )}
+          <nav className="dash-tabs-bar" aria-label="Dashboard views">
+            {user?.role === 'admin' && (
+              <>
+                <button className={`dash-tab-btn ${activeTab === 'registrations' ? 'active' : ''}`} onClick={() => setActiveTab('registrations')}>
+                  🏛️ Society Registrations
+                </button>
+                <button className="dash-tab-btn" onClick={() => setIsAddSocietyModalOpen(true)}>
+                  ➕ Add New Society
+                </button>
+                <button className="dash-tab-btn" onClick={() => setIsAddUserModalOpen(true)}>
+                  ➕ Add New User
+                </button>
+                <button className="dash-tab-btn" onClick={() => setIsUserManagementModalOpen(true)}>
+                  👥 Update Users
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'venues' ? 'active' : ''}`} onClick={() => setActiveTab('venues')}>
+                  📍 Venue Availability
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'bugs' ? 'active' : ''}`} onClick={() => setActiveTab('bugs')}>
+                  🐛 Bug Reports ({bugReports.filter((b) => b.status === 'open').length})
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'weekly' ? 'active' : ''}`} onClick={() => setActiveTab('weekly')}>
+                  📅 Weekly Events
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
+                  📊 Attendance
+                </button>
+              </>
+            )}
 
-          {user?.role === 'faculty_coordinator' && (
-            <>
-              <button className={`dash-tab-btn ${activeTab === 'approvals' ? 'active' : ''}`} onClick={() => setActiveTab('approvals')}>
-                📋 Pending Approvals ({inbox.filter((b) => b.currentReviewerRole === 'faculty_coordinator').length})
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'attendance_windows' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_windows')}>
-                ⏱ Attendance Windows
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
-                📊 Attendance Management
-              </button>
-              <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
-                ➕ Book Department Event
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'edit_society' ? 'active' : ''}`} onClick={() => setActiveTab('edit_society')}>
-                🏛️ Edit Society Page
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
-                📊 History &amp; Analytics
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'story' ? 'active' : ''}`} onClick={() => setActiveTab('story')}>
-                📸 Publish 24h Story
-              </button>
-            </>
-          )}
+            {user?.role === 'student_coordinator' && (
+              <>
+                <button className={`dash-tab-btn ${activeTab === 'my_bookings' ? 'active' : ''}`} onClick={() => setActiveTab('my_bookings')}>
+                  📅 My Event Requests
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'attendance_scanner' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_scanner')}>
+                  📷 Attendance Scanner
+                </button>
+                <button className="dash-tab-btn" onClick={() => { setSelectedPhotoBookingId(null); setEditingBooking(null); setIsVenueModalOpen(true); }}>
+                  ➕ Request Event Approval
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'story' ? 'active' : ''}`} onClick={() => setActiveTab('story')}>
+                  📸 Publish 24h Story
+                </button>
+              </>
+            )}
 
-          {user?.role === 'hod' && (
-            <>
-              <button className={`dash-tab-btn ${activeTab === 'dept_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('dept_approvals')}>
-                📋 Department Approvals
-              </button>
-              <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
-                ➕ Department Booking
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'assign' ? 'active' : ''}`} onClick={() => setActiveTab('assign')}>
-                👥 Assign Coordinators
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'dept_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('dept_analytics')}>
-                📈 Department Analytics
-              </button>
-            </>
-          )}
+            {user?.role === 'faculty_coordinator' && (
+              <>
+                <button className={`dash-tab-btn ${activeTab === 'approvals' ? 'active' : ''}`} onClick={() => setActiveTab('approvals')}>
+                  📋 Pending Approvals ({inbox.filter((b) => b.currentReviewerRole === 'faculty_coordinator').length})
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'attendance_windows' ? 'active' : ''}`} onClick={() => setActiveTab('attendance_windows')}>
+                  ⏱ Attendance Windows
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
+                  📊 Attendance Management
+                </button>
+                <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
+                  ➕ Book Department Event
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'edit_society' ? 'active' : ''}`} onClick={() => setActiveTab('edit_society')}>
+                  🏛️ Edit Society Page
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
+                  📊 History &amp; Analytics
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'certificate_templates' ? 'active' : ''}`} onClick={() => setActiveTab('certificate_templates')}>
+                  📜 Certificate Templates
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'story' ? 'active' : ''}`} onClick={() => setActiveTab('story')}>
+                  📸 Publish 24h Story
+                </button>
+              </>
+            )}
 
-          {user?.role === 'principal' && (
-            <>
-              <button className={`dash-tab-btn ${activeTab === 'final_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('final_approvals')}>
-                🎓 Final Approvals Queue ({inbox.filter((b) => b.currentReviewerRole === 'principal').length})
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
-                🏛️ College &amp; Society Analytics
-              </button>
-            </>
-          )}
+            {user?.role === 'hod' && (
+              <>
+                <button className={`dash-tab-btn ${activeTab === 'dept_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('dept_approvals')}>
+                  📋 Department Approvals
+                </button>
+                <button className="dash-tab-btn" onClick={() => { setEditingBooking(null); setIsVenueModalOpen(true); }}>
+                  ➕ Department Booking
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'assign' ? 'active' : ''}`} onClick={() => setActiveTab('assign')}>
+                  👥 Assign Coordinators
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'dept_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('dept_analytics')}>
+                  📈 Department Analytics
+                </button>
+              </>
+            )}
 
-          {/* ── Dean Tabs ── */}
-          {user?.role === 'dean' && (
-            <>
-              <button className={`dash-tab-btn ${activeTab === 'dean_overview' ? 'active' : ''}`} onClick={() => setActiveTab('dean_overview')}>
-                📋 Dean Overview
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
-                🏛️ College Analytics
-              </button>
-            </>
-          )}
+            {user?.role === 'principal' && (
+              <>
+                <button className={`dash-tab-btn ${activeTab === 'final_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('final_approvals')}>
+                  🎓 Final Approvals Queue ({inbox.filter((b) => b.currentReviewerRole === 'principal').length})
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
+                  🏛️ College &amp; Society Analytics
+                </button>
+              </>
+            )}
 
-          {/* ── Student Tabs ── */}
-          {user?.role === 'student' && (
-            <>
-              <button className={`dash-tab-btn ${activeTab === 'student_overview' ? 'active' : ''}`} onClick={() => setActiveTab('student_overview')}>
-                🎒 My Student Overview
-              </button>
-              <button className={`dash-tab-btn ${activeTab === 'event_passes' ? 'active' : ''}`} onClick={() => setActiveTab('event_passes')}>
-                🎟 My Event Passes
-              </button>
-            </>
-          )}
-        </div>
+            {/* ── Dean Tabs ── */}
+            {user?.role === 'dean' && (
+              <>
+                <button className={`dash-tab-btn ${activeTab === 'dean_overview' ? 'active' : ''}`} onClick={() => setActiveTab('dean_overview')}>
+                  📋 Dean Overview
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
+                  🏛️ College Analytics
+                </button>
+              </>
+            )}
+
+            {/* ── Student Tabs ── */}
+            {user?.role === 'student' && (
+              <>
+                <button className={`dash-tab-btn ${activeTab === 'student_overview' ? 'active' : ''}`} onClick={() => setActiveTab('student_overview')}>
+                  🎒 My Student Overview
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'event_passes' ? 'active' : ''}`} onClick={() => setActiveTab('event_passes')}>
+                  🎟 My Event Passes
+                </button>
+                <button className={`dash-tab-btn ${activeTab === 'my_certificates' ? 'active' : ''}`} onClick={() => setActiveTab('my_certificates')}>
+                  📜 My Certificates
+                </button>
+              </>
+            )}
+          </nav>
+        </aside>
+
+        {/* Main Dashboard Content Area */}
+        <main className="dash-main-content">
 
         {/* ── ADMIN: Society Registrations ── */}
         {['faculty_coordinator', 'admin'].includes(user?.role) && activeTab === 'attendance' && (
           <AttendanceManagementPage token={token} canScan={user?.role === 'faculty_coordinator'} canManage={user?.role === 'faculty_coordinator'} />
+        )}
+        {user?.role === 'faculty_coordinator' && activeTab === 'certificate_templates' && (
+          <CertificateManagementPage token={token} />
         )}
         {user?.role === 'student_coordinator' && activeTab === 'attendance_scanner' && (
           <AttendanceManagementPage token={token} canScan canManage={false} canViewDashboard={false} />
@@ -1972,6 +1991,9 @@ export default function DashboardShell({ onNavigateHome }) {
         {user?.role === 'student' && activeTab === 'event_passes' && (
           <EventPassesPage token={token} />
         )}
+        {user?.role === 'student' && activeTab === 'my_certificates' && (
+          <MyCertificatesPage token={token} />
+        )}
 
         {user?.role === 'student' && activeTab === 'student_overview' && (
           <div>
@@ -2058,7 +2080,8 @@ export default function DashboardShell({ onNavigateHome }) {
             )}
           </div>
         )}
-      </main>
+        </main>
+      </div>
 
       {/* Venue Booking Request Modal */}
       <VenueBookingModal

@@ -5,50 +5,50 @@
   transition: background 0.2s var(--ease);
 }
 
-/* ── Approval Workflow ── */
+/* ── Approval Workflow (Neo-Brutalist) ── */
 .approval-workflow {
   background: var(--bg-card);
-  border: 1px solid var(--border-blue);
-  border-left: 4px solid var(--bpit-blue);
-  border-radius: var(--r-lg);
+  border: 3px solid var(--border);
+  border-radius: var(--r-sm);
   padding: 18px 20px;
-  margin-bottom: 20px;
-  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
 }
 .workflow-title {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-weight: 700;
-  font-size: 0.86rem;
-  color: var(--bpit-blue);
+  gap: 8px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text-dark);
   margin-bottom: 16px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 .workflow-steps {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 .wf-step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   background: var(--bg-light);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 2px solid var(--border);
+  border-radius: var(--r-sm);
   padding: 12px 14px;
-  min-width: 110px;
+  min-width: 120px;
   flex: 1;
-  transition: border-color 0.15s, box-shadow 0.15s;
   text-align: center;
+  box-shadow: 2px 2px 0px var(--border);
+  transition: transform var(--dur), box-shadow var(--dur);
 }
 .wf-step:hover {
-  border-color: var(--wf-color, var(--bpit-blue));
-  box-shadow: var(--shadow-sm);
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px var(--border);
 }
 .wf-icon-wrap {
   width: 40px; height: 40px;
@@ -125,27 +125,36 @@
 /* ── Filter tabs ── */
 .events-filter-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .evt-filter-tab {
-  background: var(--bg-light);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  color: var(--text-dark);
   border-radius: var(--r-sm);
-  padding: 7px 14px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: all 0.15s;
+  box-shadow: 2px 2px 0px var(--border);
+  transition: transform var(--dur), box-shadow var(--dur);
   font-family: inherit;
 }
-.evt-filter-tab:hover { border-color: var(--bpit-blue); color: var(--bpit-blue); }
+.evt-filter-tab:hover {
+  background: var(--bpit-yellow);
+  color: #000000;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px var(--border);
+}
 .evt-filter-tab.active {
   background: var(--bpit-blue);
-  border-color: var(--bpit-blue);
-  color: #fff;
+  color: #FFFFFF;
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--border);
 }
 
 /* ── Events Grid ── */
@@ -184,32 +193,31 @@
   transform: translateY(-1px);
 }
 
-/* ── Event Card ── */
+/* ── Event Card (Neo-Brutalist) ── */
 .event-card {
-  padding: 18px;
+  padding: 20px;
   position: relative;
   overflow: hidden;
-  transition: all 0.2s var(--ease);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-sm);
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  border: 3px solid var(--border);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .event-card:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-blue);
+  box-shadow: var(--shadow-hover);
+  transform: translate(-3px, -3px);
 }
 .event-card::before {
   content: '';
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  width: 4px;
+  width: 6px;
   background: var(--event-color, var(--bpit-blue));
-  border-radius: var(--r-sm) 0 0 var(--r-sm);
 }
 .event-card.pinned {
-  border-color: var(--bpit-blue);
-  background: var(--bpit-blue-pale);
+  border-color: var(--border);
+  background: var(--bg-card);
 }
 
 .pin-ribbon {
