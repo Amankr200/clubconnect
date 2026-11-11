@@ -70,7 +70,8 @@ export default function Navbar({
     student_coordinator: [{ icon: '📅', label: 'My Event Requests' }, { icon: '📸', label: 'Publish 24h Story' }],
     faculty_coordinator: [{ icon: '📋', label: 'Pending Approvals' }, { icon: '📊', label: 'Analytics' }, { icon: '📸', label: 'Publish Story' }],
     hod:                 [{ icon: '📋', label: 'Dept Approvals' }, { icon: '👥', label: 'Assign Coordinators' }],
-    principal_dean:      [{ icon: '🎓', label: 'Final Approvals' }, { icon: '🏛️', label: 'College Analytics' }],
+    principal:           [{ icon: '🎓', label: 'Final Approvals' }, { icon: '🏛️', label: 'College Analytics' }],
+    dean:                [{ icon: '🏛️', label: 'College Analytics' }],
     student:             [{ icon: '🏛️', label: 'Browse Clubs' }, { icon: '📅', label: 'My Events' }],
   };
   const quickActions = meta ? (ROLE_ACTIONS[user?.role] || []) : [];

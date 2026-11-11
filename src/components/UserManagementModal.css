@@ -1,0 +1,27 @@
+.user-management-overlay { position: fixed; inset: 0; z-index: 2500; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(0, 0, 0, 0.65); }
+.user-management-container { width: min(100%, 1000px); max-height: 90vh; overflow-y: auto; padding: 2rem; border: 1px solid var(--border, #e2e8f0); border-radius: 20px; background: var(--bg-modal, #fff); color: var(--text-dark, #0f172a); }
+.user-management-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border, #e2e8f0); }
+.user-management-header h2 { margin: 0; color: var(--bpit-blue, #1a3a8b); }
+.user-management-header p { margin: 0.35rem 0 0; color: var(--text-secondary, #64748b); }
+.user-management-close { border: 1px solid var(--border, #cbd5e1); border-radius: 8px; padding: 0.4rem 0.6rem; background: var(--bg-light, #f1f5f9); cursor: pointer; }
+.user-management-error, .user-management-success { margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 10px; }
+.user-management-error { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+.user-management-success { background: rgba(16, 185, 129, 0.15); color: #059669; }
+.user-management-table-wrapper { overflow-x: auto; }
+.user-management-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.user-management-table th, .user-management-table td { padding: 0.8rem; border-bottom: 1px solid var(--border, #e2e8f0); text-align: left; }
+.user-management-table th { background: var(--bg-light, #f1f5f9); font-size: 0.8rem; text-transform: uppercase; }
+.user-management-actions { white-space: nowrap; }
+.user-management-actions button { margin-right: 0.4rem; border: 1px solid transparent; border-radius: 7px; padding: 0.35rem 0.5rem; color: #fff; cursor: pointer; }
+.user-management-actions button:first-child { background: #facc15; color: #422006; }
+.user-management-actions button:last-child { background: #dc2626; }
+.user-management-actions button:hover { transform: translateY(-1px); }
+.user-management-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.user-management-form { display: grid; gap: 0.9rem; }
+.user-management-form h3 { margin: 0; }
+.user-management-form label { display: grid; gap: 0.35rem; font-size: 0.85rem; font-weight: 600; }
+.user-management-form label span { color: var(--text-muted, #64748b); font-weight: 400; }
+.user-management-form input, .user-management-form select { box-sizing: border-box; width: 100%; padding: 0.7rem 0.85rem; border: 1px solid var(--border, #e2e8f0); border-radius: 9px; background: var(--bg-input, #fff); color: var(--text-dark, #0f172a); font: inherit; }
+.user-management-form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
+.user-management-form-actions button { border: 0; border-radius: 9px; padding: 0.7rem 1rem; cursor: pointer; font-weight: 600; }
+.user-management-form-actions button:last-child { background: var(--bpit-blue, #1a3a8b); color: #fff; }

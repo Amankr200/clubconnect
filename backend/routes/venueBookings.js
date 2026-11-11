@@ -202,7 +202,7 @@ router.get('/inbox', async (req, res) => {
 
   if (['faculty_coordinator', 'hod'].includes(req.user.role)) {
     filtered = allBookings.filter((b) => b.currentReviewerRole === 'faculty_coordinator');
-  } else if (['principal', 'principal_dean'].includes(req.user.role)) {
+  } else if (['principal', 'dean'].includes(req.user.role)) {
     filtered = allBookings.filter((b) => b.currentReviewerRole === 'principal');
   } else {
     filtered = allBookings.filter((b) => b.requestedBy?.id === req.user.id);
@@ -316,7 +316,7 @@ router.post('/', async (req, res) => {
 });
 
 router.patch('/:bookingId/decision', async (req, res) => {
-  if (!['faculty_coordinator', 'hod', 'principal', 'principal_dean'].includes(req.user.role)) {
+  if (!['faculty_coordinator', 'hod', 'principal', 'dean'].includes(req.user.role)) {
     return res.status(403).json({ message: 'Only faculty coordinators, HODs, and principals can review booking requests.' });
   }
 
@@ -331,7 +331,7 @@ router.patch('/:bookingId/decision', async (req, res) => {
     return;
   }
 
-  const isPrincipalRole = ['principal', 'principal_dean'].includes(req.user.role);
+  const isPrincipalRole = ['principal', 'dean'].includes(req.user.role);
   const isFacultyOrHodRole = ['faculty_coordinator', 'hod'].includes(req.user.role);
 
   const reviewTrail = [...booking.reviewTrail, {

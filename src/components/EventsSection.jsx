@@ -58,6 +58,7 @@ export default function EventsSection({ onLoginClick }) {
     }
   });
   const [activeFilter, setActiveFilter] = useState('All');
+  const [pastMonthCount, setPastMonthCount] = useState(0);
   const [approvedBookings, setApprovedBookings] = useState([]);
   const [clubs, setClubs] = useState([]);
   const [venues, setVenues] = useState([]);
@@ -170,11 +171,35 @@ export default function EventsSection({ onLoginClick }) {
     ? processedEvents
     : processedEvents.filter((e) => e.type === activeFilter);
 
+  const activeFilteredEvents = filtered.filter((event) => !event.isEnded);
+  const pastFilteredEvents = filtered.filter((event) => event.isEnded);
+  const pastMonthKeys = [...new Set(
+    pastFilteredEvents
+      .map((event) => {
+        const date = new Date(event.date);
+        return isNaN(date.getTime())
+          ? null
+          : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      })
+      .filter(Boolean),
+  )].sort().reverse();
+  const loadedPastMonthKeys = new Set(pastMonthKeys.slice(0, pastMonthCount));
+  const visibleFilteredEvents = user
+    ? filtered.filter((event) => !event.isEnded || loadedPastMonthKeys.has(
+      (() => {
+        const date = new Date(event.date);
+        return isNaN(date.getTime())
+          ? ''
+          : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      })(),
+    ))
+    : filtered;
+
   // Sorting order:
   // 1. Pinned events FIRST (move to top-left corner)
   // 2. Live & Upcoming active events
   // 3. Ended / Past events AT THE BOTTOM
-  const sortedEvents = [...filtered].sort((a, b) => {
+  const sortedEvents = [...visibleFilteredEvents].sort((a, b) => {
     const aPinned = pinned.has(a.id);
     const bPinned = pinned.has(b.id);
 
@@ -184,7 +209,7 @@ export default function EventsSection({ onLoginClick }) {
     if (!a.isEnded && b.isEnded) return -1;
     if (a.isEnded && !b.isEnded) return 1;
 
-    return 0;
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
   const handleRsvp = async (event) => {
@@ -278,6 +303,11 @@ export default function EventsSection({ onLoginClick }) {
 
         {/* Events Grid */}
         <div className="events-grid">
+          {user && activeFilteredEvents.length === 0 && (
+            <p className="events-no-active-message">
+              There are currently no live or upcoming events.
+            </p>
+          )}
           {sortedEvents.map((event) => {
             const st = STATUS_MAP[event.effectiveStatus] || STATUS_MAP.approved;
             const registration = registrations.find((item) => String(item.eventId) === String(event.extendedProps?.bookingId));
@@ -406,6 +436,16 @@ export default function EventsSection({ onLoginClick }) {
             );
           })}
         </div>
+
+        {user && pastMonthCount < pastMonthKeys.length && (
+          <button
+            className="events-load-past-btn"
+            type="button"
+            onClick={() => setPastMonthCount((count) => count + 1)}
+          >
+            Load Past Events
+          </button>
+        )}
 
         {registrationMessage && (
           <div role="alert" aria-live="polite" className="registration-feedback">

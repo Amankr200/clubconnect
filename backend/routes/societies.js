@@ -18,7 +18,7 @@ router.get('/', async (_req, res) => {
 // POST /api/societies - Create a new society (Admin / Coordinator)
 router.post('/', requireAuth, async (req, res) => {
   try {
-    if (!['admin', 'faculty_coordinator', 'hod', 'principal_dean'].includes(req.user.role)) {
+    if (!['admin', 'faculty_coordinator', 'hod', 'principal', 'dean'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Only administrators and coordinators can create societies.' });
     }
 
@@ -89,7 +89,7 @@ router.get('/:name', async (req, res) => {
 // PATCH /api/societies/:name - Update society info (Faculty Coordinator / Admin only)
 router.patch('/:name', requireAuth, async (req, res) => {
   try {
-    if (!['faculty_coordinator', 'admin', 'hod', 'principal_dean'].includes(req.user.role)) {
+    if (!['faculty_coordinator', 'admin', 'hod', 'principal', 'dean'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Not authorized to edit society details.' });
     }
 
