@@ -2,7 +2,12 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
-import { cancelEventRegistration, getMyEventRegistrations } from '../api/eventRegistrations.js';
+import {
+  cancelEventRegistration,
+  getMyEventRegistrations,
+  getMyEventFeedback,
+  submitEventFeedback,
+} from '../api/eventRegistrations.js';
 import AttendanceWindowEditor from '../components/AttendanceWindowEditor.jsx';
 import AttendanceManagementPage from './AttendanceManagementPage.jsx';
 import EventPassesPage from './EventPassesPage.jsx';
@@ -10,6 +15,7 @@ import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import AddUserModal from '../components/AddUserModal.jsx';
 import UserManagementModal from '../components/UserManagementModal.jsx';
+import { CertificateManagementPage, MyCertificatesPage } from './CertificatePages.jsx';
 import './DashboardShell.css';
 
 function readFileAsDataUrl(file) {
@@ -47,11 +53,30 @@ export default function DashboardShell({ onNavigateHome }) {
   const [bugReports, setBugReports] = useState([]);
   const [weeklyEvents, setWeeklyEvents] = useState([]);
   const [eventRegistrations, setEventRegistrations] = useState([]);
+  const [studentFeedbacks, setStudentFeedbacks] = useState([]);
+  const [feedbackDraft, setFeedbackDraft] = useState({
+    overallRating: '5',
+    organisationRating: '5',
+    contentRating: '5',
+    writtenFeedback: '',
+    suggestions: '',
+  });
+  const [feedbackSummary, setFeedbackSummary] = useState([]);
+  const [feedbackResponses, setFeedbackResponses] = useState([]);
+  const [selectedFeedbackEventId, setSelectedFeedbackEventId] = useState(null);
+  const [feedbackInsightsLoading, setFeedbackInsightsLoading] = useState(false);
+  const [feedbackInsightsError, setFeedbackInsightsError] = useState('');
+  const [feedbackModalEvent, setFeedbackModalEvent] = useState(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
   const [registrationError, setRegistrationError] = useState('');
   const [selectedRegisteredEvent, setSelectedRegisteredEvent] = useState(null);
   const activeEventRegistrations = eventRegistrations.filter(
     (registration) => registration.registrationStatus === 'REGISTERED',
   );
+  const feedbackByEventId = useMemo(() => Object.fromEntries(
+    (studentFeedbacks || []).map((entry) => [entry.eventId, entry])
+  ), [studentFeedbacks]);
 
   // Faculty & Society Data States
   const [mySociety, setMySociety] = useState({
@@ -404,7 +429,7 @@ export default function DashboardShell({ onNavigateHome }) {
     else if (user?.role === 'student_coordinator') setActiveTab('my_bookings');
     else if (user?.role === 'faculty_coordinator') setActiveTab('approvals');
     else if (user?.role === 'hod') setActiveTab('dept_approvals');
-    else if (user?.role === 'principal') setActiveTab('final_approvals');
+    else if (user?.role === 'principal' || user?.role === 'principal_dean') setActiveTab('final_approvals');
     else if (user?.role === 'dean') setActiveTab('dean_overview');
     else if (user?.role === 'student') setActiveTab('student_overview');
   }, [user?.role]);
@@ -414,13 +439,34 @@ export default function DashboardShell({ onNavigateHome }) {
     if (!token) return;
 
     if (user?.role === 'student') {
-      getMyEventRegistrations(token)
-        .then(setEventRegistrations)
-        .catch(() => setEventRegistrations([]));
+      Promise.all([
+        getMyEventRegistrations(token).catch(() => []),
+        getMyEventFeedback(token).catch(() => ({ feedback: [] })),
+      ])
+        .then(([registrations, feedbackResponse]) => {
+          setEventRegistrations(registrations || []);
+          setStudentFeedbacks((feedbackResponse && Array.isArray(feedbackResponse.feedback)) ? feedbackResponse.feedback : []);
+        })
+        .catch(() => {
+          setEventRegistrations([]);
+          setStudentFeedbacks([]);
+        });
     }
 
-    if (['faculty_coordinator', 'hod', 'principal', 'dean'].includes(user?.role)) {
+    if (['faculty_coordinator', 'hod', 'principal', 'principal_dean', 'dean'].includes(user?.role)) {
       getVenueBookingInbox(token).then((data) => setInbox(data.bookings || [])).catch(() => {});
+    }
+
+    if (['faculty_coordinator', 'hod', 'admin', 'principal', 'principal_dean', 'dean'].includes(user?.role)) {
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/feedback/summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.message || 'Unable to load feedback insights.');
+          setFeedbackSummary(Array.isArray(data.summary) ? data.summary : []);
+        })
+        .catch(() => setFeedbackSummary([]));
     }
 
     if (['student_coordinator', 'faculty_coordinator', 'hod'].includes(user?.role)) {
@@ -449,6 +495,79 @@ export default function DashboardShell({ onNavigateHome }) {
       await refreshData();
     } catch (error) {
       setRegistrationError(error.message);
+    }
+  };
+
+  const loadFeedbackResponses = async (eventId) => {
+    setSelectedFeedbackEventId(eventId);
+    setFeedbackInsightsLoading(true);
+    setFeedbackInsightsError('');
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/events/${encodeURIComponent(eventId)}/feedback/responses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Unable to load feedback responses.');
+      setFeedbackResponses(Array.isArray(data.responses) ? data.responses : []);
+    } catch (error) {
+      setFeedbackResponses([]);
+      setFeedbackInsightsError(error.message || 'Unable to load feedback responses.');
+    } finally {
+      setFeedbackInsightsLoading(false);
+    }
+  };
+
+  const openFeedbackForm = (registration) => {
+    const existing = feedbackByEventId[registration.eventId];
+    if (existing?.feedback) {
+      setFeedbackDraft({
+        overallRating: String(existing.feedback.overallRating || 5),
+        organisationRating: String(existing.feedback.organisationRating || 5),
+        contentRating: String(existing.feedback.contentRating || 5),
+        writtenFeedback: existing.feedback.writtenFeedback || '',
+        suggestions: existing.feedback.suggestions || '',
+      });
+    } else {
+      setFeedbackDraft({
+        overallRating: '5',
+        organisationRating: '5',
+        contentRating: '5',
+        writtenFeedback: '',
+        suggestions: '',
+      });
+    }
+    setFeedbackModalEvent(registration);
+    setFeedbackError('');
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackModalEvent) return;
+
+    const payload = {
+      overallRating: Number(feedbackDraft.overallRating),
+      organisationRating: Number(feedbackDraft.organisationRating),
+      contentRating: Number(feedbackDraft.contentRating),
+      writtenFeedback: feedbackDraft.writtenFeedback,
+      suggestions: feedbackDraft.suggestions,
+    };
+
+    if ([payload.overallRating, payload.organisationRating, payload.contentRating].some((value) => !Number.isInteger(value) || value < 1 || value > 5)) {
+      setFeedbackError('Each rating must be an integer from 1 to 5.');
+      return;
+    }
+
+    setFeedbackSubmitting(true);
+    setFeedbackError('');
+
+    try {
+      await submitEventFeedback(token, feedbackModalEvent.eventId, payload);
+      setFeedbackModalEvent(null);
+      await refreshData();
+    } catch (error) {
+      setFeedbackError(error.message || 'Unable to submit feedback.');
+    } finally {
+      setFeedbackSubmitting(false);
     }
   };
 
@@ -515,11 +634,11 @@ export default function DashboardShell({ onNavigateHome }) {
 
   // CSV Export Handler
   const handleExportCSV = () => {
-    const headers = ['Event Name', 'Host Club', 'Date', 'Time Slot', 'Venue', 'Status', 'Attendance'];
+    const headers = ['Event Name', 'Host Club', 'Date', 'Time Slot', 'Venue', 'Status', 'Registered Count'];
     const rows = (myRequests.length > 0 ? myRequests : [
-      { eventName: 'ACM Hackathon 2026', hostClub: 'ACM', date: '2026-06-15', timeSlots: [{ startTime: '10:00 AM', endTime: '04:00 PM' }], venueId: 1, status: 'approved', attendance: '250 Expected' },
-      { eventName: 'DSA Bootcamp', hostClub: 'ACM', date: '2026-05-10', timeSlots: [{ startTime: '02:00 PM', endTime: '05:00 PM' }], venueId: 2, status: 'approved', attendance: '120 Expected' },
-      { eventName: 'Web3 Tech Talk', hostClub: 'ACM', date: '2026-03-20', timeSlots: [{ startTime: '11:00 AM', endTime: '01:00 PM' }], venueId: 1, status: 'approved', attendance: '180 Expected' },
+      { eventName: 'ACM Hackathon 2026', hostClub: 'ACM', date: '2026-06-15', timeSlots: [{ startTime: '10:00 AM', endTime: '04:00 PM' }], venueId: 1, status: 'approved', registrationCount: 250 },
+      { eventName: 'DSA Bootcamp', hostClub: 'ACM', date: '2026-05-10', timeSlots: [{ startTime: '02:00 PM', endTime: '05:00 PM' }], venueId: 2, status: 'approved', registrationCount: 120 },
+      { eventName: 'Web3 Tech Talk', hostClub: 'ACM', date: '2026-03-20', timeSlots: [{ startTime: '11:00 AM', endTime: '01:00 PM' }], venueId: 1, status: 'approved', registrationCount: 180 },
     ]).map((b) => [
       `"${b.eventName}"`,
       `"${b.hostClub}"`,
@@ -527,7 +646,7 @@ export default function DashboardShell({ onNavigateHome }) {
       `"${b.timeSlots?.[0]?.startTime || ''} - ${b.timeSlots?.[0]?.endTime || ''}"`,
       `"${b.venueName || 'Venue Not Disclosed'}"`,
       b.status,
-      `"${b.attendance}"`,
+      Number(b.registrationCount || 0),
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -608,6 +727,7 @@ export default function DashboardShell({ onNavigateHome }) {
       { icon: '📋', label: 'Pending Approvals', tab: 'approvals' },
       { icon: '🏛️', label: 'Edit Society Page', tab: 'edit_society' },
       { icon: '📊', label: 'History & Analytics', tab: 'analytics' },
+      { icon: '📜', label: 'Certificate Templates', tab: 'certificate_templates' },
       { icon: '📸', label: 'Publish 24h Story', tab: 'story' },
     ],
     hod: [
@@ -617,10 +737,17 @@ export default function DashboardShell({ onNavigateHome }) {
     ],
     principal: [
       { icon: '🎓', label: 'Final Approvals Queue', tab: 'final_approvals' },
+      { icon: '📊', label: 'Feedback Insights', tab: 'feedback_insights' },
+      { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
+    ],
+    principal_dean: [
+      { icon: '🎓', label: 'Final Approvals Queue', tab: 'final_approvals' },
+      { icon: '📊', label: 'Feedback Insights', tab: 'feedback_insights' },
       { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
     ],
     dean: [
       { icon: '🎓', label: 'Dean Overview', tab: 'dean_overview' },
+      { icon: '📊', label: 'Feedback Insights', tab: 'feedback_insights' },
       { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
     ],
     student: [
@@ -805,6 +932,12 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
                 📊 History &amp; Analytics
               </button>
+              <button className={`dash-tab-btn ${activeTab === 'feedback_insights' ? 'active' : ''}`} onClick={() => setActiveTab('feedback_insights')}>
+                📣 Event Feedback
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'certificate_templates' ? 'active' : ''}`} onClick={() => setActiveTab('certificate_templates')}>
+                📜 Certificate Templates
+              </button>
               <button className={`dash-tab-btn ${activeTab === 'story' ? 'active' : ''}`} onClick={() => setActiveTab('story')}>
                 📸 Publish 24h Story
               </button>
@@ -828,10 +961,13 @@ export default function DashboardShell({ onNavigateHome }) {
             </>
           )}
 
-          {user?.role === 'principal' && (
+          {(user?.role === 'principal' || user?.role === 'principal_dean') && (
             <>
               <button className={`dash-tab-btn ${activeTab === 'final_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('final_approvals')}>
                 🎓 Final Approvals Queue ({inbox.filter((b) => b.currentReviewerRole === 'principal').length})
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'feedback_insights' ? 'active' : ''}`} onClick={() => setActiveTab('feedback_insights')}>
+                📊 Feedback Insights
               </button>
               <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
                 🏛️ College &amp; Society Analytics
@@ -844,6 +980,9 @@ export default function DashboardShell({ onNavigateHome }) {
             <>
               <button className={`dash-tab-btn ${activeTab === 'dean_overview' ? 'active' : ''}`} onClick={() => setActiveTab('dean_overview')}>
                 📋 Dean Overview
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'feedback_insights' ? 'active' : ''}`} onClick={() => setActiveTab('feedback_insights')}>
+                📊 Feedback Insights
               </button>
               <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
                 🏛️ College Analytics
@@ -860,6 +999,9 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'event_passes' ? 'active' : ''}`} onClick={() => setActiveTab('event_passes')}>
                 🎟 My Event Passes
               </button>
+              <button className={`dash-tab-btn ${activeTab === 'my_certificates' ? 'active' : ''}`} onClick={() => setActiveTab('my_certificates')}>
+                📜 My Certificates
+              </button>
             </>
           )}
         </div>
@@ -867,6 +1009,9 @@ export default function DashboardShell({ onNavigateHome }) {
         {/* ── ADMIN: Society Registrations ── */}
         {['faculty_coordinator', 'admin'].includes(user?.role) && activeTab === 'attendance' && (
           <AttendanceManagementPage token={token} canScan={user?.role === 'faculty_coordinator'} canManage={user?.role === 'faculty_coordinator'} />
+        )}
+        {user?.role === 'faculty_coordinator' && activeTab === 'certificate_templates' && (
+          <CertificateManagementPage token={token} />
         )}
         {user?.role === 'student_coordinator' && activeTab === 'attendance_scanner' && (
           <AttendanceManagementPage token={token} canScan canManage={false} canViewDashboard={false} />
@@ -1597,18 +1742,8 @@ export default function DashboardShell({ onNavigateHome }) {
                             </div>
 
                             <div>
-                              <strong style={{ color: 'var(--bpit-blue)' }}>Attendance Link:</strong>
-                              <div style={{ color: 'var(--text-secondary)' }}>{booking.attendance || 'N/A'}</div>
-                            </div>
-
-                            <div>
                               <strong style={{ color: 'var(--bpit-blue)' }}>Student Coordinators:</strong>
                               <div style={{ color: 'var(--text-secondary)' }}>{booking.studentCoordinators || 'N/A'}</div>
-                            </div>
-
-                            <div>
-                              <strong style={{ color: 'var(--bpit-blue)' }}>Feedback &amp; QR Link:</strong>
-                              <div style={{ color: 'var(--text-secondary)' }}>{booking.feedback || 'N/A'}</div>
                             </div>
 
                             {booking.reviewTrail && booking.reviewTrail.length > 0 && (
@@ -1968,9 +2103,101 @@ export default function DashboardShell({ onNavigateHome }) {
           </div>
         )}
 
+        {['faculty_coordinator', 'hod', 'admin', 'principal', 'principal_dean', 'dean'].includes(user?.role) && activeTab === 'feedback_insights' && (
+          <div className="dash-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <h2 className="dash-card-title" style={{ marginBottom: '0.25rem' }}>📣 Event Feedback Insights</h2>
+                <p className="dash-card-subtitle" style={{ marginBottom: 0 }}>Summary of eligible attendees, submissions, response rates and average ratings for the events you can review.</p>
+              </div>
+            </div>
+
+            {feedbackInsightsError && <p role="alert" className="form-error">{feedbackInsightsError}</p>}
+
+            {feedbackSummary.length ? (
+              <div style={{ display: 'grid', gap: '1.25rem' }}>
+                <div className="dash-table-wrapper">
+                  <table className="dash-table">
+                    <thead>
+                      <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>Eligible</th>
+                        <th>Submitted</th>
+                        <th>Response Rate</th>
+                        <th>Avg Overall</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {feedbackSummary.map((row) => (
+                        <tr key={row.eventId}>
+                          <td><strong>{row.eventName}</strong></td>
+                          <td>{row.eventDate}</td>
+                          <td>{row.eligibleAttendees}</td>
+                          <td>{row.submissionCount}</td>
+                          <td>{row.responseRate}%</td>
+                          <td>{row.averageOverall ? `${row.averageOverall}/5` : '—'}</td>
+                          <td>
+                            <button className="btn-outline" type="button" onClick={() => loadFeedbackResponses(row.eventId)}>
+                              View Responses
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {selectedFeedbackEventId && (
+                  <div style={{ border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem', background: 'var(--bg-light)' }}>
+                    <h3 style={{ margin: '0 0 0.75rem' }}>Student Responses</h3>
+                    {feedbackInsightsLoading ? <p>Loading responses...</p> : feedbackResponses.length ? (
+                      <div style={{ display: 'grid', gap: '1rem' }}>
+                        {feedbackResponses.map((response) => (
+                          <div key={response.id} style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '1rem', background: 'var(--bg-card)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                              <strong>{response.studentName}</strong>
+                              <span>{response.submittedAt ? new Date(response.submittedAt).toLocaleString() : '—'}</span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                              <div><small>Overall</small><br />{response.overallRating}/5</div>
+                              <div><small>Organisation</small><br />{response.organisationRating}/5</div>
+                              <div><small>Content</small><br />{response.contentRating}/5</div>
+                            </div>
+                            {response.writtenFeedback && (
+                              <div style={{ marginBottom: '0.5rem' }}>
+                                <strong>Written feedback</strong>
+                                <p style={{ margin: '0.35rem 0 0' }}>{response.writtenFeedback}</p>
+                              </div>
+                            )}
+                            {response.suggestions && (
+                              <div>
+                                <strong>Suggestions</strong>
+                                <p style={{ margin: '0.35rem 0 0' }}>{response.suggestions}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p>No feedback responses captured for this event yet.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p>No event feedback is available yet for the events you manage.</p>
+            )}
+          </div>
+        )}
+
         {/* ── STUDENT: Overview Panel ── */}
         {user?.role === 'student' && activeTab === 'event_passes' && (
           <EventPassesPage token={token} />
+        )}
+        {user?.role === 'student' && activeTab === 'my_certificates' && (
+          <MyCertificatesPage token={token} />
         )}
 
         {user?.role === 'student' && activeTab === 'student_overview' && (
@@ -1988,8 +2215,15 @@ export default function DashboardShell({ onNavigateHome }) {
               </div>
               <div className="dash-stat-box">
                 <span className="dash-stat-label">Certificates Earned</span>
-                <span className="dash-stat-value">4 Certificates</span>
-                <span className="dash-stat-desc">Verified & downloadable</span>
+                <button
+                  className="dash-stat-value"
+                  type="button"
+                  onClick={() => setActiveTab('my_certificates')}
+                  style={{ padding: 0, border: 0, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  My Certificates
+                </button>
+                <span className="dash-stat-desc">View issued and downloadable certificates</span>
               </div>
               <div className="dash-stat-box">
                 <span className="dash-stat-label">Registered Events</span>
@@ -2021,12 +2255,40 @@ export default function DashboardShell({ onNavigateHome }) {
                         <td>{registration.date}</td>
                         <td>{registration.venue}</td>
                         <td>{registration.registrationStatus}</td>
-                        <td>{registration.attendanceStatus === 'PRESENT' ? 'Present' : 'Not Marked'}</td>
+                        <td>{registration.attendanceStatus === 'PRESENT'
+                          ? 'Present'
+                          : registration.attendanceStatus === 'ATTENDANCE_WINDOW_CLOSED'
+                            ? 'Attendance Window Closed'
+                            : 'Attendance Pending'}</td>
                         <td>
-                          <button className="btn-outline" type="button" onClick={() => setSelectedRegisteredEvent(registration)}>View Details</button>{' '}
-                          {registration.registrationStatus === 'REGISTERED' && (
-                            <button className="btn-outline" type="button" onClick={() => handleCancelEventRegistration(registration)}>Cancel</button>
-                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                            <button className="btn-outline" type="button" onClick={() => setSelectedRegisteredEvent(registration)}>View Details</button>
+                            {registration.registrationStatus === 'REGISTERED' && (
+                              <button className="btn-outline" type="button" onClick={() => handleCancelEventRegistration(registration)}>Cancel</button>
+                            )}
+                            {(() => {
+                              const feedbackStatus = feedbackByEventId[registration.eventId];
+                              const statusText = feedbackStatus?.feedbackStatus || 'NOT_ELIGIBLE';
+                              const label = statusText === 'SUBMITTED'
+                                ? 'View Feedback'
+                                : statusText === 'FEEDBACK_PENDING' && feedbackStatus?.canSubmitFeedback
+                                  ? 'Submit Feedback'
+                                  : statusText === 'EXPIRED'
+                                    ? 'Feedback Expired'
+                                    : 'Not Eligible';
+                              const disabled = !feedbackStatus || !feedbackStatus.canSubmitFeedback && statusText !== 'SUBMITTED';
+                              return (
+                                <button
+                                  className="btn-outline"
+                                  type="button"
+                                  disabled={disabled}
+                                  onClick={() => openFeedbackForm(registration)}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })()}
+                          </div>
                         </td>
                       </tr>
                     )) : (
@@ -2052,6 +2314,61 @@ export default function DashboardShell({ onNavigateHome }) {
                     <div className="calendar-detail-section"><strong>Time</strong><span>{selectedRegisteredEvent.time}</span></div>
                     <div className="calendar-detail-section"><strong>Venue</strong><span>{selectedRegisteredEvent.venue}</span></div>
                     <div className="calendar-detail-section"><strong>Registration</strong><span>{selectedRegisteredEvent.registrationStatus}</span></div>
+                    {(() => {
+                      const feedbackStatus = feedbackByEventId[selectedRegisteredEvent.eventId];
+                      return feedbackStatus ? (
+                        <div className="calendar-detail-section">
+                          <strong>Feedback</strong>
+                          <span>{feedbackStatus.feedbackStatus === 'SUBMITTED' ? 'Submitted' : feedbackStatus.feedbackStatus === 'EXPIRED' ? 'Expired' : feedbackStatus.feedbackStatus === 'NOT_ELIGIBLE' ? 'Not Eligible' : 'Pending'}{feedbackStatus.feedbackDeadline ? ` · Deadline ${new Date(feedbackStatus.feedbackDeadline).toLocaleString()}` : ''}</span>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {feedbackModalEvent && (
+              <div className="calendar-detail-modal" role="presentation" onClick={() => setFeedbackModalEvent(null)}>
+                <div className="calendar-detail-dialog" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                  <div className="calendar-detail-header">
+                    <div>
+                      <h3>Event Feedback</h3>
+                      <p>{feedbackModalEvent.title}</p>
+                    </div>
+                    <button className="calendar-detail-close" type="button" aria-label="Close feedback form" onClick={() => setFeedbackModalEvent(null)}>✕</button>
+                  </div>
+                  <div className="calendar-detail-body">
+                    <div className="calendar-detail-section">
+                      <strong>Overall event rating</strong>
+                      <select value={feedbackDraft.overallRating} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, overallRating: event.target.value })}>
+                        {[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}</option>)}
+                      </select>
+                    </div>
+                    <div className="calendar-detail-section">
+                      <strong>Organisation rating</strong>
+                      <select value={feedbackDraft.organisationRating} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, organisationRating: event.target.value })}>
+                        {[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}</option>)}
+                      </select>
+                    </div>
+                    <div className="calendar-detail-section">
+                      <strong>Content/activity rating</strong>
+                      <select value={feedbackDraft.contentRating} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, contentRating: event.target.value })}>
+                        {[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}</option>)}
+                      </select>
+                    </div>
+                    <div className="calendar-detail-section">
+                      <strong>Written feedback</strong>
+                      <textarea value={feedbackDraft.writtenFeedback} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, writtenFeedback: event.target.value })} rows="4" maxLength="2000" placeholder="Optional" />
+                    </div>
+                    <div className="calendar-detail-section">
+                      <strong>Suggestions</strong>
+                      <textarea value={feedbackDraft.suggestions} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, suggestions: event.target.value })} rows="3" maxLength="1000" placeholder="Optional" />
+                    </div>
+                    {feedbackError && <p role="alert" className="form-error">{feedbackError}</p>}
+                    <button className="btn-action-primary" type="button" disabled={feedbackSubmitting} onClick={handleFeedbackSubmit}>
+                      {feedbackSubmitting ? 'Submitting...' : 'Submit feedback'}
+                    </button>
                   </div>
                 </div>
               </div>

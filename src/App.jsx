@@ -11,6 +11,7 @@ import SocietyDashboard from './pages/SocietyDashboard';
 import CalendarPage from './calendar/FullCalendar.jsx';
 import DashboardShell from './pages/DashboardShell.jsx';
 import LandingPage from './pages/LandingPage.jsx';
+import { CertificateVerificationPage } from './pages/CertificatePages.jsx';
 import { useAuth } from './context/AuthContext';
 import { Toaster } from 'sonner';
 
@@ -211,6 +212,7 @@ function PreviousLandingPage({ onOpenDashboard }) {
 ═══════════════════════════════════════════════════ */
 export default function App() {
   const { user, loading } = useAuth();
+  const verificationToken = window.location.pathname.match(/^\/verify\/([a-f0-9]{64})\/?$/i)?.[1];
   // 'landing' = previous landing | 'dashboard' = role dashboard
   const [view, setView] = useState('landing');
   const [toast, setToast] = useState(null);
@@ -224,6 +226,10 @@ export default function App() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  if (verificationToken) {
+    return <CertificateVerificationPage token={verificationToken} />;
+  }
 
   if (loading) return <FullPageLoader />;
 

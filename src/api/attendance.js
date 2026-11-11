@@ -30,6 +30,33 @@ export async function getEventAttendance(token, eventId) {
   }));
 }
 
+export async function getAttendanceTeam(token, eventId) {
+  return parseJsonResponse(await fetch(`${API_BASE}/attendance/event/${encodeURIComponent(eventId)}/scanners`, {
+    headers: authHeaders(token),
+  }));
+}
+
+export async function getEligibleScanners(token, eventId) {
+  return parseJsonResponse(await fetch(`${API_BASE}/attendance/event/${encodeURIComponent(eventId)}/scanners/eligible`, {
+    headers: authHeaders(token),
+  }));
+}
+
+export async function grantAttendanceScanner(token, eventId, userId) {
+  return parseJsonResponse(await fetch(`${API_BASE}/attendance/event/${encodeURIComponent(eventId)}/scanners`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: JSON.stringify({ userId }),
+  }));
+}
+
+export async function revokeAttendanceScanner(token, eventId, permissionId) {
+  return parseJsonResponse(await fetch(`${API_BASE}/attendance/event/${encodeURIComponent(eventId)}/scanners/${encodeURIComponent(permissionId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  }));
+}
+
 export async function scanAttendance(token, passToken) {
   return parseJsonResponse(await fetch(`${API_BASE}/attendance/scan`, {
     method: 'POST',
@@ -38,11 +65,11 @@ export async function scanAttendance(token, passToken) {
   }));
 }
 
-export async function updateAttendance(token, attendanceId, attendanceStatus) {
+export async function updateAttendance(token, attendanceId, attendanceStatus, reason) {
   return parseJsonResponse(await fetch(`${API_BASE}/attendance/${encodeURIComponent(attendanceId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
-    body: JSON.stringify({ attendanceStatus }),
+    body: JSON.stringify({ attendanceStatus, reason }),
   }));
 }
 
@@ -55,5 +82,8 @@ export async function downloadAttendanceExport(token, eventId, format) {
     const data = await response.json().catch(() => ({}));
     throw new Error(data.message || `Export failed (${response.status}).`);
   }
-  return response.blob();
+  const disposition = response.headers.get('content-disposition') || '';
+  const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1]
+    || `${eventId}-attendance.${format}`;
+  return { blob: await response.blob(), filename };
 }

@@ -15,6 +15,9 @@ const adminRoutes = require('./routes/admin');
 const eventRegistrationRoutes = require('./routes/eventRegistrations');
 const eventPassRoutes = require('./routes/eventPasses');
 const attendanceRoutes = require('./routes/attendance');
+const eventFeedbackRoutes = require('./routes/eventFeedbacks');
+const certificateRoutes = require('./routes/certificates');
+const certificateModel = require('./models/certificateModel');
 
 const app  = express();
 const PORT = process.env.PORT || 5001;
@@ -50,6 +53,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', eventRegistrationRoutes);
 app.use('/api', eventPassRoutes);
 app.use('/api', attendanceRoutes);
+app.use('/api/certificates', certificateRoutes);
+app.use('/api', eventFeedbackRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
@@ -66,6 +71,7 @@ app.get(/^(?!\/api).*/, (req, res, next) => {
 db.initDb()
   .then(() => {
     console.log('✅ PostgreSQL / Neon DB connected and schema verified');
+    certificateModel.startCertificateWorker();
     app.listen(PORT, () => {
       console.log(`🚀 ClubConnect API running on http://localhost:${PORT}`);
     });

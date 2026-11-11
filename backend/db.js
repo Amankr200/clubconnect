@@ -34,6 +34,8 @@ async function initDb() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT '';
+
       CREATE TABLE IF NOT EXISTS societies (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) UNIQUE NOT NULL,
@@ -51,12 +53,24 @@ async function initDb() {
       );
     `);
 
+    // Ensure all missing columns exist in existing societies table
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS full_name VARCHAR(255) DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Technical';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS vision TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS mission TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS logo TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS banner TEXT DEFAULT '';`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2) DEFAULT 4.50;`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS faculty_coordinator JSONB DEFAULT '{}'::jsonb;`);
+    await client.query(`ALTER TABLE societies ADD COLUMN IF NOT EXISTS student_coordinators JSONB DEFAULT '[]'::jsonb;`);
     await client.query(`
       ALTER TABLE users
       ADD COLUMN IF NOT EXISTS society_id INTEGER REFERENCES societies(id) ON DELETE SET NULL;
     `);
 
     await client.query(`
+
       CREATE TABLE IF NOT EXISTS "venues" (
         id integer PRIMARY KEY,
         name varchar(255) NOT NULL,
@@ -166,6 +180,21 @@ async function initDb() {
       'utf8'
     );
     await client.query(attendanceMigration);
+    const scannerPermissionMigration = fs.readFileSync(
+      path.join(__dirname, 'migrations', '005_scanner_permissions_and_booking_cleanup.sql'),
+      'utf8'
+    );
+    await client.query(scannerPermissionMigration);
+    const eventFeedbackMigration = fs.readFileSync(
+      path.join(__dirname, 'migrations', '006_event_feedbacks.sql'),
+      'utf8'
+    );
+    await client.query(eventFeedbackMigration);
+    const certificateMigration = fs.readFileSync(
+      path.join(__dirname, 'migrations', '007_certificates.sql'),
+      'utf8'
+    );
+    await client.query(certificateMigration);
     console.log('✅ All PostgreSQL database schemas verified');
   } finally {
     client.release();

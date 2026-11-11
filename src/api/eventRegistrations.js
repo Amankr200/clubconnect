@@ -52,3 +52,43 @@ export async function cancelEventRegistration(token, registrationId) {
 
   return parseJsonResponse(res);
 }
+
+export async function getMyEventFeedback(token) {
+  const res = await fetch(`${API_BASE}/event-feedbacks/me`, {
+    headers: { ...authHeaders(token) },
+  });
+  return parseJsonResponse(res);
+}
+
+export async function getEventFeedbackStatus(token, eventId) {
+  const res = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}/feedback/status`, {
+    headers: { ...authHeaders(token) },
+  });
+  return parseJsonResponse(res);
+}
+
+export async function submitEventFeedback(token, eventId, payload) {
+  const res = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}/feedback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(token),
+    },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(res);
+}
+
+export async function getEventFeedbackSummary(token, eventId) {
+  const res = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}/feedback/summary`, {
+    headers: { ...authHeaders(token) },
+  });
+  return parseJsonResponse(res);
+}
+
+export async function getEventFeedbackResponses(token, eventId) {
+  const res = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}/feedback/responses`, {
+    headers: { ...authHeaders(token) },
+  });
+  return parseJsonResponse(res);
+}

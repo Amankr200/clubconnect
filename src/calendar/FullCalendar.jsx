@@ -34,7 +34,7 @@ function formatEventTime(event) {
 }
 
 function getEventRegistrationUrl(event) {
-  return event.extendedProps?.registrationLink || event.extendedProps?.registrationUrl || event.url || '';
+  return event.url || '';
 }
 
 // const getClubName = (clubId) => {
@@ -82,8 +82,6 @@ function convertBookingsToEvents(bookings, clubMap, venueMap, registeredEventIds
         photoFileName: booking.photoFileName,
         descriptionText: booking.description,
         eligibility: booking.eligibility,
-        attendance: booking.attendance,
-        feedback: booking.feedback,
         studentCoordinators: booking.studentCoordinators,
         isBooked: true,
         isRegistered
@@ -339,8 +337,6 @@ export default function CalendarPage() {
                     {/* <small>Description: {event.extendedProps?.descriptionText || '—'}</small> */}
                     <small><b>Eligibility:</b> {event.extendedProps?.eligibility || '—'}</small>
                     <small><b>Student Coordinators:</b> {event.extendedProps?.studentCoordinators || '—'}</small>
-                    {/* <small>Registration Link: {renderBookingDetailValue(event.extendedProps?.attendance)}</small>
-                    <small>Feedback Link: {renderBookingDetailValue(event.extendedProps?.feedback)}</small> */}
                     {event.allDay && <small>All day</small>}
                   </div>
                 ))}
@@ -394,19 +390,12 @@ export default function CalendarPage() {
                   <span>{activeEvent.extendedProps.studentCoordinators}</span>
                 </div>
               )}
-              {activeEvent.extendedProps?.attendance && (
+              {activeEvent.extendedProps?.isBooked ? (
                 <div className="calendar-detail-section">
-                  <strong>Expected Attendance</strong>
-                  <span>{activeEvent.extendedProps.attendance}</span>
+                  <strong>Registration</strong>
+                  <span>Use the RSVP button on the ClubConnect event listing.</span>
                 </div>
-              )}
-              {activeEvent.extendedProps?.feedback && (
-                <div className="calendar-detail-section">
-                  <strong>Feedback Notes</strong>
-                  <p>{activeEvent.extendedProps.feedback}</p>
-                </div>
-              )}
-              {getEventRegistrationUrl(activeEvent) ? (
+              ) : getEventRegistrationUrl(activeEvent) ? (
                 <div className="calendar-detail-action">
                   <a
                     href={getEventRegistrationUrl(activeEvent)}
@@ -414,13 +403,13 @@ export default function CalendarPage() {
                     rel="noreferrer"
                     className="calendar-detail-button"
                   >
-                    Open registration link
+                    Open event link
                   </a>
                 </div>
               ) : (
                 <div className="calendar-detail-section">
                   <strong>Registration</strong>
-                  <span>No registration link provided.</span>
+                  <span>No event link provided.</span>
                 </div>
               )}
             </div>

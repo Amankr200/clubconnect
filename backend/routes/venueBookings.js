@@ -84,9 +84,22 @@ async function getAssignedFacultyCoordinator(hostClub) {
     const { clubs } = await import('../../src/data/clubs.js');
     const target = String(hostClub || '').trim().toLowerCase();
     const matchedClub = clubs.find((club) => club.name.toLowerCase() === target || club.fullName.toLowerCase() === target);
-    return matchedClub?.coordinator || '';
+    const coordinatorName = matchedClub?.coordinator || '';
+    if (!coordinatorName) return {};
+
+    const result = await db.query(
+      `SELECT id, name, email
+       FROM users
+       WHERE role = 'faculty_coordinator' AND LOWER(name) = LOWER($1)
+       LIMIT 1`,
+      [coordinatorName],
+    );
+    const coordinator = result.rows[0];
+    return coordinator
+      ? { id: coordinator.id, name: coordinator.name, email: coordinator.email }
+      : { name: coordinatorName, email: '' };
   } catch {
-    return '';
+    return {};
   }
 }
 
@@ -101,6 +114,7 @@ function toBookingResponse(booking) {
     registrationDeadline: booking.registrationDeadline,
     attendanceStartTime: booking.attendanceStartTime,
     attendanceEndTime: booking.attendanceEndTime,
+    feedbackDeadlineHours: booking.feedbackDeadlineHours,
     registrationCount: booking.registrationCount,
     eventName: booking.eventName,
     hostClub: booking.hostClub,
@@ -108,8 +122,6 @@ function toBookingResponse(booking) {
     photoFileName: booking.photoFileName,
     description: booking.description,
     eligibility: booking.eligibility,
-    attendance: booking.attendance,
-    feedback: booking.feedback,
     studentCoordinators: booking.studentCoordinators,
     requestedBy: booking.requestedBy,
     assignedFacultyCoordinator: booking.assignedFacultyCoordinator,
@@ -213,10 +225,11 @@ router.post('/', async (req, res) => {
   const photoFileName = String(req.body?.photoFileName || '').trim();
   const description = String(req.body?.description || '').trim();
   const eligibility = String(req.body?.eligibility || '').trim();
-  const attendance = String(req.body?.attendance || '').trim();
   const capacity = req.body?.capacity == null || req.body.capacity === '' ? null : Number(req.body.capacity);
   const registrationDeadline = req.body?.registrationDeadline ? new Date(req.body.registrationDeadline) : null;
-  const feedback = String(req.body?.feedback || '').trim();
+  const feedbackDeadlineHours = req.body?.feedbackDeadlineHours == null || req.body?.feedbackDeadlineHours === ''
+    ? 48
+    : Number(req.body.feedbackDeadlineHours);
   const studentCoordinators = String(req.body?.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots);
   const attendanceWindow = getAttendanceWindow(
@@ -229,11 +242,14 @@ router.post('/', async (req, res) => {
   console.log("REQ BODY:", req.body);
   console.log("NORMALIZED SLOTS:", slots);
 
-  if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
-    return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
+  if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !studentCoordinators || slots.length === 0) {
+    return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, studentCoordinators, and timeSlots are required.' });
   }
   if (capacity !== null && (!Number.isInteger(capacity) || capacity < 1)) {
     return res.status(400).json({ message: 'capacity must be a positive whole number.' });
+  }
+  if (!Number.isInteger(feedbackDeadlineHours) || feedbackDeadlineHours < 1 || feedbackDeadlineHours > 720) {
+    return res.status(400).json({ message: 'feedbackDeadlineHours must be an integer between 1 and 720.' });
   }
   if (registrationDeadline && Number.isNaN(registrationDeadline.getTime())) {
     return res.status(400).json({ message: 'registrationDeadline must be a valid date and time.' });
@@ -267,12 +283,11 @@ router.post('/', async (req, res) => {
     photoFileName,
     description,
     eligibility,
-    attendance,
     capacity,
     registrationDeadline,
     attendanceStartTime: attendanceWindow.start,
     attendanceEndTime: attendanceWindow.end,
-    feedback,
+    feedbackDeadlineHours,
     studentCoordinators,
     requestedBy: {
       id: req.user.id,
@@ -280,10 +295,7 @@ router.post('/', async (req, res) => {
       email: req.user.email,
       role: req.user.role,
     },
-    assignedFacultyCoordinator: {
-      name: assignedFacultyCoordinator,
-      email: '',
-    },
+    assignedFacultyCoordinator,
     status: initialStatus,
     currentReviewerRole: initialReviewerRole,
     reviewTrail: [],
@@ -419,14 +431,12 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
   const photoFileName = String(req.body?.photoFileName || booking.photoFileName || '').trim();
   const description = String(req.body?.description || booking.description || '').trim();
   const eligibility = String(req.body?.eligibility || booking.eligibility || '').trim();
-  const attendance = String(req.body?.attendance || booking.attendance || '').trim();
   const capacity = req.body?.capacity == null || req.body.capacity === ''
     ? (booking.capacity ?? null)
     : Number(req.body.capacity);
   const registrationDeadline = req.body?.registrationDeadline
     ? new Date(req.body.registrationDeadline)
     : booking.registrationDeadline;
-  const feedback = String(req.body?.feedback || booking.feedback || '').trim();
   const studentCoordinators = String(req.body?.studentCoordinators || booking.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots || booking.timeSlots);
   const attendanceWindow = getAttendanceWindow(
@@ -437,8 +447,8 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
     { start: booking.attendanceStartTime, end: booking.attendanceEndTime },
   );
 
-  if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !attendance || !feedback || !studentCoordinators || slots.length === 0) {
-    return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, attendance, feedback, studentCoordinators, and timeSlots are required.' });
+  if (!venueId || !date || !eventName || !hostClub || !description || !eligibility || !studentCoordinators || slots.length === 0) {
+    return res.status(400).json({ message: 'venueId, date, eventName, hostClub, description, eligibility, studentCoordinators, and timeSlots are required.' });
   }
   if (capacity !== null && (!Number.isInteger(capacity) || capacity < 1)) {
     return res.status(400).json({ message: 'capacity must be a positive whole number.' });
@@ -486,12 +496,10 @@ router.patch('/:bookingId/resubmit', async (req, res) => {
     photoFileName,
     description,
     eligibility,
-    attendance,
     capacity,
     registrationDeadline,
     attendanceStartTime: attendanceWindow.start,
     attendanceEndTime: attendanceWindow.end,
-    feedback,
     studentCoordinators,
     status,
     currentReviewerRole,

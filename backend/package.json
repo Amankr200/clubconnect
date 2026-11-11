@@ -19,6 +19,7 @@
     "nodemailer": "^7.0.5",
     "pdfkit": "^0.20.2",
     "pg": "^8.22.0",
+    "qrcode": "^1.5.4",
     "resend": "^6.28.1"
   },
   "devDependencies": {
