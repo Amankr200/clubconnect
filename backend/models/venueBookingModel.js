@@ -13,6 +13,7 @@ function formatBooking(row) {
     registrationDeadline: row.registration_deadline || null,
     attendanceStartTime: row.attendance_start_time || null,
     attendanceEndTime: row.attendance_end_time || null,
+    feedbackDeadlineHours: Number(row.feedback_deadline_hours ?? 48),
     registrationCount: Number(row.registration_count || 0),
     eventName: row.event_name,
     hostClub: row.host_club,
@@ -126,6 +127,7 @@ async function createBooking(data) {
     registrationDeadline = null,
     attendanceStartTime = null,
     attendanceEndTime = null,
+    feedbackDeadlineHours = 48,
     eventName,
     hostClub,
     photo = '',
@@ -146,10 +148,10 @@ async function createBooking(data) {
       venue_id, date, time_slots, event_name, host_club, photo, photo_file_name,
       description, eligibility, student_coordinators,
       capacity, registration_deadline, attendance_start_time, attendance_end_time,
-      requested_by, assigned_faculty_coordinator, status, current_reviewer_role,
-      change_request, review_trail
+      feedback_deadline_hours, requested_by, assigned_faculty_coordinator, status,
+      current_reviewer_role, change_request, review_trail
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
     ) RETURNING *`,
     [
       venueId,
@@ -166,6 +168,7 @@ async function createBooking(data) {
       registrationDeadline,
       attendanceStartTime,
       attendanceEndTime,
+      feedbackDeadlineHours,
       JSON.stringify(requestedBy),
       JSON.stringify(assignedFacultyCoordinator),
       status,
@@ -191,6 +194,7 @@ async function updateBooking(id, fields) {
     registrationDeadline: 'registration_deadline',
     attendanceStartTime: 'attendance_start_time',
     attendanceEndTime: 'attendance_end_time',
+    feedbackDeadlineHours: 'feedback_deadline_hours',
     eventName: 'event_name',
     hostClub: 'host_club',
     photo: 'photo',

@@ -2,7 +2,12 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
-import { cancelEventRegistration, getMyEventRegistrations } from '../api/eventRegistrations.js';
+import {
+  cancelEventRegistration,
+  getMyEventRegistrations,
+  getMyEventFeedback,
+  submitEventFeedback,
+} from '../api/eventRegistrations.js';
 import AttendanceWindowEditor from '../components/AttendanceWindowEditor.jsx';
 import AttendanceManagementPage from './AttendanceManagementPage.jsx';
 import EventPassesPage from './EventPassesPage.jsx';
@@ -43,11 +48,25 @@ export default function DashboardShell({ onNavigateHome }) {
   const [bugReports, setBugReports] = useState([]);
   const [weeklyEvents, setWeeklyEvents] = useState([]);
   const [eventRegistrations, setEventRegistrations] = useState([]);
+  const [studentFeedbacks, setStudentFeedbacks] = useState([]);
+  const [feedbackDraft, setFeedbackDraft] = useState({
+    overallRating: '5',
+    organisationRating: '5',
+    contentRating: '5',
+    writtenFeedback: '',
+    suggestions: '',
+  });
+  const [feedbackModalEvent, setFeedbackModalEvent] = useState(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
   const [registrationError, setRegistrationError] = useState('');
   const [selectedRegisteredEvent, setSelectedRegisteredEvent] = useState(null);
   const activeEventRegistrations = eventRegistrations.filter(
     (registration) => registration.registrationStatus === 'REGISTERED',
   );
+  const feedbackByEventId = useMemo(() => Object.fromEntries(
+    (studentFeedbacks || []).map((entry) => [entry.eventId, entry])
+  ), [studentFeedbacks]);
 
   // Faculty & Society Data States
   const [mySociety, setMySociety] = useState({
@@ -410,9 +429,18 @@ export default function DashboardShell({ onNavigateHome }) {
     if (!token) return;
 
     if (user?.role === 'student') {
-      getMyEventRegistrations(token)
-        .then(setEventRegistrations)
-        .catch(() => setEventRegistrations([]));
+      Promise.all([
+        getMyEventRegistrations(token).catch(() => []),
+        getMyEventFeedback(token).catch(() => ({ feedback: [] })),
+      ])
+        .then(([registrations, feedbackResponse]) => {
+          setEventRegistrations(registrations || []);
+          setStudentFeedbacks((feedbackResponse && Array.isArray(feedbackResponse.feedback)) ? feedbackResponse.feedback : []);
+        })
+        .catch(() => {
+          setEventRegistrations([]);
+          setStudentFeedbacks([]);
+        });
     }
 
     if (['faculty_coordinator', 'hod', 'principal_dean', 'dean'].includes(user?.role)) {
@@ -445,6 +473,59 @@ export default function DashboardShell({ onNavigateHome }) {
       await refreshData();
     } catch (error) {
       setRegistrationError(error.message);
+    }
+  };
+
+  const openFeedbackForm = (registration) => {
+    const existing = feedbackByEventId[registration.eventId];
+    if (existing?.feedback) {
+      setFeedbackDraft({
+        overallRating: String(existing.feedback.overallRating || 5),
+        organisationRating: String(existing.feedback.organisationRating || 5),
+        contentRating: String(existing.feedback.contentRating || 5),
+        writtenFeedback: existing.feedback.writtenFeedback || '',
+        suggestions: existing.feedback.suggestions || '',
+      });
+    } else {
+      setFeedbackDraft({
+        overallRating: '5',
+        organisationRating: '5',
+        contentRating: '5',
+        writtenFeedback: '',
+        suggestions: '',
+      });
+    }
+    setFeedbackModalEvent(registration);
+    setFeedbackError('');
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackModalEvent) return;
+
+    const payload = {
+      overallRating: Number(feedbackDraft.overallRating),
+      organisationRating: Number(feedbackDraft.organisationRating),
+      contentRating: Number(feedbackDraft.contentRating),
+      writtenFeedback: feedbackDraft.writtenFeedback,
+      suggestions: feedbackDraft.suggestions,
+    };
+
+    if ([payload.overallRating, payload.organisationRating, payload.contentRating].some((value) => !Number.isInteger(value) || value < 1 || value > 5)) {
+      setFeedbackError('Each rating must be an integer from 1 to 5.');
+      return;
+    }
+
+    setFeedbackSubmitting(true);
+    setFeedbackError('');
+
+    try {
+      await submitEventFeedback(token, feedbackModalEvent.eventId, payload);
+      setFeedbackModalEvent(null);
+      await refreshData();
+    } catch (error) {
+      setFeedbackError(error.message || 'Unable to submit feedback.');
+    } finally {
+      setFeedbackSubmitting(false);
     }
   };
 
@@ -2007,10 +2088,34 @@ export default function DashboardShell({ onNavigateHome }) {
                             ? 'Attendance Window Closed'
                             : 'Attendance Pending'}</td>
                         <td>
-                          <button className="btn-outline" type="button" onClick={() => setSelectedRegisteredEvent(registration)}>View Details</button>{' '}
-                          {registration.registrationStatus === 'REGISTERED' && (
-                            <button className="btn-outline" type="button" onClick={() => handleCancelEventRegistration(registration)}>Cancel</button>
-                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                            <button className="btn-outline" type="button" onClick={() => setSelectedRegisteredEvent(registration)}>View Details</button>
+                            {registration.registrationStatus === 'REGISTERED' && (
+                              <button className="btn-outline" type="button" onClick={() => handleCancelEventRegistration(registration)}>Cancel</button>
+                            )}
+                            {(() => {
+                              const feedbackStatus = feedbackByEventId[registration.eventId];
+                              const statusText = feedbackStatus?.feedbackStatus || 'NOT_ELIGIBLE';
+                              const label = statusText === 'SUBMITTED'
+                                ? 'View Feedback'
+                                : statusText === 'FEEDBACK_PENDING' && feedbackStatus?.canSubmitFeedback
+                                  ? 'Submit Feedback'
+                                  : statusText === 'EXPIRED'
+                                    ? 'Feedback Expired'
+                                    : 'Not Eligible';
+                              const disabled = !feedbackStatus || !feedbackStatus.canSubmitFeedback && statusText !== 'SUBMITTED';
+                              return (
+                                <button
+                                  className="btn-outline"
+                                  type="button"
+                                  disabled={disabled}
+                                  onClick={() => openFeedbackForm(registration)}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })()}
+                          </div>
                         </td>
                       </tr>
                     )) : (
@@ -2036,6 +2141,61 @@ export default function DashboardShell({ onNavigateHome }) {
                     <div className="calendar-detail-section"><strong>Time</strong><span>{selectedRegisteredEvent.time}</span></div>
                     <div className="calendar-detail-section"><strong>Venue</strong><span>{selectedRegisteredEvent.venue}</span></div>
                     <div className="calendar-detail-section"><strong>Registration</strong><span>{selectedRegisteredEvent.registrationStatus}</span></div>
+                    {(() => {
+                      const feedbackStatus = feedbackByEventId[selectedRegisteredEvent.eventId];
+                      return feedbackStatus ? (
+                        <div className="calendar-detail-section">
+                          <strong>Feedback</strong>
+                          <span>{feedbackStatus.feedbackStatus === 'SUBMITTED' ? 'Submitted' : feedbackStatus.feedbackStatus === 'EXPIRED' ? 'Expired' : feedbackStatus.feedbackStatus === 'NOT_ELIGIBLE' ? 'Not Eligible' : 'Pending'}{feedbackStatus.feedbackDeadline ? ` · Deadline ${new Date(feedbackStatus.feedbackDeadline).toLocaleString()}` : ''}</span>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {feedbackModalEvent && (
+              <div className="calendar-detail-modal" role="presentation" onClick={() => setFeedbackModalEvent(null)}>
+                <div className="calendar-detail-dialog" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                  <div className="calendar-detail-header">
+                    <div>
+                      <h3>Event Feedback</h3>
+                      <p>{feedbackModalEvent.title}</p>
+                    </div>
+                    <button className="calendar-detail-close" type="button" aria-label="Close feedback form" onClick={() => setFeedbackModalEvent(null)}>✕</button>
+                  </div>
+                  <div className="calendar-detail-body">
+                    <div className="calendar-detail-section">
+                      <strong>Overall event rating</strong>
+                      <select value={feedbackDraft.overallRating} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, overallRating: event.target.value })}>
+                        {[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}</option>)}
+                      </select>
+                    </div>
+                    <div className="calendar-detail-section">
+                      <strong>Organisation rating</strong>
+                      <select value={feedbackDraft.organisationRating} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, organisationRating: event.target.value })}>
+                        {[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}</option>)}
+                      </select>
+                    </div>
+                    <div className="calendar-detail-section">
+                      <strong>Content/activity rating</strong>
+                      <select value={feedbackDraft.contentRating} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, contentRating: event.target.value })}>
+                        {[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}</option>)}
+                      </select>
+                    </div>
+                    <div className="calendar-detail-section">
+                      <strong>Written feedback</strong>
+                      <textarea value={feedbackDraft.writtenFeedback} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, writtenFeedback: event.target.value })} rows="4" maxLength="2000" placeholder="Optional" />
+                    </div>
+                    <div className="calendar-detail-section">
+                      <strong>Suggestions</strong>
+                      <textarea value={feedbackDraft.suggestions} onChange={(event) => setFeedbackDraft({ ...feedbackDraft, suggestions: event.target.value })} rows="3" maxLength="1000" placeholder="Optional" />
+                    </div>
+                    {feedbackError && <p role="alert" className="form-error">{feedbackError}</p>}
+                    <button className="btn-action-primary" type="button" disabled={feedbackSubmitting} onClick={handleFeedbackSubmit}>
+                      {feedbackSubmitting ? 'Submitting...' : 'Submit feedback'}
+                    </button>
                   </div>
                 </div>
               </div>

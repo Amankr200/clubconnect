@@ -179,6 +179,11 @@ async function initDb() {
       'utf8'
     );
     await client.query(scannerPermissionMigration);
+    const eventFeedbackMigration = fs.readFileSync(
+      path.join(__dirname, 'migrations', '006_event_feedbacks.sql'),
+      'utf8'
+    );
+    await client.query(eventFeedbackMigration);
     console.log('✅ All PostgreSQL database schemas verified');
   } finally {
     client.release();

@@ -114,6 +114,7 @@ function toBookingResponse(booking) {
     registrationDeadline: booking.registrationDeadline,
     attendanceStartTime: booking.attendanceStartTime,
     attendanceEndTime: booking.attendanceEndTime,
+    feedbackDeadlineHours: booking.feedbackDeadlineHours,
     registrationCount: booking.registrationCount,
     eventName: booking.eventName,
     hostClub: booking.hostClub,
@@ -226,6 +227,9 @@ router.post('/', async (req, res) => {
   const eligibility = String(req.body?.eligibility || '').trim();
   const capacity = req.body?.capacity == null || req.body.capacity === '' ? null : Number(req.body.capacity);
   const registrationDeadline = req.body?.registrationDeadline ? new Date(req.body.registrationDeadline) : null;
+  const feedbackDeadlineHours = req.body?.feedbackDeadlineHours == null || req.body?.feedbackDeadlineHours === ''
+    ? 48
+    : Number(req.body.feedbackDeadlineHours);
   const studentCoordinators = String(req.body?.studentCoordinators || '').trim();
   const slots = normalizeSlots(req.body?.timeSlots);
   const attendanceWindow = getAttendanceWindow(
@@ -243,6 +247,9 @@ router.post('/', async (req, res) => {
   }
   if (capacity !== null && (!Number.isInteger(capacity) || capacity < 1)) {
     return res.status(400).json({ message: 'capacity must be a positive whole number.' });
+  }
+  if (!Number.isInteger(feedbackDeadlineHours) || feedbackDeadlineHours < 1 || feedbackDeadlineHours > 720) {
+    return res.status(400).json({ message: 'feedbackDeadlineHours must be an integer between 1 and 720.' });
   }
   if (registrationDeadline && Number.isNaN(registrationDeadline.getTime())) {
     return res.status(400).json({ message: 'registrationDeadline must be a valid date and time.' });
@@ -280,6 +287,7 @@ router.post('/', async (req, res) => {
     registrationDeadline,
     attendanceStartTime: attendanceWindow.start,
     attendanceEndTime: attendanceWindow.end,
+    feedbackDeadlineHours,
     studentCoordinators,
     requestedBy: {
       id: req.user.id,
