@@ -12,6 +12,7 @@ ClubConnect centralises every aspect of campus society life: browsing clubs, pos
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | **Club Stories**                 | Instagram-style 24-hour stories from 20+ active societies, with view and click tracking                                        |
 | **Event Management**             | Create events with venue booking, photo upload (base-64), time-slot conflict detection, and RSVP                               |
+| **Certificates**                | Faculty-managed visual templates; certificates are generated after verified attendance and submitted event feedback           |
 | **Multi-Tier Approval Workflow** | Student Coordinator → Faculty Coordinator → Principal; HOD/Faculty requests route directly to Principal                        |
 | **Role-Based Dashboards**        | Custom dashboards for every actor: Student, Student Coordinator, Faculty Coordinator, HOD, Dean, Principal, and Platform Admin |
 | **Venue Booking**                | Availability checker with time-slot overlap prevention across concurrent active requests                                       |
@@ -47,6 +48,8 @@ ClubConnect centralises every aspect of campus society life: browsing clubs, pos
 | `bcryptjs`        | 2       | Password hashing                |
 | `jsonwebtoken`    | 9       | JWT authentication              |
 | `nodemailer`      | 7       | Email notifications             |
+| `pdfkit`          | 0.20    | Certificate PDF generation         |
+| `qrcode`          | 1.5     | PDF certificate verification QR    |
 | `dotenv`          | 16      | Environment variable loading    |
 | `nodemon`         | 3       | Dev auto-restart                |
 
@@ -83,6 +86,9 @@ SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_app_password
 # Optional; defaults to SMTP_USER
 SMTP_FROM=ClubConnect <your_email@gmail.com>
+
+# Optional — URL embedded in certificate verification QR codes
+PUBLIC_APP_URL=http://localhost:5173
 ```
 
 For Gmail, `SMTP_PASS` must be a Google **App Password**, not your normal account
@@ -140,6 +146,16 @@ npm run server       # Express serves dist/ as static files + API
 ```
 
 The Express server in [`backend/server.js`](backend/server.js) detects a `dist/index.html` and serves the SPA alongside the REST API from a single port.
+
+## Certificates
+
+Authorised faculty coordinators manage their society's templates from the faculty dashboard. The designer stores artwork and normalized field positions as versioned PostgreSQL records; issued certificates retain their original template version and field values. A backend worker issues one certificate per eligible student/event and retries failed PDF generation. Students use **My Certificates** to download PDFs, and `/verify/:token` is a public page that exposes only non-sensitive verification details.
+
+Database migrations (including `backend/migrations/007_certificates.sql`) run during backend startup. Set `PUBLIC_APP_URL` to the public frontend origin for production verification QR codes; it falls back to `FRONTEND_URL`. Run focused certificate checks with:
+
+```bash
+node --test backend/tests/certificateModel.test.js
+```
 
 ---
 

@@ -15,6 +15,7 @@ import VenueBookingModal from '../components/VenueBookingModal.jsx';
 import AddSocietyModal from '../components/AddSocietyModal.jsx';
 import AddUserModal from '../components/AddUserModal.jsx';
 import UserManagementModal from '../components/UserManagementModal.jsx';
+import { CertificateManagementPage, MyCertificatesPage } from './CertificatePages.jsx';
 import './DashboardShell.css';
 
 function readFileAsDataUrl(file) {
@@ -60,6 +61,11 @@ export default function DashboardShell({ onNavigateHome }) {
     writtenFeedback: '',
     suggestions: '',
   });
+  const [feedbackSummary, setFeedbackSummary] = useState([]);
+  const [feedbackResponses, setFeedbackResponses] = useState([]);
+  const [selectedFeedbackEventId, setSelectedFeedbackEventId] = useState(null);
+  const [feedbackInsightsLoading, setFeedbackInsightsLoading] = useState(false);
+  const [feedbackInsightsError, setFeedbackInsightsError] = useState('');
   const [feedbackModalEvent, setFeedbackModalEvent] = useState(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
@@ -423,7 +429,7 @@ export default function DashboardShell({ onNavigateHome }) {
     else if (user?.role === 'student_coordinator') setActiveTab('my_bookings');
     else if (user?.role === 'faculty_coordinator') setActiveTab('approvals');
     else if (user?.role === 'hod') setActiveTab('dept_approvals');
-    else if (user?.role === 'principal') setActiveTab('final_approvals');
+    else if (user?.role === 'principal' || user?.role === 'principal_dean') setActiveTab('final_approvals');
     else if (user?.role === 'dean') setActiveTab('dean_overview');
     else if (user?.role === 'student') setActiveTab('student_overview');
   }, [user?.role]);
@@ -447,8 +453,20 @@ export default function DashboardShell({ onNavigateHome }) {
         });
     }
 
-    if (['faculty_coordinator', 'hod', 'principal', 'dean'].includes(user?.role)) {
+    if (['faculty_coordinator', 'hod', 'principal', 'principal_dean', 'dean'].includes(user?.role)) {
       getVenueBookingInbox(token).then((data) => setInbox(data.bookings || [])).catch(() => {});
+    }
+
+    if (['faculty_coordinator', 'hod', 'admin', 'principal', 'principal_dean', 'dean'].includes(user?.role)) {
+      fetch(`${import.meta.env.VITE_API_URL || '/api'}/feedback/summary`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.message || 'Unable to load feedback insights.');
+          setFeedbackSummary(Array.isArray(data.summary) ? data.summary : []);
+        })
+        .catch(() => setFeedbackSummary([]));
     }
 
     if (['student_coordinator', 'faculty_coordinator', 'hod'].includes(user?.role)) {
@@ -477,6 +495,26 @@ export default function DashboardShell({ onNavigateHome }) {
       await refreshData();
     } catch (error) {
       setRegistrationError(error.message);
+    }
+  };
+
+  const loadFeedbackResponses = async (eventId) => {
+    setSelectedFeedbackEventId(eventId);
+    setFeedbackInsightsLoading(true);
+    setFeedbackInsightsError('');
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/events/${encodeURIComponent(eventId)}/feedback/responses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Unable to load feedback responses.');
+      setFeedbackResponses(Array.isArray(data.responses) ? data.responses : []);
+    } catch (error) {
+      setFeedbackResponses([]);
+      setFeedbackInsightsError(error.message || 'Unable to load feedback responses.');
+    } finally {
+      setFeedbackInsightsLoading(false);
     }
   };
 
@@ -689,6 +727,7 @@ export default function DashboardShell({ onNavigateHome }) {
       { icon: '📋', label: 'Pending Approvals', tab: 'approvals' },
       { icon: '🏛️', label: 'Edit Society Page', tab: 'edit_society' },
       { icon: '📊', label: 'History & Analytics', tab: 'analytics' },
+      { icon: '📜', label: 'Certificate Templates', tab: 'certificate_templates' },
       { icon: '📸', label: 'Publish 24h Story', tab: 'story' },
     ],
     hod: [
@@ -698,10 +737,17 @@ export default function DashboardShell({ onNavigateHome }) {
     ],
     principal: [
       { icon: '🎓', label: 'Final Approvals Queue', tab: 'final_approvals' },
+      { icon: '📊', label: 'Feedback Insights', tab: 'feedback_insights' },
+      { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
+    ],
+    principal_dean: [
+      { icon: '🎓', label: 'Final Approvals Queue', tab: 'final_approvals' },
+      { icon: '📊', label: 'Feedback Insights', tab: 'feedback_insights' },
       { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
     ],
     dean: [
       { icon: '🎓', label: 'Dean Overview', tab: 'dean_overview' },
+      { icon: '📊', label: 'Feedback Insights', tab: 'feedback_insights' },
       { icon: '🏛️', label: 'College Analytics', tab: 'college_analytics' },
     ],
     student: [
@@ -886,6 +932,12 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
                 📊 History &amp; Analytics
               </button>
+              <button className={`dash-tab-btn ${activeTab === 'feedback_insights' ? 'active' : ''}`} onClick={() => setActiveTab('feedback_insights')}>
+                📣 Event Feedback
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'certificate_templates' ? 'active' : ''}`} onClick={() => setActiveTab('certificate_templates')}>
+                📜 Certificate Templates
+              </button>
               <button className={`dash-tab-btn ${activeTab === 'story' ? 'active' : ''}`} onClick={() => setActiveTab('story')}>
                 📸 Publish 24h Story
               </button>
@@ -909,10 +961,13 @@ export default function DashboardShell({ onNavigateHome }) {
             </>
           )}
 
-          {user?.role === 'principal' && (
+          {(user?.role === 'principal' || user?.role === 'principal_dean') && (
             <>
               <button className={`dash-tab-btn ${activeTab === 'final_approvals' ? 'active' : ''}`} onClick={() => setActiveTab('final_approvals')}>
                 🎓 Final Approvals Queue ({inbox.filter((b) => b.currentReviewerRole === 'principal').length})
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'feedback_insights' ? 'active' : ''}`} onClick={() => setActiveTab('feedback_insights')}>
+                📊 Feedback Insights
               </button>
               <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
                 🏛️ College &amp; Society Analytics
@@ -925,6 +980,9 @@ export default function DashboardShell({ onNavigateHome }) {
             <>
               <button className={`dash-tab-btn ${activeTab === 'dean_overview' ? 'active' : ''}`} onClick={() => setActiveTab('dean_overview')}>
                 📋 Dean Overview
+              </button>
+              <button className={`dash-tab-btn ${activeTab === 'feedback_insights' ? 'active' : ''}`} onClick={() => setActiveTab('feedback_insights')}>
+                📊 Feedback Insights
               </button>
               <button className={`dash-tab-btn ${activeTab === 'college_analytics' ? 'active' : ''}`} onClick={() => setActiveTab('college_analytics')}>
                 🏛️ College Analytics
@@ -941,6 +999,9 @@ export default function DashboardShell({ onNavigateHome }) {
               <button className={`dash-tab-btn ${activeTab === 'event_passes' ? 'active' : ''}`} onClick={() => setActiveTab('event_passes')}>
                 🎟 My Event Passes
               </button>
+              <button className={`dash-tab-btn ${activeTab === 'my_certificates' ? 'active' : ''}`} onClick={() => setActiveTab('my_certificates')}>
+                📜 My Certificates
+              </button>
             </>
           )}
         </div>
@@ -948,6 +1009,9 @@ export default function DashboardShell({ onNavigateHome }) {
         {/* ── ADMIN: Society Registrations ── */}
         {['faculty_coordinator', 'admin'].includes(user?.role) && activeTab === 'attendance' && (
           <AttendanceManagementPage token={token} canScan={user?.role === 'faculty_coordinator'} canManage={user?.role === 'faculty_coordinator'} />
+        )}
+        {user?.role === 'faculty_coordinator' && activeTab === 'certificate_templates' && (
+          <CertificateManagementPage token={token} />
         )}
         {user?.role === 'student_coordinator' && activeTab === 'attendance_scanner' && (
           <AttendanceManagementPage token={token} canScan canManage={false} canViewDashboard={false} />
@@ -2039,9 +2103,101 @@ export default function DashboardShell({ onNavigateHome }) {
           </div>
         )}
 
+        {['faculty_coordinator', 'hod', 'admin', 'principal', 'principal_dean', 'dean'].includes(user?.role) && activeTab === 'feedback_insights' && (
+          <div className="dash-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <h2 className="dash-card-title" style={{ marginBottom: '0.25rem' }}>📣 Event Feedback Insights</h2>
+                <p className="dash-card-subtitle" style={{ marginBottom: 0 }}>Summary of eligible attendees, submissions, response rates and average ratings for the events you can review.</p>
+              </div>
+            </div>
+
+            {feedbackInsightsError && <p role="alert" className="form-error">{feedbackInsightsError}</p>}
+
+            {feedbackSummary.length ? (
+              <div style={{ display: 'grid', gap: '1.25rem' }}>
+                <div className="dash-table-wrapper">
+                  <table className="dash-table">
+                    <thead>
+                      <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>Eligible</th>
+                        <th>Submitted</th>
+                        <th>Response Rate</th>
+                        <th>Avg Overall</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {feedbackSummary.map((row) => (
+                        <tr key={row.eventId}>
+                          <td><strong>{row.eventName}</strong></td>
+                          <td>{row.eventDate}</td>
+                          <td>{row.eligibleAttendees}</td>
+                          <td>{row.submissionCount}</td>
+                          <td>{row.responseRate}%</td>
+                          <td>{row.averageOverall ? `${row.averageOverall}/5` : '—'}</td>
+                          <td>
+                            <button className="btn-outline" type="button" onClick={() => loadFeedbackResponses(row.eventId)}>
+                              View Responses
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {selectedFeedbackEventId && (
+                  <div style={{ border: '1px solid var(--border)', borderRadius: '14px', padding: '1rem', background: 'var(--bg-light)' }}>
+                    <h3 style={{ margin: '0 0 0.75rem' }}>Student Responses</h3>
+                    {feedbackInsightsLoading ? <p>Loading responses...</p> : feedbackResponses.length ? (
+                      <div style={{ display: 'grid', gap: '1rem' }}>
+                        {feedbackResponses.map((response) => (
+                          <div key={response.id} style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '1rem', background: 'var(--bg-card)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                              <strong>{response.studentName}</strong>
+                              <span>{response.submittedAt ? new Date(response.submittedAt).toLocaleString() : '—'}</span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                              <div><small>Overall</small><br />{response.overallRating}/5</div>
+                              <div><small>Organisation</small><br />{response.organisationRating}/5</div>
+                              <div><small>Content</small><br />{response.contentRating}/5</div>
+                            </div>
+                            {response.writtenFeedback && (
+                              <div style={{ marginBottom: '0.5rem' }}>
+                                <strong>Written feedback</strong>
+                                <p style={{ margin: '0.35rem 0 0' }}>{response.writtenFeedback}</p>
+                              </div>
+                            )}
+                            {response.suggestions && (
+                              <div>
+                                <strong>Suggestions</strong>
+                                <p style={{ margin: '0.35rem 0 0' }}>{response.suggestions}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p>No feedback responses captured for this event yet.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p>No event feedback is available yet for the events you manage.</p>
+            )}
+          </div>
+        )}
+
         {/* ── STUDENT: Overview Panel ── */}
         {user?.role === 'student' && activeTab === 'event_passes' && (
           <EventPassesPage token={token} />
+        )}
+        {user?.role === 'student' && activeTab === 'my_certificates' && (
+          <MyCertificatesPage token={token} />
         )}
 
         {user?.role === 'student' && activeTab === 'student_overview' && (
@@ -2059,8 +2215,15 @@ export default function DashboardShell({ onNavigateHome }) {
               </div>
               <div className="dash-stat-box">
                 <span className="dash-stat-label">Certificates Earned</span>
-                <span className="dash-stat-value">4 Certificates</span>
-                <span className="dash-stat-desc">Verified & downloadable</span>
+                <button
+                  className="dash-stat-value"
+                  type="button"
+                  onClick={() => setActiveTab('my_certificates')}
+                  style={{ padding: 0, border: 0, background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  My Certificates
+                </button>
+                <span className="dash-stat-desc">View issued and downloadable certificates</span>
               </div>
               <div className="dash-stat-box">
                 <span className="dash-stat-label">Registered Events</span>

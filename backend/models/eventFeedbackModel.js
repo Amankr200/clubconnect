@@ -126,7 +126,7 @@ function facultyEventPredicate(alias, firstParameter) {
 }
 
 async function ensureAuthorizedEventAccess(client, eventId, user) {
-  if (user.role === 'admin') {
+  if (['admin', 'principal_dean', 'dean'].includes(user.role)) {
     const event = await client.query('SELECT id FROM venue_bookings WHERE id = $1', [eventId]);
     if (!event.rows[0]) throw new FeedbackError('EVENT_NOT_FOUND', 'Event not found.');
     return;
@@ -378,13 +378,13 @@ async function listForStudent(studentId) {
 }
 
 async function getSummaryForUser(user) {
-  const roles = ['faculty_coordinator', 'hod', 'admin'];
-  if (!roles.includes(user.role)) throw new FeedbackError('FORBIDDEN', 'Only faculty or administrators can view feedback summaries.');
+  const roles = ['faculty_coordinator', 'hod', 'admin', 'principal_dean', 'dean'];
+  if (!roles.includes(user.role)) throw new FeedbackError('FORBIDDEN', 'Only faculty, principal/dean or administrators can view feedback summaries.');
 
   let whereClause = 'WHERE 1 = 1';
   let params = [];
 
-  if (user.role !== 'admin') {
+  if (!['admin', 'principal_dean', 'dean'].includes(user.role)) {
     const predicate = facultyEventPredicate('vb', 1);
     whereClause = `WHERE ${predicate}`;
     params = [user.id, user.email || '', user.name || ''];

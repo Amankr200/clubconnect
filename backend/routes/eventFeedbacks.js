@@ -10,7 +10,7 @@ function isStudent(req) {
 }
 
 function isFacultyOrAdmin(req) {
-  return ['faculty_coordinator', 'hod', 'admin'].includes(req.user?.role);
+  return ['faculty_coordinator', 'hod', 'admin', 'principal_dean', 'dean'].includes(req.user?.role);
 }
 
 function sendFeedbackError(res, error) {
