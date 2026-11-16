@@ -13,15 +13,14 @@
 
 .modal-box {
   background: var(--bg-modal);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
+  border: 4px solid var(--border);
+  border-radius: var(--r-sm);
   width: 100%;
   max-width: 500px;
   max-height: 92vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
-  animation: fadeInUp 0.25s var(--ease);
-  border-top: 4px solid var(--bpit-blue);
+  animation: fadeInUp 0.2s var(--ease);
   transition: background 0.2s var(--ease);
 }
 
@@ -31,7 +30,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 3px solid var(--border);
   padding-bottom: 14px;
   background: var(--bg-light);
 }
@@ -91,13 +90,20 @@
   align-items: center;
   gap: 0 10px;
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
+  border: 2px solid var(--border);
+  border-radius: var(--r-sm);
   padding: 12px 14px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.15s;
+  transition: transform var(--dur), box-shadow var(--dur);
   position: relative;
+  box-shadow: 2px 2px 0px var(--border);
+}
+.role-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px var(--border);
+  background: var(--bg-card-hover);
+}
   overflow: hidden;
   font-family: inherit;
 }
