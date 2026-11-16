@@ -22,6 +22,12 @@
 /* Brand */
 .footer-logo { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
 .footer-logo-icon { font-size: 1.8rem; }
+.footer-cc-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
 .footer-logo-name {
   font-size: 1.1rem;
   font-weight: 800;

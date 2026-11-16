@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import clubConnectLogo from '../assets/clubconnectlogo.png';
 import { getMyVenueBookings, getVenueBookingInbox, decideVenueBooking, resubmitVenueBooking, updateVenueBookingPhoto } from '../api/venueBookings.js';
 import {
   cancelEventRegistration,
@@ -761,7 +762,7 @@ export default function DashboardShell({ onNavigateHome }) {
       {/* Glassmorphic Topbar */}
       <header className="dash-topbar">
         <div className="dash-brand" onClick={onNavigateHome}>
-          <span className="dash-brand-icon">🔗</span>
+          <img src={clubConnectLogo} alt="ClubConnect Logo" className="dash-brand-icon-img" />
           <span className="dash-brand-name">ClubConnect</span>
         </div>
 

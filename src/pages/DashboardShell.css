@@ -35,6 +35,13 @@
   font-size: 1.5rem;
 }
 
+.dash-brand-icon-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .dash-brand-name {
   font-size: 1.4rem;
   font-weight: 900;

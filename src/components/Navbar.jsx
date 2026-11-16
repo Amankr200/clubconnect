@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { ROLE_META } from '../context/AuthContext';
 import bpitLogo from '../assets/bpitlogo.png';
+import clubConnectLogo from '../assets/clubconnectlogo.png';
 import './Navbar.css';
 
 export default function Navbar({
@@ -98,7 +99,7 @@ export default function Navbar({
         </button>
 
         <div className="navbar-platform-name">
-          <div className="platform-badge">🔗 ClubConnect</div>
+          <div className="platform-badge"><img src={clubConnectLogo} alt="ClubConnect" className="navbar-cc-logo-img" /><span>ClubConnect</span></div>
           <div className="platform-tagline">Unified Clubs &amp; Societies Platform</div>
         </div>
       </div>

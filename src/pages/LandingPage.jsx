@@ -3,6 +3,7 @@ import { useAuth, ROLE_META } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { ExternalLink, Sparkles, Code2 } from 'lucide-react';
 import StudentRegistrationModal from '../components/StudentRegistrationModal';
+import clubConnectLogo from '../assets/clubconnectlogo.png';
 import './LandingPage.css';
 
 function GithubIcon({ size = 16 }) {
@@ -572,7 +573,7 @@ export default function LandingPage({ onLoginSuccess }) {
       {/* ── NAVBAR ─────────────────────────────────── */}
       <nav className={`lp-nav${scrolled ? ' scrolled' : ''}`} role="navigation" aria-label="Main navigation">
         <div className="lp-nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <div className="lp-nav-logo-icon">🔗</div>
+          <img src={clubConnectLogo} alt="ClubConnect Logo" className="lp-nav-logo-img" />
           <div>
             <span className="lp-nav-logo-text">ClubConnect</span>
             <span className="lp-nav-logo-sub">BPIT · Powered by Campus</span>
@@ -915,7 +916,7 @@ export default function LandingPage({ onLoginSuccess }) {
           <div className="lp-footer-top">
             <div className="lp-footer-brand">
               <div className="lp-footer-logo">
-                <div className="lp-footer-logo-icon">🔗</div>
+                <img src={clubConnectLogo} alt="ClubConnect Logo" className="lp-footer-logo-img" />
                 <span className="lp-footer-logo-text">ClubConnect</span>
               </div>
               <p className="lp-footer-tagline">

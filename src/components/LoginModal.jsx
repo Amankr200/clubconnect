@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth, ROLE_META } from '../context/AuthContext';
+import clubConnectLogo from '../assets/clubconnectlogo.png';
 import './LoginModal.css';
 
 const ROLES = [
@@ -116,7 +117,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
         {/* Header */}
         <div className="modal-header">
           <div className="modal-logo">
-            <span className="modal-logo-icon">🔗</span>
+            <img src={clubConnectLogo} alt="ClubConnect" className="modal-cc-logo-img" />
             <span className="modal-logo-text">ClubConnect</span>
           </div>
           <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>

@@ -83,6 +83,15 @@
   text-transform: uppercase;
   border: 2px solid var(--border);
   box-shadow: 2px 2px 0px var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.navbar-cc-logo-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: inline-block;
 }
 .platform-tagline {
   font-size: 0.65rem;

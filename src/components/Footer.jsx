@@ -1,4 +1,5 @@
 import React from 'react';
+import clubConnectLogo from '../assets/clubconnectlogo.png';
 import './Footer.css';
 
 const SOCIETIES_QUICK = [
@@ -21,7 +22,7 @@ export default function Footer({ onNavigate, onReportBugClick }) {
           {/* Brand */}
           <div className="footer-brand">
             <div className="footer-logo">
-              <span className="footer-logo-icon">🔗</span>
+              <img src={clubConnectLogo} alt="ClubConnect" className="footer-cc-logo-img" />
               <div>
                 <div className="footer-logo-name">ClubConnect</div>
                 <div className="footer-logo-sub">BPIT – Bhagwan Parshuram Institute of Technology</div>

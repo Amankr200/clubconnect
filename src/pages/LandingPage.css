@@ -133,6 +133,12 @@
   font-size: 1.2rem;
   box-shadow: 0 4px 12px rgba(26,58,139,0.25);
 }
+.lp-nav-logo-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
 .lp-nav-logo-text {
   font-size: 1.15rem;
   font-weight: 800;
@@ -1059,6 +1065,12 @@
   border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.1rem;
+}
+.lp-footer-logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .lp-footer-logo-text {
   font-size: 1.05rem;
