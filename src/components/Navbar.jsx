@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { ROLE_META } from '../context/AuthContext';
+import bpitLogo from '../assets/bpitlogo.png';
 import './Navbar.css';
 
 export default function Navbar({
@@ -87,7 +88,7 @@ export default function Navbar({
           style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
           aria-label="Go to home"
         >
-          <div className="navbar-bpit-logo-box" aria-label="BPIT Logo">BPIT</div>
+          <img src={bpitLogo} alt="BPIT Logo" className="navbar-bpit-logo-img" />
           <div>
             <div className="navbar-bpit-title">Bhagwan Parshuram Institute of Technology</div>
             <div className="navbar-bpit-subtitle">
