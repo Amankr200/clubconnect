@@ -270,35 +270,37 @@ function Toast({ toast, onClose }) {
       aria-live="polite"
       style={{
         position: 'fixed',
-        bottom: 28,
+        bottom: 20,
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 9999,
         background: toast.type === 'success' ? '#1A3A8B' : '#DC2626',
         color: 'white',
-        padding: '12px 24px',
+        padding: '10px 18px',
         borderRadius: 12,
         fontFamily: 'Plus Jakarta Sans, Inter, sans-serif',
-        fontSize: '0.9rem',
+        fontSize: '0.85rem',
         fontWeight: 600,
-        boxShadow: '0 8px 32px rgba(15,23,42,0.25)',
+        boxShadow: '0 8px 32px rgba(15,23,42,0.3)',
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
+        justifyContent: 'space-between',
+        gap: 8,
         animation: 'fadeInUp 0.3s ease both',
-        whiteSpace: 'nowrap',
-        maxWidth: '90vw',
+        width: 'max-content',
+        maxWidth: 'calc(100vw - 32px)',
+        boxSizing: 'border-box',
       }}
     >
-      <span>{toast.type === 'success' ? '✅' : '⚠️'}</span>
-      <span>{toast.message}</span>
+      <span style={{ flexShrink: 0 }}>{toast.type === 'success' ? '✅' : '⚠️'}</span>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{toast.message}</span>
       <button
         onClick={onClose}
         style={{
           background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white',
           cursor: 'pointer', borderRadius: '50%', width: 22, height: 22,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '0.75rem', fontFamily: 'inherit', marginLeft: 4,
+          fontSize: '0.75rem', fontFamily: 'inherit', marginLeft: 4, flexShrink: 0,
         }}
         aria-label="Close notification"
       >

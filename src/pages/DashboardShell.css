@@ -723,18 +723,56 @@
 
 /* Responsive: hide old user-info, show profile avatar */
 @media (max-width: 900px) {
+  .dash-topbar {
+    padding: 0.65rem 0.85rem;
+    gap: 0.5rem;
+  }
+  .dash-brand-name {
+    font-size: 1.1rem;
+  }
+  .dash-brand-icon-img {
+    width: 26px;
+    height: 26px;
+  }
+  .dash-topbar-right {
+    gap: 0.5rem;
+  }
   .dash-pd-name,
   .dash-pd-email {
     max-width: 130px;
   }
+  .dash-profile-dropdown {
+    max-width: calc(100vw - 20px);
+    right: 0;
+  }
 }
 
 @media (max-width: 480px) {
-  .dash-profile-dropdown {
-    min-width: calc(100vw - 24px);
-    right: -8px;
+  .dash-topbar {
+    padding: 0.5rem 0.75rem;
   }
-  .npd-name, .npd-email { max-width: 160px; }
+  .dash-brand {
+    gap: 0.4rem;
+  }
+  .dash-brand-name {
+    font-size: 0.95rem;
+  }
+  .dash-role-badge {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.7rem;
+    gap: 0.25rem;
+  }
+  .dash-topbar-right .theme-toggle-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+  .dash-profile-dropdown {
+    width: min(320px, calc(100vw - 20px));
+    min-width: unset;
+    right: 0;
+  }
+  .dash-pd-name, .dash-pd-email { max-width: 150px; }
 }
 
 /* ══════════════════════════════════════════════════

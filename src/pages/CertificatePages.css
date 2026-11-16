@@ -456,6 +456,8 @@
   margin: 0.3rem 0;
   color: var(--text-secondary, #475569);
   font-weight: 600;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .certificate-list-card a {
@@ -620,12 +622,24 @@
     flex-direction: column;
   }
 
-  .certificate-tools-grid {
-    grid-template-columns: 1fr;
+  .certificate-list-card {
+    padding: 1rem;
+    overflow-x: hidden;
   }
 
   .certificate-list-actions {
-    align-items: flex-start;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+
+  .certificate-list-actions .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .certificate-tools-grid {
+    grid-template-columns: 1fr;
   }
 
   .certificate-verify-card dl {

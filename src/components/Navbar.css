@@ -321,10 +321,13 @@
   .navbar-bpit-title { font-size: 0.88rem; }
   .user-name, .user-role-badge, .chevron { display: none; }
   .nav-theme-toggle { display: none; } /* Show in mobile drawer menu instead */
+  .navbar-actions { margin-left: auto; gap: 6px; }
+  .nav-bug-btn { padding: 0.35rem 0.6rem; font-size: 0.72rem; }
 }
 @media (max-width: 600px) {
   .navbar-identity { padding: 6px 12px; }
   .navbar-bpit-logo-box { width: 38px; height: 38px; font-size: 0.68rem; }
+  .navbar-bpit-logo-img { width: 38px; height: 38px; }
   .navbar-bpit-subtitle { display: none; }
   .navbar-platform-name { display: none; }
 }
@@ -567,14 +570,19 @@
 /* Responsive */
 @media (max-width: 960px) {
   .nav-profile-name { display: none; }
-  .nav-profile-dropdown { min-width: 270px; }
+  .nav-profile-dropdown {
+    min-width: 270px;
+    max-width: calc(100vw - 20px);
+    right: 0;
+  }
 }
 
 @media (max-width: 480px) {
   .nav-profile-dropdown {
-    min-width: calc(100vw - 24px);
-    right: -8px;
+    width: min(320px, calc(100vw - 24px));
+    min-width: unset;
+    right: 0;
   }
-  .npd-name, .npd-email { max-width: 160px; }
+  .npd-name, .npd-email { max-width: 150px; }
 }
 
